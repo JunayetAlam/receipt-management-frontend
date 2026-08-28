@@ -83,12 +83,7 @@ export default function UsersList() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Users</h1>
-          <p className="text-sm text-muted-foreground">
-            Activate, block, and manage staff accounts and devices.
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold">Manage Users</h1>
         <CreateUserDialog />
       </div>
 

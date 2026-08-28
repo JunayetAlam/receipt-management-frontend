@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Red_Hat_Display, Outfit, Inter } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({
-  variable: "--font-inter",
-  weight: ["100", "300", "200", "400", "500", "600", "700", "800", "900"],
-  subsets: ["latin"],
+const nunito = Nunito({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-nunito",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} `}>
+    <html lang="en" className={nunito.variable}>
+      <body className={`${nunito.className} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

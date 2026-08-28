@@ -45,6 +45,7 @@
   --shadow-lg: 0 1px 3px 0px rgb(0 0 0 / 0.1), 0 4px 6px -1px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 1px 3px 0px rgb(0 0 0 / 0.1), 0 8px 10px -1px rgb(0 0 0 / 0.1);
   --shadow-2xl: 0 1px 3px 0px rgb(0 0 0 / 0.25);
+  --radius: 0.625rem;
 }
 
 .dark {
@@ -91,8 +92,8 @@
 }
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-heading);
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

@@ -7,8 +7,8 @@ import useEmblaCarousel, {
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 
 type CarouselApi = UseEmblaCarouselType[1]
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
@@ -186,7 +186,7 @@ function CarouselPrevious({
       variant={variant}
       size={size}
       className={cn(
-        "absolute touch-manipulation rounded-full",
+        "absolute touch-manipulation rounded-2xl",
         orientation === "horizontal"
           ? "inset-y-0 -left-12 my-auto"
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
@@ -216,7 +216,7 @@ function CarouselNext({
       variant={variant}
       size={size}
       className={cn(
-        "absolute touch-manipulation rounded-full",
+        "absolute touch-manipulation rounded-2xl",
         orientation === "horizontal"
           ? "inset-y-0 -right-12 my-auto"
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
