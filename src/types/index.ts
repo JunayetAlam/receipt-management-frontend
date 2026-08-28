@@ -1,33 +1,41 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BaseQueryApi } from "@reduxjs/toolkit/query";
 import { SVGProps } from "react";
-export * from "./message.type";
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;
 };
 
-export type UserRoleEnum = "USER" | "SUPERADMIN";
+export type UserRoleEnum = "SUPERADMIN" | "ADMIN" | "CASHIER";
 
-export type UserStatus = "ACTIVE" | "INACTIVE" | "BLOCKED";
+export type UserStatus = "PENDING" | "ACTIVE" | "INACTIVE" | "BLOCKED";
 
 export interface User {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber?: string | null;
   role: UserRoleEnum;
   status: UserStatus;
   bio?: string | null;
   location?: string | null;
-  isAgreeWithTerms: boolean;
+  isAgreeWithTerms?: boolean;
   profilePhoto?: string | null;
-  sentMessages?: any[];
-  receivedMessages?: any[];
-  supports?: any[];
+  isEmailVerified?: boolean;
+  isDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
+  name?: string;
+}
+
+export interface DeviceSession {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  lastSeenAt: string;
+  expireAt: string;
+  createdAt: string;
+  isCurrent?: boolean;
 }
 export type TQueryParam = {
   name: string;

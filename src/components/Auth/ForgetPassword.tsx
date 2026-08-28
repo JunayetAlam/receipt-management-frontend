@@ -24,7 +24,7 @@ export default function ForgetPassword() {
 
         if (!email) return;
 
-        const toastId = toast.loading('Sending reset link...');
+        const toastId = toast.loading('Sending reset code...');
         
         try {
             const result = await forgetPassword({ email }).unwrap();
@@ -33,10 +33,10 @@ export default function ForgetPassword() {
             
             
             if (result?.success) {
-                router.push(`/auth/check-email?email=${email}`);
-                toast.success('Reset link sent successfully!', { id: toastId });
+                router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&purpose=reset`);
+                toast.success('If an account exists, a verification code has been sent.', { id: toastId });
             } else {
-                toast.error(result?.message || 'Failed to send reset link', { id: toastId });
+                toast.error(result?.message || 'Failed to send reset code', { id: toastId });
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
@@ -57,7 +57,7 @@ export default function ForgetPassword() {
                 {/* Email Field */}
                 <div className="space-y-2">
                     <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input
                             id="email"
                             name="email"
@@ -72,13 +72,13 @@ export default function ForgetPassword() {
 
                 {/* Submit Button */}
                 <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                    {isLoading ? 'Sending Reset Link...' : 'Send Reset Link'}
+                    {isLoading ? 'Sending code...' : 'Send reset code'}
                 </Button>
             </form>
 
             {/* Back to Sign In */}
             <div className="text-center mt-6">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                     Go back to{' '}
                     <Link href="/auth/sign-in">
                         <Button variant="link" className="px-0 text-sm" disabled={isLoading}>

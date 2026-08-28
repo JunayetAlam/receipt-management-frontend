@@ -1,26 +1,20 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Overlanding outpost",
-  description: "Buy sell explore",
+  title: "Receipt Management",
+  description: "Sign in to manage products, customers, and receipts.",
 };
-import Container from "@/components/Global/Container";
-import Navbar from "@/components/Global/Navbar";
-import Footer from "@/components/Global/Footer";
-export default function RootLayout({
+
+export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <>
-      <Navbar />
-      <Container className="w-full md:px-10 pt-24 lg:pt-40 min-h-[70vh] pb-20 flex justify-center items-center">
-        <div className="flex justify-center items-center flex-col gap-5  min-h-full w-full">
-          {children}
-        </div>
-      </Container>
-      <Footer />
-    </>
+    <div className="flex min-h-screen w-full items-center justify-center bg-background px-5 py-10">
+      <div className="flex w-full flex-col items-center justify-center gap-5">
+        {children}
+      </div>
+    </div>
   );
 }

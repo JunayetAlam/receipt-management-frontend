@@ -1,43 +1,33 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store";
-import Cookies from "js-cookie";
 
-
-type User = {
-  email: string;
+export type AuthUser = {
   id: string;
-  name: string;
-  role: "USER" | "SUPERADMIN"; // Add other roles if needed
+  email: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  profilePhoto?: string | null;
 };
 
 type TAuthState = {
-  user: null | User;
-  token: null | string;
+  user: null | AuthUser;
 };
 
 const initialState: TAuthState = {
   user: null,
-  token: null,
 };
 
 export const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser: (state, action) => {
-      const { user, token } = action.payload;
-
-      state.user = user;
-      state.token = token;
-      Cookies.set("accessToken", token, { expires: 30 });
+    setUser: (state, action: PayloadAction<AuthUser>) => {
+      state.user = action.payload;
     },
-
     logout: (state) => {
       state.user = null;
-      state.token = null;
-
-      // Remove token from cookies
-      Cookies.remove("accessToken");
     },
   },
 });
@@ -45,5 +35,4 @@ export const authSlice = createSlice({
 export const { setUser, logout } = authSlice.actions;
 export default authSlice.reducer;
 
-export const useCurrentToken = (state: RootState) => state.auth.token;
 export const useCurrentUser = (state: RootState) => state.auth.user;

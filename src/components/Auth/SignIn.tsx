@@ -30,15 +30,16 @@ export default function SignIn() {
         try {
 
             const result = await login({ email, password }).unwrap();
-           
+
             form.reset();
-           
-            if(result?.data){
-                 router.push('/')
-                  toast.success('Login successful!', { id: toastId });
+
+            const user = result?.data;
+            if (user && typeof user === "object" && "id" in user && user.id) {
+                router.push("/dashboard");
+                toast.success("Login successful!", { id: toastId });
             } else {
-                router.push(`/auth/check-email?email=${email}`)
-                 toast.warning('Please Verify Email first!', { id: toastId });
+                router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
+                toast.warning("Please verify your email first!", { id: toastId });
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
@@ -56,7 +57,7 @@ export default function SignIn() {
                 {/* Email Field */}
                 <div className="space-y-2">
                     <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input
                             id="email"
                             name="email"
@@ -72,7 +73,7 @@ export default function SignIn() {
                 {/* Password Field */}
                 <div className="space-y-2">
                     <div className="relative">
-                        <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <LockKeyhole className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input
                             id="password"
                             name="password"
@@ -112,7 +113,7 @@ export default function SignIn() {
 
             {/* Sign Up Link */}
             <div className="text-center mt-6">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                     Don&apos;t have an account?{' '}
                     <Link href="/auth/sign-up">
                         <Button variant="link" className="px-0 text-sm" disabled={isLoading}>

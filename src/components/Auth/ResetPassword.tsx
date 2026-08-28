@@ -24,6 +24,7 @@ export default function ResetPassword() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const token = searchParams.get('token')
+    const email = searchParams.get('email')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -33,12 +34,13 @@ export default function ResetPassword() {
             return
         }
 
-        if (!token) {
-            toast.error('Invalid reset token')
+        if (!token || !email) {
+            toast.error('Invalid reset link')
             return
         }
 
         const formData = {
+            email,
             newPassword: data.newPassword,
             token: token,
         }
@@ -64,7 +66,7 @@ export default function ResetPassword() {
             <CustomForm 
                 onSubmit={handleSubmit} 
                 defaultValues={defaultValues} 
-                className="rounded-lg border border-gray-200 p-6 space-y-6"
+                className="rounded-lg border border-border p-6 space-y-6"
             >
                 <div className="space-y-4">
                     {/* New Password Field */}
@@ -101,7 +103,7 @@ export default function ResetPassword() {
 
                 {/* Back to Sign In */}
                 <div className="text-center">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                         Remember your password?{' '}
                         <Link href="/auth/sign-in">
                             <Button variant="link" className="px-0 text-sm text-primary" disabled={isLoading}>

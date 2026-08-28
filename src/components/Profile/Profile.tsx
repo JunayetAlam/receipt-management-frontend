@@ -3,6 +3,7 @@ import Container from "../Global/Container";
 import ProfilePicture from "./ProfilePicture";
 import ProfileDetails from "./ProfileDetails";
 import ProfilePassword from "./ProfilePassword";
+import ProfileDevices from "./ProfileDevices";
 import { useGetMeQuery } from "@/redux/api/userApi";
 import { Skeleton } from "../ui/skeleton";
 
@@ -85,6 +86,7 @@ export default function Profile() {
             }}
           />
           <ProfilePassword />
+          <ProfileDevices />
         </div>
       </div>
     </Container>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Red_Hat_Display, Outfit, Inter } from "next/font/google";
-import "../styles/globals.css";
+import "./globals.css";
 import { Providers } from "./providers";
 
 const inter = Inter({

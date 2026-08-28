@@ -1,72 +1,140 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Title from '../Global/Title';
 import Subtitle from '../Global/Subtitle';
 import { Button } from '../ui/button';
-import { Skeleton } from '../ui/skeleton';
-import { useSearchParams } from 'next/navigation';
-import { useVerifyEmailMutation } from '@/redux/api/userApi';
+import { Input } from '../ui/input';
+import {
+    useResendVerificationEmailMutation,
+    useVerifyEmailMutation,
+    useVerifyForgotPasswordOtpMutation,
+} from '@/redux/api/userApi';
 
 export default function VerifyMail() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [verify, { isLoading }] = useVerifyEmailMutation();
-    const [statusMessage, setStatusMessage] = useState('');
-    const [error, setError] = useState(false);
+    const email = searchParams.get('email') || '';
+    const purpose = searchParams.get('purpose') === 'reset' ? 'reset' : 'verify';
 
-    const token = searchParams.get('token');
+    const [otp, setOtp] = useState('');
+    const [pendingApproval, setPendingApproval] = useState(false);
+    const [verifyEmail, { isLoading: isVerifyingEmail }] = useVerifyEmailMutation();
+    const [verifyResetOtp, { isLoading: isVerifyingReset }] = useVerifyForgotPasswordOtpMutation();
+    const [resend, { isLoading: isResending }] = useResendVerificationEmailMutation();
 
-    useEffect(() => {
-        if (!token) {
-            setStatusMessage('Token not found.');
-            setError(true);
+    const isLoading = isVerifyingEmail || isVerifyingReset;
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!email || !otp) {
+            toast.error('Email and verification code are required');
             return;
         }
 
-        const verifyEmail = async () => {
-            try {
-                await verify({ token }).unwrap();
-                toast.success('Your email has been successfully verified.');
-                router.push('/');
-            } catch {
-                setStatusMessage('Email verification failed.');
-                setError(true);
+        const toastId = toast.loading('Verifying...');
+        try {
+            if (purpose === 'reset') {
+                const result = await verifyResetOtp({ email, otp }).unwrap();
+                const token = result?.data?.resetToken;
+                if (!token) {
+                    toast.error('Reset token missing. Try again.', { id: toastId });
+                    return;
+                }
+                toast.success(result?.message || 'Code verified', { id: toastId });
+                router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&token=${token}`);
+                return;
             }
-        };
 
-        verifyEmail();
-    }, [token, verify, router]);
+            const result = await verifyEmail({ email, otp }).unwrap();
+            toast.success(result?.message || 'Email verified', { id: toastId });
+            setPendingApproval(true);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            toast.error(error?.data?.message || 'Verification failed', { id: toastId });
+        }
+    };
+
+    const handleResend = async () => {
+        if (!email) {
+            toast.error('Email not found');
+            return;
+        }
+        if (purpose === 'reset') {
+            toast.info('Go back and request a new reset code.');
+            return;
+        }
+        const toastId = toast.loading('Resending code...');
+        try {
+            const result = await resend({ email }).unwrap();
+            toast.success(result?.message || 'Code sent', { id: toastId });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            toast.error(error?.data?.message || 'Could not resend code', { id: toastId });
+        }
+    };
+
+    if (pendingApproval) {
+        return (
+            <div className="w-full max-w-md text-center space-y-4">
+                <Title>Waiting for approval</Title>
+                <Subtitle>
+                    Your email is verified. An admin needs to activate your account before you can sign in.
+                </Subtitle>
+                <Link href="/auth/sign-in">
+                    <Button className="mt-4">Go to Sign In</Button>
+                </Link>
+            </div>
+        );
+    }
 
     return (
-        <div className="w-full max-w-md text-center">
-            <div className="pb-5">
-                <Title>Email Verification</Title>
-                {statusMessage && <Subtitle>{statusMessage}</Subtitle>}
+        <div className="w-full max-w-md">
+            <div className="text-center mb-10">
+                <Title>{purpose === 'reset' ? 'Enter reset code' : 'Verify your email'}</Title>
+                <Subtitle>
+                    We sent a code to <span className="font-semibold">{email || 'your email'}</span>.
+                </Subtitle>
             </div>
 
-            {isLoading && (
-                <div className="flex flex-col items-center mt-6 space-y-4">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 bg-primary rounded-full animate-pulse"></div>
-                        <span className="text-sm text-muted-foreground">Verifying your email...</span>
-                    </div>
-                    <div className="space-y-2 w-full">
-                        <Skeleton className="h-4 w-3/4 mx-auto" />
-                        <Skeleton className="h-4 w-1/2 mx-auto" />
-                        <Skeleton className="h-4 w-2/3 mx-auto" />
-                    </div>
-                </div>
-            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                    name="otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.trim())}
+                    disabled={isLoading}
+                    required
+                    className="md:h-11 tracking-widest text-center"
+                />
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading || !email}>
+                    {isLoading ? 'Verifying...' : 'Verify'}
+                </Button>
+            </form>
 
-            {error && (
-                <Link href="/">
-                    <Button className="mt-6">Go to Home Page</Button>
+            <div className="text-center mt-6 space-y-2">
+                {purpose === 'verify' && (
+                    <p className="text-sm text-muted-foreground">
+                        Didn&apos;t receive the code?{' '}
+                        <Button
+                            disabled={isResending || isLoading}
+                            onClick={handleResend}
+                            variant="link"
+                            className="px-0 text-sm"
+                        >
+                            Resend
+                        </Button>
+                    </p>
+                )}
+                <Link href="/auth/sign-in">
+                    <Button variant="link" className="px-0 text-sm">Back to sign in</Button>
                 </Link>
-            )}
+            </div>
         </div>
     );
 }

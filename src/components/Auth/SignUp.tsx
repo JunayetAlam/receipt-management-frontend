@@ -54,7 +54,7 @@ export default function SignUp() {
         try {
             const result = await signUp(formData).unwrap()
             toast.success(result?.message, { id: toastId })
-           router.push(`/auth/check-email?email=${data.email}`)
+           router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             toast.error(error?.data?.message || 'Sign up failed', { id: toastId })
@@ -65,10 +65,10 @@ export default function SignUp() {
         <Container className="max-w-3xl">
             <div className="text-center mb-10">
                 <Title>Create your account</Title>
-                <Subtitle>Join us to buy or sell vehicles with ease.</Subtitle>
+                <Subtitle>Create an account to manage products, customers, and receipts.</Subtitle>
             </div>
 
-            <CustomForm onSubmit={handleSubmit} defaultValues={defaultValues} className="rounded-lg border border-gray-200 p-6 space-y-6">
+            <CustomForm onSubmit={handleSubmit} defaultValues={defaultValues} className="rounded-lg border border-border p-6 space-y-6">
                 <div className="space-y-4">
                     {/* Name Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -170,7 +170,7 @@ export default function SignUp() {
 
                 {/* Already have account */}
                 <div className="text-center">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                         Already have an account?{' '}
                         <Link href="/auth/sign-in">
                             <Button variant="link" className="px-0 text-sm text-primary" disabled={isLoading}>
