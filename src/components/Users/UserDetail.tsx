@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StatusBadge from "./StatusBadge";
 import UserActions from "./UserActions";
 import Spinner from "../Global/Spinner";
+import UserActivityLogs from "./UserActivityLogs";
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleString(undefined, {
@@ -179,6 +180,9 @@ export default function UserDetail() {
           You can view this account but cannot manage it.
         </p>
       )}
+
+      {/* User Activity History */}
+      <UserActivityLogs userId={id} />
     </div>
   );
 }

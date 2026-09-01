@@ -4,6 +4,7 @@ import ProfilePicture from "./ProfilePicture";
 import ProfileDetails from "./ProfileDetails";
 import ProfilePassword from "./ProfilePassword";
 import ProfileDevices from "./ProfileDevices";
+import ProfileActivityLogs from "./ProfileActivityLogs";
 import { useGetMeQuery } from "@/redux/api/userApi";
 import { Skeleton } from "../ui/skeleton";
 
@@ -69,7 +70,7 @@ export default function Profile() {
     (profileData?.firstName || "N") + " " + (profileData?.lastName || "A");
 
   return (
-    <Container className="pb-20 ">
+    <Container className="pb-20 space-y-8">
       <div className="bg-white rounded-lg grid grid-cols-1 lg:grid-cols-3 gap-8 p-5">
         <ProfilePicture
           profileImg={profileData?.profilePhoto}
@@ -89,6 +90,8 @@ export default function Profile() {
           <ProfileDevices />
         </div>
       </div>
+
+      <ProfileActivityLogs />
     </Container>
   );
 }

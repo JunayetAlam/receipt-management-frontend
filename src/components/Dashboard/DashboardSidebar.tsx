@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users } from "lucide-react";
+import { Contact, History, LayoutDashboard, Package, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useIsAdmin from "@/hooks/useIsAdmin";
 
@@ -12,7 +12,14 @@ export default function DashboardSidebar() {
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    ...(isAdmin ? [{ name: "Users", href: "/users", icon: Users }] : []),
+    { name: "Products", href: "/products", icon: Package },
+    { name: "Customers", href: "/customers", icon: Contact },
+    ...(isAdmin
+      ? [
+          { name: "Users", href: "/users", icon: Users },
+          { name: "Activity Logs", href: "/activity-logs", icon: History },
+        ]
+      : []),
   ];
 
   return (

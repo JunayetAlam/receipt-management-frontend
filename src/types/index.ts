@@ -57,6 +57,124 @@ export type TMeta = {
   totalPage: number;
 };
 
+export type NotificationType =
+  | "INFO"
+  | "SUCCESS"
+  | "WARNING"
+  | "ERROR"
+  | "DUE_REMINDER"
+  | "PAYMENT_ALERT"
+  | "SYSTEM";
+
+export type NotificationTargetType =
+  | "ALL"
+  | "ADMINS"
+  | "CASHIERS"
+  | "SPECIFIC_USER";
+
+export interface TNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  targetType: NotificationTargetType;
+  link?: string | null;
+  userId?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TActivityLog {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  details?: Record<string, unknown> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: UserRoleEnum;
+    profilePhoto?: string | null;
+  } | null;
+}
+
+export type ProductUnit =
+  | "KG"
+  | "LITER"
+  | "PIECE"
+  | "GRAM"
+  | "METER"
+  | "BOX"
+  | "PACKET"
+  | "OTHER";
+
+export interface TProduct {
+  id: string;
+  name: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  buyingPrice?: number | null;
+  stock: number;
+  description?: string | null;
+  isDeleted: boolean;
+  isDeleteRequested: boolean;
+  deleteRequestedAt?: string | null;
+  deleteReason?: string | null;
+  deleteRequestedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TCustomer {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  email?: string | null;
+  address?: string | null;
+  isDeleted: boolean;
+  isDeleteRequested: boolean;
+  deleteRequestedAt?: string | null;
+  deleteReason?: string | null;
+  deleteRequestedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type TResponse<T> = {
   data?: T;
   error?: TError;

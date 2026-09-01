@@ -14,7 +14,7 @@ export const useHandleLogout = () => {
   const handleLogout = async () => {
     const toastId = toast.loading("Logging out...");
     try {
-      await logoutApi().unwrap();
+      await logoutApi(undefined).unwrap();
       toast.info("Logged Out!!", { id: toastId });
     } catch (error) {
       toast.error(errorMessageGenerator(error), { id: toastId });

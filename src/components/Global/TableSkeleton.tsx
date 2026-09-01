@@ -128,7 +128,7 @@ const TableSkeleton = ({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody colSpan={headers.length}>
+          <TableBody>
             {Array.from({ length: headers.length }).map((_, rowIndex) => (
               <TableRow key={rowIndex}>
                 {headers.map((header, colIndex) => (
