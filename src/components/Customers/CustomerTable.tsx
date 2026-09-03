@@ -388,7 +388,10 @@ export default function CustomerTable() {
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
                           <Phone className="size-3.5 text-muted-foreground" />
-                          {customer.phoneNumber}
+                          <span className="font-mono text-muted-foreground text-[11px]">
+                            {customer.countryCode || "+880"}
+                          </span>
+                          <span>{customer.phoneNumber}</span>
                         </span>
                       </td>
 

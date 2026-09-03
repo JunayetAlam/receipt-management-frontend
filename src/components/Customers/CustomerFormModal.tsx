@@ -19,6 +19,7 @@ import {
 import { TCustomer } from "@/types";
 import { UserPlus, UserCheck } from "lucide-react";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
+import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 
 interface CustomerFormModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ export default function CustomerFormModal({
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
 
   const [name, setName] = useState("");
+  const [countryCode, setCountryCode] = useState("+880");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
@@ -44,12 +46,14 @@ export default function CustomerFormModal({
   useEffect(() => {
     if (customerToEdit) {
       setName(customerToEdit.name || "");
+      setCountryCode(customerToEdit.countryCode || "+880");
       setPhoneNumber(customerToEdit.phoneNumber || "");
       setEmail(customerToEdit.email || "");
       setAddress(customerToEdit.address || "");
       setErrors({});
     } else {
       setName("");
+      setCountryCode("+880");
       setPhoneNumber("");
       setEmail("");
       setAddress("");
@@ -62,10 +66,11 @@ export default function CustomerFormModal({
     if (!name.trim()) {
       errs.name = "Customer name is required";
     }
-    if (!phoneNumber.trim()) {
+    const cleanPhone = phoneNumber.trim().replace(/[\s\-\(\)]/g, "");
+    if (!cleanPhone) {
       errs.phoneNumber = "Phone number is required";
-    } else if (phoneNumber.trim().length < 5 || phoneNumber.trim().length > 20) {
-      errs.phoneNumber = "Phone number must be between 5 and 20 digits";
+    } else if (cleanPhone.length < 4 || cleanPhone.length > 16) {
+      errs.phoneNumber = "Phone number must be between 4 and 16 digits";
     }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = "Please enter a valid email address";
@@ -80,7 +85,8 @@ export default function CustomerFormModal({
 
     const payload = {
       name: name.trim(),
-      phoneNumber: phoneNumber.trim(),
+      countryCode,
+      phoneNumber: phoneNumber.trim().replace(/[\s\-\(\)]/g, ""),
       email: email.trim() || null,
       address: address.trim() || null,
     };
@@ -95,7 +101,11 @@ export default function CustomerFormModal({
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(errorMessageGenerator(error));
+      const errMsg = errorMessageGenerator(error);
+      toast.error(errMsg);
+      if (errMsg.toLowerCase().includes("phone number")) {
+        setErrors((prev) => ({ ...prev, phoneNumber: errMsg }));
+      }
     }
   };
 
@@ -128,19 +138,33 @@ export default function CustomerFormModal({
             )}
           </div>
 
-          {/* Phone Number */}
-          <div className="space-y-1.5">
-            <Label htmlFor="customer-phone">Phone Number *</Label>
-            <Input
-              id="customer-phone"
-              placeholder="e.g. 01712345678"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-            />
-            {errors.phoneNumber && (
-              <p className="text-xs text-destructive">{errors.phoneNumber}</p>
-            )}
-          </div>
+          {/* Professional React Phone Input with country selector and search */}
+          <CustomPhoneInput
+            name="customer-phone"
+            label="Phone Number"
+            required
+            country="bd"
+            value={
+              phoneNumber
+                ? phoneNumber.startsWith("+")
+                  ? phoneNumber
+                  : `${countryCode}${phoneNumber}`
+                : countryCode
+            }
+            onChange={(val: string, data: any) => {
+              if (data && data.dialCode) {
+                setCountryCode(`+${data.dialCode}`);
+                const rawNational = val.slice(data.dialCode.length).trim();
+                setPhoneNumber(rawNational);
+              } else {
+                setPhoneNumber(val);
+              }
+              if (errors.phoneNumber) {
+                setErrors((prev) => ({ ...prev, phoneNumber: "" }));
+              }
+            }}
+            error={errors.phoneNumber}
+          />
 
           {/* Email */}
           <div className="space-y-1.5">
@@ -159,10 +183,10 @@ export default function CustomerFormModal({
 
           {/* Address */}
           <div className="space-y-1.5">
-            <Label htmlFor="customer-address">Address / Location (Optional)</Label>
+            <Label htmlFor="customer-address">Address (Optional)</Label>
             <Textarea
               id="customer-address"
-              placeholder="e.g. House 12, Road 4, Dhanmondi, Dhaka"
+              placeholder="e.g. House #12, Road #4, Dhanmondi, Dhaka"
               rows={3}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -170,23 +194,20 @@ export default function CustomerFormModal({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+          <div className="flex justify-end gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={isCreating || isUpdating}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={isCreating || isUpdating}>
-              {isCreating || isUpdating ? (
-                "Saving..."
-              ) : isEditing ? (
-                "Update Customer"
-              ) : (
-                "Create Customer"
-              )}
+              {isCreating || isUpdating
+                ? "Saving..."
+                : isEditing
+                ? "Update Customer"
+                : "Add Customer"}
             </Button>
           </div>
         </form>

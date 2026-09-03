@@ -118,6 +118,7 @@ export type ProductUnit =
 export interface TProduct {
   id: string;
   name: string;
+  slug?: string | null;
   unit: ProductUnit;
   sellingPrice: number;
   buyingPrice?: number | null;
@@ -149,6 +150,7 @@ export interface TProduct {
 export interface TCustomer {
   id: string;
   name: string;
+  countryCode?: string;
   phoneNumber: string;
   email?: string | null;
   address?: string | null;

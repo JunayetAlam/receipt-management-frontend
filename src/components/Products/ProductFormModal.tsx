@@ -117,7 +117,11 @@ export default function ProductFormModal({
       }
       onOpenChange(false);
     } catch (error) {
-      toast.error(errorMessageGenerator(error));
+      const errMsg = errorMessageGenerator(error);
+      toast.error(errMsg);
+      if (errMsg.toLowerCase().includes("already exists")) {
+        setErrors((prev) => ({ ...prev, name: errMsg }));
+      }
     }
   };
 

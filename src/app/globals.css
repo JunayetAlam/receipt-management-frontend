@@ -162,3 +162,65 @@
     font-family: var(--font-mono);
   }
 }
+
+/* react-phone-input-2 ShadCN theme integration */
+.custom-phone-input .react-tel-input .form-control {
+  width: 100% !important;
+  height: 2.5rem !important;
+  font-size: 0.875rem !important;
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--input) !important;
+  border-radius: var(--radius) !important;
+  padding-left: 48px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.custom-phone-input .react-tel-input .form-control:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1px var(--primary) !important;
+}
+
+.custom-phone-input .react-tel-input .flag-dropdown {
+  background-color: var(--muted) !important;
+  border: 1px solid var(--input) !important;
+  border-right: none !important;
+  border-radius: var(--radius) 0 0 var(--radius) !important;
+}
+
+.custom-phone-input .react-tel-input .flag-dropdown:hover,
+.custom-phone-input .react-tel-input .flag-dropdown.open {
+  background-color: var(--muted) !important;
+}
+
+.custom-phone-input .react-tel-input .selected-flag {
+  background-color: transparent !important;
+  border-radius: var(--radius) 0 0 var(--radius) !important;
+}
+
+.custom-phone-input .react-tel-input .country-list {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow-md) !important;
+  scrollbar-width: thin;
+}
+
+.custom-phone-input .react-tel-input .country-list .country:hover,
+.custom-phone-input .react-tel-input .country-list .country.highlight {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.custom-phone-input .react-tel-input .country-list .search {
+  background-color: var(--popover) !important;
+}
+
+.custom-phone-input .react-tel-input .country-list .search-box {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+}
+
