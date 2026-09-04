@@ -155,7 +155,7 @@ export default function ProductSelect({
                 {prod.name}
               </span>
               <span className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                Stock: {prod.stock} {prod.unit} · {prod.sellingPrice} BDT
+                Stock: {prod.stock} {prod.unit} · ৳{prod.sellingPrice}
               </span>
             </div>
           );

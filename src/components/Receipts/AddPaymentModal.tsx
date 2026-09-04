@@ -53,7 +53,7 @@ export default function AddPaymentModal({
     }
 
     if (numAmount > receipt.dueAmount) {
-      setError(`Payment amount cannot exceed the remaining due of ${receipt.dueAmount} BDT`);
+      setError(`Payment amount cannot exceed the remaining due of ৳${receipt.dueAmount}`);
       return;
     }
 
@@ -64,7 +64,7 @@ export default function AddPaymentModal({
         note: note.trim() || null,
       }).unwrap();
 
-      toast.success(`Payment of ${numAmount} BDT recorded successfully!`);
+      toast.success(`Payment of ৳${numAmount} recorded successfully!`);
       onOpenChange(false);
     } catch (err) {
       toast.error(errorMessageGenerator(err));
@@ -93,21 +93,21 @@ export default function AddPaymentModal({
           </div>
           <div className="flex justify-between items-center border-t border-border/40 pt-2">
             <span className="text-muted-foreground">Total Bill:</span>
-            <span className="font-medium text-foreground">{receipt.totalAmount} BDT</span>
+            <span className="font-medium text-foreground">৳{receipt.totalAmount}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Already Paid:</span>
-            <span className="font-medium text-emerald-600 dark:text-emerald-400">{receipt.paidAmount} BDT</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">৳{receipt.paidAmount}</span>
           </div>
           <div className="flex justify-between items-center text-sm font-semibold border-t border-border/40 pt-2">
             <span className="text-destructive">Remaining Due:</span>
-            <span className="font-mono text-destructive">{receipt.dueAmount} BDT</span>
+            <span className="font-mono text-destructive">৳{receipt.dueAmount}</span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label htmlFor="payment-amount">Payment Amount (BDT) *</Label>
+            <Label htmlFor="payment-amount">Payment Amount (৳) *</Label>
             <Input
               id="payment-amount"
               type="number"

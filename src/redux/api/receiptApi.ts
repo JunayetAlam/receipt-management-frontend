@@ -97,12 +97,46 @@ export const receiptApi = baseApi.injectEndpoints({
 
     addPayment: builder.mutation<
       TResponse<{ payment: any; receipt: TReceipt }>,
-      { id: string; amount: number; note?: string | null }
+      { id: string; amount: number; note?: string | null; date?: string | null }
     >({
-      query: ({ id, amount, note }) => ({
+      query: ({ id, amount, note, date }) => ({
         url: `/receipts/${id}/payments`,
         method: "POST",
-        body: { amount, note },
+        body: { amount, note, date },
+      }),
+      invalidatesTags: ["Receipt", "ActivityLog", "Notification"],
+    }),
+
+    updatePayment: builder.mutation<
+      TResponse<{ payment: any; receipt: TReceipt }>,
+      { receiptId: string; paymentId: string; amount?: number; note?: string | null; date?: string | null }
+    >({
+      query: ({ receiptId, paymentId, amount, note, date }) => ({
+        url: `/receipts/${receiptId}/payments/${paymentId}`,
+        method: "PATCH",
+        body: { amount, note, date },
+      }),
+      invalidatesTags: ["Receipt", "ActivityLog", "Notification"],
+    }),
+
+    approvePayment: builder.mutation<
+      TResponse<{ payment: any; receipt: TReceipt }>,
+      { receiptId: string; paymentId: string }
+    >({
+      query: ({ receiptId, paymentId }) => ({
+        url: `/receipts/${receiptId}/payments/${paymentId}/approve`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Receipt", "ActivityLog", "Notification"],
+    }),
+
+    deletePayment: builder.mutation<
+      TResponse<{ deletedPaymentId: string; receipt: TReceipt }>,
+      { receiptId: string; paymentId: string }
+    >({
+      query: ({ receiptId, paymentId }) => ({
+        url: `/receipts/${receiptId}/payments/${paymentId}`,
+        method: "DELETE",
       }),
       invalidatesTags: ["Receipt", "ActivityLog", "Notification"],
     }),
@@ -120,4 +154,7 @@ export const {
   useRejectDeleteReceiptMutation,
   useRestoreReceiptMutation,
   useAddPaymentMutation,
+  useUpdatePaymentMutation,
+  useApprovePaymentMutation,
+  useDeletePaymentMutation,
 } = receiptApi;

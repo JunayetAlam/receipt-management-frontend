@@ -216,6 +216,7 @@ export interface TReceiptPayment {
   receiptId: string;
   amount: number;
   note?: string | null;
+  status?: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
   createdById: string;
   createdBy?: {
@@ -223,6 +224,13 @@ export interface TReceiptPayment {
     firstName: string;
     lastName: string;
   } | null;
+  approvedById?: string | null;
+  approvedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+  approvedAt?: string | null;
 }
 
 export interface TReceipt {

@@ -20,7 +20,9 @@ import {
   Receipt,
   Clock,
   Banknote,
+  FileText,
 } from "lucide-react";
+import Link from "next/link";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "—";
@@ -78,6 +80,16 @@ export default function ReceiptDetailsSheet({
               Receipt Details
             </SheetTitle>
             <div className="flex items-center gap-2">
+              <Link href={`/receipts/${receipt.id}/invoice`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                >
+                  <FileText className="size-3.5" />
+                  Invoice (A4)
+                </Button>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
@@ -163,13 +175,13 @@ export default function ReceiptDetailsSheet({
                         {it.productName}
                         <span className="ml-1 text-[10px] text-muted-foreground">({it.unit})</span>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-mono">{it.sellingPrice} BDT</td>
+                      <td className="px-3 py-2.5 text-right font-mono">৳{it.sellingPrice}</td>
                       <td className="px-3 py-2.5 text-center font-mono">{it.quantity}</td>
                       <td className="px-3 py-2.5 text-right font-mono text-amber-600 dark:text-amber-400">
                         {it.discount > 0 ? `${it.discount}%` : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono font-semibold">
-                        {it.totalPrice} BDT
+                        ৳{it.totalPrice}
                       </td>
                     </tr>
                   ))}
@@ -182,25 +194,25 @@ export default function ReceiptDetailsSheet({
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-2 ml-auto max-w-xs text-xs">
             <div className="flex justify-between items-center text-muted-foreground">
               <span>Subtotal:</span>
-              <span className="font-mono text-foreground">{receipt.subTotal} BDT</span>
+              <span className="font-mono text-foreground">৳{receipt.subTotal}</span>
             </div>
             {receipt.discount > 0 && (
               <div className="flex justify-between items-center text-amber-600 dark:text-amber-400">
                 <span>Receipt Discount:</span>
-                <span className="font-mono">- {receipt.discount} BDT</span>
+                <span className="font-mono">- ৳{receipt.discount}</span>
               </div>
             )}
             <div className="flex justify-between items-center text-sm font-bold border-t border-border/60 pt-2 text-foreground">
               <span>Net Total:</span>
-              <span className="font-mono">{receipt.totalAmount} BDT</span>
+              <span className="font-mono">৳{receipt.totalAmount}</span>
             </div>
             <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-medium">
               <span>Paid Amount:</span>
-              <span className="font-mono">{receipt.paidAmount} BDT</span>
+              <span className="font-mono">৳{receipt.paidAmount}</span>
             </div>
             <div className="flex justify-between items-center text-destructive font-semibold border-t border-border/40 pt-2 text-sm">
               <span>Remaining Due:</span>
-              <span className="font-mono">{receipt.dueAmount} BDT</span>
+              <span className="font-mono">৳{receipt.dueAmount}</span>
             </div>
           </div>
 
@@ -210,28 +222,28 @@ export default function ReceiptDetailsSheet({
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Clock className="size-3" /> Payment History ({receipt.payments?.length || 0})
               </p>
-              {receipt.dueAmount > 0 && onAddPayment && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs gap-1 text-primary border-primary/40 hover:bg-primary/10"
-                  onClick={() => {
-                    onOpenChange(false);
-                    onAddPayment(receipt);
-                  }}
-                >
-                  <Banknote className="size-3" /> Add Payment
-                </Button>
+              {receipt.dueAmount > 0 && (
+                <Link href={`/receipts/${receipt.id}`} onClick={() => onOpenChange(false)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1 text-primary border-primary/40 hover:bg-primary/10"
+                  >
+                    <Banknote className="size-3" /> Add Payment
+                  </Button>
+                </Link>
               )}
             </div>
 
             {receipt.payments && receipt.payments.length > 0 ? (
               <div className="rounded-xl border border-border divide-y divide-border/40 text-xs overflow-hidden">
-                {receipt.payments.map((p, idx) => (
+                {[...receipt.payments]
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                  .map((p, idx) => (
                   <div key={p.id || idx} className="p-3 flex justify-between items-center hover:bg-muted/20">
                     <div>
                       <p className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                        +{p.amount} BDT
+                        +৳{p.amount}
                       </p>
                       {p.note && <p className="text-[11px] text-muted-foreground">{p.note}</p>}
                     </div>

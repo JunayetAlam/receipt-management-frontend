@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Archive,
   Phone,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -44,7 +45,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmPopup from "../Global/ConfirmPopup";
 import ReceiptDetailsSheet from "./ReceiptDetailsSheet";
-import AddPaymentModal from "./AddPaymentModal";
 import ReceiptDeleteModal from "./ReceiptDeleteModal";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
@@ -80,9 +80,6 @@ export default function ReceiptTable() {
   // Modals & Sheets
   const [selectedReceiptForDetails, setSelectedReceiptForDetails] = useState<TReceipt | null>(null);
   const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
-
-  const [selectedReceiptForPayment, setSelectedReceiptForPayment] = useState<TReceipt | null>(null);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const [selectedReceiptForDelete, setSelectedReceiptForDelete] = useState<TReceipt | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -128,11 +125,6 @@ export default function ReceiptTable() {
   const handleOpenDetails = (r: TReceipt) => {
     setSelectedReceiptForDetails(r);
     setDetailsSheetOpen(true);
-  };
-
-  const handleOpenPayment = (r: TReceipt) => {
-    setSelectedReceiptForPayment(r);
-    setPaymentModalOpen(true);
   };
 
   const handleOpenDelete = (r: TReceipt) => {
@@ -417,19 +409,19 @@ export default function ReceiptTable() {
 
                       {/* Total Amount */}
                       <td className="px-4 py-3 text-right font-mono font-semibold text-foreground">
-                        {receipt.totalAmount} BDT
+                        ৳{receipt.totalAmount}
                       </td>
 
                       {/* Paid Amount */}
                       <td className="px-4 py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-medium">
-                        {receipt.paidAmount} BDT
+                        ৳{receipt.paidAmount}
                       </td>
 
                       {/* Due Amount */}
                       <td className="px-4 py-3 text-right">
                         {hasDue ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/10 text-destructive border border-destructive/20">
-                            {receipt.dueAmount} BDT
+                            ৳{receipt.dueAmount}
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -468,54 +460,59 @@ export default function ReceiptTable() {
                       {/* Actions */}
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {/* View Details */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="View Receipt Details"
-                            onClick={() => handleOpenDetails(receipt)}
-                            className="size-7 text-muted-foreground hover:text-foreground"
-                          >
-                            <Eye className="size-3.5" />
-                          </Button>
-
-                          {/* Add Payment (Visible whenever there is due!) */}
-                          {hasDue && !receipt.isDeleted && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Add Due Payment"
-                              onClick={() => handleOpenPayment(receipt)}
-                              className="size-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
-                            >
-                              <Banknote className="size-3.5" />
-                            </Button>
-                          )}
-
-                          {/* Edit Receipt */}
-                          {!receipt.isDeleted && (
-                            isLockedForCashier ? (
+                          {/* Receipt Action: Details button when approved, or View Details + Edit when pending */}
+                          {!receipt.isDeleted && receipt.status === "APPROVED" ? (
+                            <Link href={`/receipts/${receipt.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="View Receipt Details"
+                                className="h-7 px-2 text-xs gap-1 text-primary hover:bg-primary/10"
+                              >
+                                <Eye className="size-3.5" /> Details
+                              </Button>
+                            </Link>
+                          ) : (
+                            <>
+                              {/* View Details */}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                disabled
-                                title="Approved receipts are locked for cashiers"
-                                className="size-7 text-muted-foreground/30 cursor-not-allowed"
+                                title="View Receipt Details"
+                                onClick={() => handleOpenDetails(receipt)}
+                                className="size-7 text-muted-foreground hover:text-foreground"
                               >
-                                <Pencil className="size-3.5" />
+                                <Eye className="size-3.5" />
                               </Button>
-                            ) : (
-                              <Link href={`/receipts/${receipt.id}/edit`}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Edit Receipt"
-                                  className="size-7 text-muted-foreground hover:text-foreground"
-                                >
-                                  <Pencil className="size-3.5" />
-                                </Button>
-                              </Link>
-                            )
+
+                              {/* Edit Receipt */}
+                              {!receipt.isDeleted && (
+                                <Link href={`/receipts/${receipt.id}/edit`}>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Edit Receipt"
+                                    className="size-7 text-muted-foreground hover:text-foreground"
+                                  >
+                                    <Pencil className="size-3.5" />
+                                  </Button>
+                                </Link>
+                              )}
+                            </>
+                          )}
+
+                          {/* View PDF / Invoice */}
+                          {!receipt.isDeleted && (
+                            <Link href={`/receipts/${receipt.id}/invoice`}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="View PDF / Invoice"
+                                className="size-7 text-muted-foreground hover:text-primary"
+                              >
+                                <FileText className="size-3.5" />
+                              </Button>
+                            </Link>
                           )}
 
                           {/* Admin Quick Status: Approve / Reject Pending Receipt */}
@@ -688,13 +685,6 @@ export default function ReceiptTable() {
         open={detailsSheetOpen}
         onOpenChange={setDetailsSheetOpen}
         receipt={selectedReceiptForDetails}
-        onAddPayment={(r) => handleOpenPayment(r)}
-      />
-
-      <AddPaymentModal
-        open={paymentModalOpen}
-        onOpenChange={setPaymentModalOpen}
-        receipt={selectedReceiptForPayment}
       />
 
       <ReceiptDeleteModal

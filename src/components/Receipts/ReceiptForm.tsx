@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   useCreateReceiptMutation,
   useUpdateReceiptMutation,
+  useApprovePaymentMutation,
+  useDeletePaymentMutation,
 } from "@/redux/api/receiptApi";
 import { useGetAllProductsQuery } from "@/redux/api/productApi";
 import {
@@ -32,12 +34,14 @@ import {
   useCreateCustomerMutation,
 } from "@/redux/api/customerApi";
 import { useGetMeQuery } from "@/redux/api/userApi";
-import { ProductUnit, TReceipt, TReceiptFormItem, TCustomer, TProduct } from "@/types";
+import useIsAdmin from "@/hooks/useIsAdmin";
+import { ProductUnit, TReceipt, TReceiptFormItem, TCustomer, TProduct, TReceiptPayment } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 import CustomerSelect from "./CustomerSelect";
 import ProductSelect from "./ProductSelect";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
+import PaymentModal from "./PaymentModal";
 import {
   Plus,
   X,
@@ -52,8 +56,23 @@ import {
   CheckCircle2,
   Unlock,
   Loader2,
+  Banknote,
+  Clock,
+  Pencil,
+  Check,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "N/A";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "N/A";
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+};
 
 const PRODUCT_UNITS: ProductUnit[] = [
   "PIECE",
@@ -66,22 +85,103 @@ const PRODUCT_UNITS: ProductUnit[] = [
   "OTHER",
 ];
 
-interface FormItemState extends TReceiptFormItem {
+interface FormItemState extends Omit<TReceiptFormItem, "sellingPrice" | "quantity" | "discount"> {
   tempId: string;
+  sellingPrice: number | string;
+  quantity: number | string;
+  discount: number | string;
 }
 
 interface ReceiptFormProps {
   initialData?: TReceipt;
   isEditing?: boolean;
+  isDetails?: boolean;
 }
 
-export default function ReceiptForm({ initialData, isEditing = false }: ReceiptFormProps) {
+export default function ReceiptForm({
+  initialData,
+  isEditing = false,
+  isDetails = false,
+}: ReceiptFormProps) {
   const router = useRouter();
 
   // Redux APIs
   const { data: meData } = useGetMeQuery(undefined);
+  const [isAdmin] = useIsAdmin();
   const isCashier = meData?.data?.role === "CASHIER";
-  const isApprovedAndCashier = isEditing && initialData?.status === "APPROVED" && isCashier;
+  const isApproved = initialData?.status === "APPROVED";
+  const isLocked = isDetails || isApproved;
+
+  // Payments State for Edit / Details mode
+  const [payments, setPayments] = useState<TReceiptPayment[]>(
+    initialData?.payments || []
+  );
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedPaymentToEdit, setSelectedPaymentToEdit] = useState<TReceiptPayment | null>(null);
+
+  const [approvePayment, { isLoading: isApprovingPayment }] = useApprovePaymentMutation();
+  const [deletePayment, { isLoading: isDeletingPayment }] = useDeletePaymentMutation();
+
+  const handleOpenAddPayment = () => {
+    setSelectedPaymentToEdit(null);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handleOpenEditPayment = (p: TReceiptPayment) => {
+    setSelectedPaymentToEdit(p);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = (updatedReceipt: TReceipt) => {
+    if (updatedReceipt.payments) {
+      setPayments(updatedReceipt.payments);
+    }
+    setPaidAmount(String(updatedReceipt.paidAmount || 0));
+  };
+
+  // Always keep payments sorted chronologically so the last payment is at last
+  const sortedPayments = useMemo(() => {
+    return [...payments].sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeA - timeB;
+    });
+  }, [payments]);
+
+  const handleApprovePayment = async (paymentId: string) => {
+    if (!initialData) return;
+    try {
+      const res = await approvePayment({
+        receiptId: initialData.id,
+        paymentId,
+      }).unwrap();
+      toast.success("Payment approved successfully!");
+      if (res?.data?.receipt?.payments) {
+        setPayments(res.data.receipt.payments);
+      }
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+    }
+  };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!initialData) return;
+    try {
+      const res = await deletePayment({
+        receiptId: initialData.id,
+        paymentId,
+      }).unwrap();
+      toast.success("Payment deleted successfully!");
+      if (res?.data?.receipt) {
+        if (res.data.receipt.payments) {
+          setPayments(res.data.receipt.payments);
+        }
+        setPaidAmount(String(res.data.receipt.paidAmount || 0));
+      }
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+    }
+  };
 
   const [createReceipt, { isLoading: isCreating }] = useCreateReceiptMutation();
   const [updateReceipt, { isLoading: isUpdating }] = useUpdateReceiptMutation();
@@ -178,6 +278,10 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
             availableStock: it.product?.stock ?? null,
           }))
         );
+      }
+
+      if (initialData.payments) {
+        setPayments(initialData.payments);
       }
     }
   }, [initialData]);
@@ -449,8 +553,8 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isApprovedAndCashier) {
-      toast.error("Approved receipts cannot be modified by cashiers.");
+    if (isLocked) {
+      toast.error("This receipt is locked for editing");
       return;
     }
 
@@ -535,15 +639,20 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Role-Lock Banner for Cashier on Approved Receipt */}
-      {isApprovedAndCashier && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-sm font-medium">
-          <Lock className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Lock Banner on Approved / Details Receipt */}
+      {isLocked && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-border/70 bg-muted/30 text-foreground text-sm font-medium">
+          <Lock className="size-5 shrink-0 text-primary" />
           <div>
-            <p className="font-semibold">Locked: Receipt is Approved</p>
+            <p className="font-semibold">
+              {isApproved ? "Approved Receipt (Product & Billing Locked)" : "Receipt Details (Read-Only)"}
+            </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              This receipt has been approved by an administrator and cannot be modified by cashiers. You can record customer due payments via the &quot;Add Payment&quot; button in the table.
+              {isApproved
+                ? "This receipt has been approved. Product and billing edits are locked, but installment payments can still be added or updated below."
+                : "You are viewing receipt details in read-only mode. Installment payments can still be managed below."}
             </p>
           </div>
         </div>
@@ -557,19 +666,33 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
         >
           <ArrowLeft className="size-3.5" /> Back to Receipts
         </Link>
-        {initialData?.status && (
-          <Badge
-            className={
-              initialData.status === "APPROVED"
-                ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
-                : initialData.status === "REJECTED"
-                ? "bg-destructive/15 text-destructive border-destructive/30"
-                : "bg-amber-500/15 text-amber-600 border-amber-500/30"
-            }
-          >
-            {initialData.status}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {initialData && (
+            <Link href={`/receipts/${initialData.id}/invoice`}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+              >
+                <FileText className="size-3.5" /> View Invoice (A4)
+              </Button>
+            </Link>
+          )}
+          {initialData?.status && (
+            <Badge
+              className={
+                initialData.status === "APPROVED"
+                  ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                  : initialData.status === "REJECTED"
+                  ? "bg-destructive/15 text-destructive border-destructive/30"
+                  : "bg-amber-500/15 text-amber-600 border-amber-500/30"
+              }
+            >
+              {initialData.status}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -586,7 +709,11 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                       <CheckCircle2 className="size-3.5" /> Customer Linked
                     </span>
                   )}
-                  {isCustomerLocked ? (
+                  {isLocked ? (
+                    <Badge variant="outline" className="text-xs gap-1 border-border/80">
+                      <Lock className="size-3" /> Locked
+                    </Badge>
+                  ) : isCustomerLocked ? (
                     <Button
                       type="button"
                       variant="outline"
@@ -603,7 +730,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                       variant="outline"
                       size="sm"
                       disabled={
-                        isApprovedAndCashier ||
+                        isLocked ||
                         isLookingUp ||
                         isCreatingCustomer ||
                         !customerPhone ||
@@ -640,7 +767,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                     onSelectCustomer={handleSelectCustomer}
                     onNameChange={handleNameChange}
                     onClear={handleClearCustomer}
-                    disabled={isApprovedAndCashier}
+                    disabled={isLocked}
                     isLoading={isCustomersLoading}
                     placeholder="Search customer by name or phone, or type new..."
                   />
@@ -654,7 +781,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                   <CustomPhoneInput
                     name="customer-phone"
                     country="bd"
-                    disabled={isApprovedAndCashier || isCustomerLocked}
+                    disabled={isLocked || isCustomerLocked}
                     value={
                       customerPhone
                         ? customerPhone.startsWith("+")
@@ -688,7 +815,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                     placeholder="e.g. rahim@example.com"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    disabled={isApprovedAndCashier || isCustomerLocked}
+                    disabled={isLocked || isCustomerLocked}
                   />
                 </div>
 
@@ -702,7 +829,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                     placeholder="e.g. Dhanmondi, Dhaka"
                     value={customerAddress}
                     onChange={(e) => setCustomerAddress(e.target.value)}
-                    disabled={isApprovedAndCashier || isCustomerLocked}
+                    disabled={isLocked || isCustomerLocked}
                   />
                 </div>
               </div>
@@ -716,16 +843,17 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Receipt className="size-4 text-primary" /> Receipt Items & Billing ({items.length})
                 </CardTitle>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleAddItem}
-                  disabled={isApprovedAndCashier}
-                  className="gap-1 text-xs"
-                >
-                  <Plus className="size-3.5" /> Add Product
-                </Button>
+                {!isLocked && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleAddItem}
+                    className="gap-1 text-xs"
+                  >
+                    <Plus className="size-3.5" /> Add Product
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
@@ -734,9 +862,9 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                 <div>Product Name *</div>
                 <div>Unit</div>
                 <div className="text-right">Qty *</div>
-                <div className="text-right">Price (BDT) *</div>
+                <div className="text-right">Price (৳) *</div>
                 <div className="text-right">Disc (%)</div>
-                <div className="text-right">Total (BDT)</div>
+                <div className="text-right">Total (৳)</div>
               </div>
 
               {calculatedRows.map((it, index) => {
@@ -759,7 +887,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                     }`}
                   >
                     {/* Top-Right Corner Cross Button */}
-                    {items.length > 1 && (
+                    {items.length > 1 && !isLocked && (
                       <div className="absolute -top-2.5 -right-2.5 z-10">
                         <ConfirmPopup
                           title="Remove Product"
@@ -777,7 +905,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                             type="button"
                             variant="outline"
                             size="icon"
-                            disabled={isApprovedAndCashier}
+                            disabled={isLocked}
                             className="size-5 rounded-full bg-background border border-border shadow-xs hover:bg-destructive hover:text-destructive-foreground hover:border-destructive text-muted-foreground transition-all cursor-pointer"
                             title="Remove product"
                           >
@@ -811,7 +939,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                           onSelectProduct={(prod) => handleSelectProduct(it.tempId, prod)}
                           onNameChange={(name) => handleCustomProductNameChange(it.tempId, name)}
                           onClear={() => handleClearProduct(it.tempId)}
-                          disabled={isApprovedAndCashier || isProductsLoading}
+                          disabled={isLocked || isProductsLoading}
                           placeholder="Search product or type custom name..."
                         />
                       </div>
@@ -824,7 +952,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                         <Select
                           value={it.unit}
                           onValueChange={(val) => handleItemChange(it.tempId, "unit", val as ProductUnit)}
-                          disabled={isApprovedAndCashier || it.productId !== null}
+                          disabled={isLocked || it.productId !== null}
                         >
                           <SelectTrigger className="w-full h-8 text-xs font-mono rounded-2xl bg-input/50 border-transparent disabled:opacity-60">
                             <SelectValue />
@@ -850,9 +978,9 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                           min="0.01"
                           value={it.quantity}
                           onChange={(e) =>
-                            handleItemChange(it.tempId, "quantity", Number(e.target.value))
+                            handleItemChange(it.tempId, "quantity", e.target.value)
                           }
-                          disabled={isApprovedAndCashier}
+                          disabled={isLocked}
                           className="text-xs font-mono text-right"
                         />
                       </div>
@@ -860,7 +988,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                       {/* 4. Unit Price (Editable!) */}
                       <div>
                         <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
-                          Price (BDT) *
+                          Price (৳) *
                         </label>
                         <Input
                           type="number"
@@ -868,9 +996,9 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                           min="0"
                           value={it.sellingPrice}
                           onChange={(e) =>
-                            handleItemChange(it.tempId, "sellingPrice", Number(e.target.value))
+                            handleItemChange(it.tempId, "sellingPrice", e.target.value)
                           }
-                          disabled={isApprovedAndCashier}
+                          disabled={isLocked}
                           className="text-xs font-mono text-right"
                         />
                       </div>
@@ -888,26 +1016,21 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                           placeholder="0"
                           value={it.discount}
                           onChange={(e) =>
-                            handleItemChange(it.tempId, "discount", Number(e.target.value))
+                            handleItemChange(it.tempId, "discount", e.target.value)
                           }
-                          disabled={isApprovedAndCashier}
+                          disabled={isLocked}
                           className="text-xs font-mono text-right"
                         />
                       </div>
 
-                      {/* 6. Total (BDT) */}
+                      {/* 6. Total */}
                       <div className="text-right">
                         <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
-                          Total (BDT)
+                          Total (৳)
                         </label>
-                        <span className="text-xs font-bold font-mono text-foreground block">
-                          {it.rowTotal.toFixed(2)}
+                        <span className="text-sm font-semibold font-mono text-foreground block">
+                          ৳{it.rowTotal}
                         </span>
-                        {it.rowDiscountAmount > 0 && (
-                          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono block">
-                            -{it.rowDiscountAmount.toFixed(2)}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -917,14 +1040,14 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
               {/* Billing & Payment Calculations */}
               <div className="pt-5 mt-4 border-t border-border/70 space-y-4 text-sm">
                 <div className="flex justify-between items-center text-muted-foreground">
-                  <span>Items Subtotal (BDT):</span>
-                  <span className="font-mono font-semibold text-foreground">{subTotal}</span>
+                  <span>Items Subtotal:</span>
+                  <span className="font-mono font-semibold text-foreground pr-[11px]">৳{subTotal}</span>
                 </div>
 
                 {/* Solid Receipt-Level Discount */}
                 <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/60">
                   <Label htmlFor="receipt-discount" className="text-xs text-muted-foreground">
-                    Receipt Discount (BDT)
+                    Receipt Discount (৳)
                   </Label>
                   <div className="w-40 sm:w-52">
                     <Input
@@ -936,7 +1059,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                       placeholder="0"
                       value={receiptDiscount}
                       onChange={(e) => setReceiptDiscount(e.target.value)}
-                      disabled={isApprovedAndCashier}
+                      disabled={isLocked}
                       className="font-mono text-xs text-right"
                     />
                   </div>
@@ -944,14 +1067,14 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
 
                 {/* Total Amount */}
                 <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-border/60 text-foreground">
-                  <span>Net Total (BDT):</span>
-                  <span className="font-mono text-primary text-lg">{totalAmount}</span>
+                  <span>Net Total:</span>
+                  <span className="font-mono text-primary text-lg pr-[11px]">৳{totalAmount}</span>
                 </div>
 
                 {/* Paid Amount */}
                 <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/60">
                   <Label htmlFor="paid-amount" className="text-xs text-muted-foreground">
-                    Paid Amount (BDT)
+                    Paid Amount (৳)
                   </Label>
                   <div className="w-40 sm:w-52">
                     <Input
@@ -962,21 +1085,168 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                       placeholder="0.00"
                       value={paidAmount}
                       onChange={(e) => setPaidAmount(e.target.value)}
-                      disabled={isApprovedAndCashier}
+                      disabled={isLocked}
                       className="font-mono text-xs text-right"
                     />
                   </div>
                 </div>
 
-                {/* Remaining Due */}
+                {/* Payment History & Inline Add Payment (Placed under Paid Amount, above Remaining Due) */}
+                {(isEditing || isDetails) && initialData && (
+                  <div className="pt-3 border-t border-border/60 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Clock className="size-3" /> Payment History ({payments.length})
+                      </span>
+                      {dueAmount > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1.5 text-primary border-primary/40 hover:bg-primary/10"
+                          onClick={handleOpenAddPayment}
+                        >
+                          <Banknote className="size-3.5" /> Add Payment
+                        </Button>
+                      )}
+                    </div>
+
+                    {sortedPayments.length > 0 ? (
+                      <div className="space-y-3">
+                        {sortedPayments.map((p) => {
+                          const isApprovedPayment = p.status === "APPROVED";
+                          return (
+                            <div
+                              key={p.id}
+                              className="relative rounded-xl border border-border/70 bg-card p-3 transition-colors hover:border-border"
+                            >
+                              {/* Top-Right Corner Action Buttons (Like Product Row) */}
+                              <div className="absolute -top-2.5 -right-2.5 z-10 flex items-center gap-1">
+                                {/* Approve Button (Only Admin and Super Admin, when not approved) */}
+                                {isAdmin && !isApprovedPayment && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-5 rounded-full bg-background border border-border shadow-xs hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-emerald-600 transition-all cursor-pointer"
+                                    title="Approve Payment"
+                                    onClick={() => handleApprovePayment(p.id)}
+                                    disabled={isApprovingPayment}
+                                  >
+                                    <Check className="size-3" />
+                                  </Button>
+                                )}
+
+                                {/* Edit Button (Only when not approved) */}
+                                {!isApprovedPayment && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="size-5 rounded-full bg-background border border-border shadow-xs hover:bg-primary hover:text-primary-foreground hover:border-primary text-muted-foreground transition-all cursor-pointer"
+                                    title="Edit Payment"
+                                    onClick={() => handleOpenEditPayment(p)}
+                                  >
+                                    <Pencil className="size-2.5" />
+                                  </Button>
+                                )}
+
+                                {/* Delete Button with Popover Warning (Only when not approved) */}
+                                {!isApprovedPayment && (
+                                  <ConfirmPopup
+                                    title="Delete Payment"
+                                    description={`Are you sure you want to delete this payment of ৳${p.amount}? The receipt remaining due will be recalculated.`}
+                                    confirmLabel="Delete"
+                                    cancelLabel="Cancel"
+                                    destructive
+                                    side="top"
+                                    align="end"
+                                    onConfirm={() => handleDeletePayment(p.id)}
+                                  >
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="size-5 rounded-full bg-background border border-border shadow-xs hover:bg-destructive hover:text-destructive-foreground hover:border-destructive text-muted-foreground transition-all cursor-pointer"
+                                      title="Delete Payment"
+                                      disabled={isDeletingPayment}
+                                    >
+                                      <X className="size-3" />
+                                    </Button>
+                                  </ConfirmPopup>
+                                )}
+                              </div>
+
+                              {/* Card Content: Left side (Date, By Name, Status, Note) & Right side (Price) */}
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-foreground">
+                                      {formatDateTime(p.createdAt)}
+                                    </span>
+                                    {isApprovedPayment ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0 h-4 font-medium border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                                      >
+                                        Approved
+                                      </Badge>
+                                    ) : (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0 h-4 font-medium border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                      >
+                                        Pending
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                                    {p.createdBy && (
+                                      <span>
+                                        By {p.createdBy.firstName} {p.createdBy.lastName}
+                                      </span>
+                                    )}
+                                    {p.approvedBy && isApprovedPayment && (
+                                      <span>
+                                        (Approved by {p.approvedBy.firstName} {p.approvedBy.lastName})
+                                      </span>
+                                    )}
+                                  </div>
+                                  {p.note && (
+                                    <p className="text-[11px] text-muted-foreground/90 italic mt-0.5">
+                                      {p.note}
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Right Side: Price */}
+                                <div className="text-right shrink-0">
+                                  <span className="font-bold text-base font-mono text-emerald-600 dark:text-emerald-400">
+                                    +৳{p.amount}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic py-1">
+                        No payments recorded yet.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Remaining Due (Placed at bottom, UNDER all payments) */}
                 <div className="flex justify-between items-center text-sm font-semibold pt-2 border-t border-border/60">
-                  <span className="text-destructive">Remaining Due (BDT):</span>
-                  <span className="font-mono text-base font-bold text-destructive">
-                    {dueAmount}
+                  <span className="text-destructive">Remaining Due:</span>
+                  <span className="font-mono text-base font-bold text-destructive pr-[11px]">
+                    ৳{dueAmount}
                   </span>
                 </div>
 
-                {/* Receipt Note (Under Paid Amount & above Create Receipt button) */}
+                {/* Receipt Note */}
                 <div className="space-y-1.5 pt-2 border-t border-border/60">
                   <Label htmlFor="receipt-note" className="text-xs text-muted-foreground">
                     Receipt Note (Optional)
@@ -987,7 +1257,7 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
                     rows={2}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    disabled={isApprovedAndCashier}
+                    disabled={isLocked}
                     className="text-xs"
                   />
                 </div>
@@ -995,22 +1265,55 @@ export default function ReceiptForm({ initialData, isEditing = false }: ReceiptF
             </CardContent>
           </Card>
 
-          {/* Submit Action (Kept outside the section) */}
+          {/* Submit Action or Lock Banner */}
           <div className="pt-2">
-            <Button
-              type="submit"
-              disabled={isCreating || isUpdating || isApprovedAndCashier}
-              className="w-full gap-2 font-semibold shadow-xs"
-            >
-              <Save className="size-4" />
-              {isCreating || isUpdating
-                ? "Saving..."
-                : isEditing
-                ? "Update Receipt"
-                : "Create Receipt"}
-            </Button>
+            {isLocked ? (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-border/70 bg-muted/30">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Lock className="size-4 text-primary shrink-0" />
+                  <span>
+                    {isApproved
+                      ? "This receipt is approved. Product and billing edits are locked, but installment payments can still be added or updated above."
+                      : "Viewing receipt in read-only details mode."}
+                  </span>
+                </div>
+                <Link href="/receipts">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ArrowLeft className="size-3.5" /> Back to Receipts
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <Button
+                type="submit"
+                disabled={isCreating || isUpdating}
+                className="w-full gap-2 font-semibold shadow-xs"
+              >
+                <Save className="size-4" />
+                {isCreating || isUpdating
+                  ? "Saving..."
+                  : isEditing
+                  ? "Update Receipt"
+                  : "Create Receipt"}
+              </Button>
+            )}
           </div>
       </div>
     </form>
-  );
+
+    {initialData && (
+      <PaymentModal
+        open={isPaymentModalOpen}
+        onOpenChange={setIsPaymentModalOpen}
+        receiptId={initialData.id}
+        receiptNumber={initialData.receiptNumber}
+        totalAmount={totalAmount}
+        paidAmount={Math.max(0, Number(paidAmount) || 0)}
+        dueAmount={dueAmount}
+        paymentToEdit={selectedPaymentToEdit}
+        onSuccess={handlePaymentSuccess}
+      />
+    )}
+  </>
+);
 }

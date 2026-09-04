@@ -444,7 +444,7 @@ export default function ProductTable() {
 
                     {/* Price */}
                     <td className="px-4 py-3.5 font-semibold text-foreground text-xs sm:text-sm">
-                      ৳{product.sellingPrice.toFixed(2)}
+                      ৳{product.sellingPrice}
                     </td>
 
                     {/* Status */}

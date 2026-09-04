@@ -115,7 +115,7 @@ export default function ProductActivitySheet({
             <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-border/80 bg-background/80 p-2.5 text-xs">
               <div>
                 <span className="text-muted-foreground block text-[10px]">Price</span>
-                <span className="font-semibold text-foreground">৳{product.sellingPrice.toFixed(2)}</span>
+                <span className="font-semibold text-foreground">৳{product.sellingPrice}</span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">Stock</span>
