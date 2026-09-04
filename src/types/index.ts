@@ -186,3 +186,103 @@ export type TResponse<T> = {
 };
 
 export type TResponseRedux<T> = TResponse<T> & BaseQueryApi;
+
+export type ReceiptStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface TReceiptItem {
+  id: string;
+  receiptId: string;
+  productId?: string | null;
+  productName: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  buyingPrice?: number | null;
+  quantity: number;
+  discount: number; // percentage (0 - 100)
+  subTotal: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  product?: {
+    id: string;
+    name: string;
+    stock: number;
+    unit: ProductUnit;
+  } | null;
+}
+
+export interface TReceiptPayment {
+  id: string;
+  receiptId: string;
+  amount: number;
+  note?: string | null;
+  createdAt: string;
+  createdById: string;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
+}
+
+export interface TReceipt {
+  id: string;
+  receiptNumber: string;
+  customerId: string;
+  customer: {
+    id: string;
+    name: string;
+    countryCode?: string;
+    phoneNumber: string;
+    email?: string | null;
+    address?: string | null;
+  };
+  subTotal: number;
+  discount: number; // solid receipt-level discount
+  totalAmount: number;
+  paidAmount: number;
+  dueAmount: number;
+  status: ReceiptStatus;
+  note?: string | null;
+  isDeleted: boolean;
+  isDeleteRequested: boolean;
+  deleteRequestedAt?: string | null;
+  deleteReason?: string | null;
+  deleteRequestedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  items: TReceiptItem[];
+  payments: TReceiptPayment[];
+  _count?: {
+    items: number;
+    payments: number;
+  };
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TReceiptFormItem {
+  productId?: string | null;
+  productName: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  quantity: number;
+  discount: number; // percentage
+  availableStock?: number | null; // for live stock tracking
+}
+

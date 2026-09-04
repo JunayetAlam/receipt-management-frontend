@@ -23,6 +23,17 @@ export const customerApi = baseApi.injectEndpoints({
       providesTags: ["Customer"],
     }),
 
+    lookupCustomerByPhone: builder.query<
+      TResponse<TCustomer | null>,
+      { phoneNumber: string; countryCode?: string }
+    >({
+      query: (params) => ({
+        url: "/customers/lookup-phone",
+        method: "GET",
+        params,
+      }),
+    }),
+
     createCustomer: builder.mutation<
       TResponse<TCustomer>,
       Partial<TCustomer>
@@ -88,6 +99,8 @@ export const customerApi = baseApi.injectEndpoints({
 export const {
   useGetAllCustomersQuery,
   useGetCustomerByIdQuery,
+  useLookupCustomerByPhoneQuery,
+  useLazyLookupCustomerByPhoneQuery,
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
   useDeleteCustomerMutation,
