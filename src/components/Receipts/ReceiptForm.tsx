@@ -42,6 +42,7 @@ import CustomerSelect from "./CustomerSelect";
 import ProductSelect from "./ProductSelect";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
 import PaymentModal from "./PaymentModal";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Plus,
   X,
@@ -61,6 +62,7 @@ import {
   Pencil,
   Check,
   FileText,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -96,12 +98,16 @@ interface ReceiptFormProps {
   initialData?: TReceipt;
   isEditing?: boolean;
   isDetails?: boolean;
+  onCancelEdit?: () => void;
+  onSaveSuccess?: () => void;
 }
 
 export default function ReceiptForm({
   initialData,
   isEditing = false,
   isDetails = false,
+  onCancelEdit,
+  onSaveSuccess,
 }: ReceiptFormProps) {
   const router = useRouter();
 
@@ -110,7 +116,7 @@ export default function ReceiptForm({
   const [isAdmin] = useIsAdmin();
   const isCashier = meData?.data?.role === "CASHIER";
   const isApproved = initialData?.status === "APPROVED";
-  const isLocked = isDetails || isApproved;
+  const isLocked = isDetails || (!isAdmin && isApproved);
 
   // Payments State for Edit / Details mode
   const [payments, setPayments] = useState<TReceiptPayment[]>(
@@ -628,11 +634,16 @@ export default function ReceiptForm({
       if (isEditing && initialData) {
         await updateReceipt({ id: initialData.id, body: payload }).unwrap();
         toast.success("Receipt updated successfully!");
+        if (onSaveSuccess) {
+          onSaveSuccess();
+        } else {
+          router.push(`/receipts/${initialData.id}`);
+        }
       } else {
         await createReceipt(payload).unwrap();
         toast.success("Receipt created successfully!");
+        router.push("/receipts");
       }
-      router.push("/receipts");
     } catch (err) {
       toast.error(errorMessageGenerator(err));
     }
@@ -640,60 +651,60 @@ export default function ReceiptForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Lock Banner on Approved / Details Receipt */}
-      {isLocked && (
-        <div className="flex items-center gap-3 p-4 rounded-xl border border-border/70 bg-muted/30 text-foreground text-sm font-medium">
-          <Lock className="size-5 shrink-0 text-primary" />
-          <div>
-            <p className="font-semibold">
-              {isApproved ? "Approved Receipt (Product & Billing Locked)" : "Receipt Details (Read-Only)"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isApproved
-                ? "This receipt has been approved. Product and billing edits are locked, but installment payments can still be added or updated below."
-                : "You are viewing receipt details in read-only mode. Installment payments can still be managed below."}
-            </p>
-          </div>
-        </div>
-      )}
+      <form id="receipt-form" onSubmit={handleSubmit} className="space-y-6">
 
-      {/* Top Header Actions */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/receipts"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="size-3.5" /> Back to Receipts
-        </Link>
-        <div className="flex items-center gap-2">
-          {initialData && (
-            <Link href={`/receipts/${initialData.id}/invoice`}>
+      {/* Top Header Actions (Sticky bar for quick access in Edit/Create mode) */}
+      {!isDetails && (
+        <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
+          <Link
+            href="/receipts"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back to Receipt List</span>
+          </Link>
+
+          {/* Top Right Action Buttons (Cancel + Update / Create) */}
+          {!isLocked && (
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                disabled={isCreating || isUpdating}
+                onClick={() => {
+                  if (isEditing && initialData) {
+                    router.push(`/receipts/${initialData.id}`);
+                  } else {
+                    router.push("/receipts");
+                  }
+                }}
+                className="h-8 px-3 text-xs font-medium cursor-pointer"
               >
-                <FileText className="size-3.5" /> View Invoice (A4)
+                <X className="size-3.5 mr-1" /> Cancel
               </Button>
-            </Link>
-          )}
-          {initialData?.status && (
-            <Badge
-              className={
-                initialData.status === "APPROVED"
-                  ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
-                  : initialData.status === "REJECTED"
-                  ? "bg-destructive/15 text-destructive border-destructive/30"
-                  : "bg-amber-500/15 text-amber-600 border-amber-500/30"
-              }
-            >
-              {initialData.status}
-            </Badge>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isCreating || isUpdating}
+                className="h-8 px-4 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
+              >
+                {isCreating || isUpdating ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-3.5" />
+                    <span>{isEditing ? "Update Receipt" : "Create Receipt"}</span>
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
-      </div>
+      )}
 
       <div className="space-y-6">
         {/* Customer Selection Card */}
@@ -710,9 +721,36 @@ export default function ReceiptForm({
                     </span>
                   )}
                   {isLocked ? (
-                    <Badge variant="outline" className="text-xs gap-1 border-border/80">
-                      <Lock className="size-3" /> Locked
-                    </Badge>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 cursor-help">
+                          <Badge
+                            variant="outline"
+                            className="text-xs gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium cursor-help"
+                          >
+                            <Lock className="size-3" /> Locked
+                          </Badge>
+                          <span className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors inline-flex items-center">
+                            <Info className="size-3.5" />
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="end" className="max-w-xs text-xs p-2.5">
+                        <p className="font-semibold text-foreground mb-0.5">
+                          {isApproved ? "Approved Receipt" : "Receipt Locked"}
+                        </p>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {isApproved
+                            ? "This receipt has been approved. Product and billing edits are locked, but installment payments can still be added or updated below."
+                            : "This receipt is in view mode. Product and billing edits are locked."}
+                          {isAdmin && (
+                            <span className="block mt-1 font-medium text-primary">
+                              As an Admin, you can still edit this receipt using the Edit button.
+                            </span>
+                          )}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   ) : isCustomerLocked ? (
                     <Button
                       type="button"
@@ -843,7 +881,38 @@ export default function ReceiptForm({
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Receipt className="size-4 text-primary" /> Receipt Items & Billing ({items.length})
                 </CardTitle>
-                {!isLocked && (
+                {isLocked ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1.5 cursor-help">
+                        <Badge
+                          variant="outline"
+                          className="text-xs gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium cursor-help"
+                        >
+                          <Lock className="size-3" /> Locked
+                        </Badge>
+                        <span className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors inline-flex items-center">
+                          <Info className="size-3.5" />
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="end" className="max-w-xs text-xs p-2.5">
+                      <p className="font-semibold text-foreground mb-0.5">
+                        {isApproved ? "Approved Receipt" : "Receipt Locked"}
+                      </p>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {isApproved
+                          ? "This receipt has been approved. Product and billing edits are locked, but installment payments can still be added or updated below."
+                          : "This receipt is in view mode. Product and billing edits are locked."}
+                        {isAdmin && (
+                          <span className="block mt-1 font-medium text-primary">
+                            As an Admin, you can still edit this receipt using the Edit button.
+                          </span>
+                        )}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
                   <Button
                     type="button"
                     size="sm"
@@ -886,9 +955,36 @@ export default function ReceiptForm({
                         : "border-border/70 bg-card hover:border-border"
                     }`}
                   >
-                    {/* Top-Right Corner Cross Button */}
-                    {items.length > 1 && !isLocked && (
-                      <div className="absolute -top-2.5 -right-2.5 z-10">
+                    {/* Top-Right Corner Actions: Stock Warning Tooltip & Cross Button */}
+                    <div className="absolute -top-2.5 -right-2.5 z-10 flex items-center gap-1.5">
+                      {hasStockWarning && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="size-5 rounded-full bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center shadow-xs cursor-help border border-amber-600/30 transition-transform hover:scale-110"
+                              aria-label="Stock shortage warning"
+                            >
+                              <AlertTriangle className="size-3 text-white stroke-[2.5]" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            align="end"
+                            className="bg-popover text-popover-foreground border border-amber-500/30 shadow-lg p-2.5 rounded-xl max-w-xs"
+                          >
+                            <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold text-xs mb-1">
+                              <AlertTriangle className="size-3.5 shrink-0" />
+                              <span>Stock Shortage Warning</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-snug">
+                              Requested total <strong className="text-foreground font-mono">{totalRequestedForThisProduct} {it.unit}</strong> exceeds available stock (<strong className="text-foreground font-mono">{it.availableStock} {it.unit}</strong>).
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {items.length > 1 && !isLocked && (
                         <ConfirmPopup
                           title="Remove Product"
                           description={`Are you sure you want to remove ${
@@ -912,18 +1008,8 @@ export default function ReceiptForm({
                             <X className="size-3" />
                           </Button>
                         </ConfirmPopup>
-                      </div>
-                    )}
-
-                    {/* Stock shortage warning badge */}
-                    {hasStockWarning && (
-                      <div className="flex items-center gap-2 p-1.5 rounded-lg bg-amber-500/15 text-amber-900 dark:text-amber-200 text-xs font-medium border border-amber-500/30">
-                        <AlertTriangle className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-                        <span>
-                          Warning: Requested ({totalRequestedForThisProduct} {it.unit}) exceeds stock ({it.availableStock} {it.unit}).
-                        </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* All Inputs in One Single Line (on md+) */}
                     <div className="grid grid-cols-1 md:grid-cols-[4fr_1.8fr_1.4fr_2fr_1.4fr_2fr] gap-2 items-center">
@@ -1265,9 +1351,9 @@ export default function ReceiptForm({
             </CardContent>
           </Card>
 
-          {/* Submit Action or Lock Banner */}
-          <div className="pt-2">
-            {isLocked ? (
+          {/* Back Action Banner in Read-only details / locked mode */}
+          {isLocked && (
+            <div className="pt-2">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-xl border border-border/70 bg-muted/30">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Lock className="size-4 text-primary shrink-0" />
@@ -1283,21 +1369,8 @@ export default function ReceiptForm({
                   </Button>
                 </Link>
               </div>
-            ) : (
-              <Button
-                type="submit"
-                disabled={isCreating || isUpdating}
-                className="w-full gap-2 font-semibold shadow-xs"
-              >
-                <Save className="size-4" />
-                {isCreating || isUpdating
-                  ? "Saving..."
-                  : isEditing
-                  ? "Update Receipt"
-                  : "Create Receipt"}
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
       </div>
     </form>
 

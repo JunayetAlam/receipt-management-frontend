@@ -21,12 +21,14 @@ interface ReceiptDeleteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   receipt: TReceipt | null;
+  onSuccess?: () => void;
 }
 
 export default function ReceiptDeleteModal({
   open,
   onOpenChange,
   receipt,
+  onSuccess,
 }: ReceiptDeleteModalProps) {
   const [isAdmin] = useIsAdmin();
   const [reason, setReason] = useState("");
@@ -43,6 +45,7 @@ export default function ReceiptDeleteModal({
       toast.success(res.message || "Action processed successfully");
       setReason("");
       onOpenChange(false);
+      onSuccess?.();
     } catch (err) {
       toast.error(errorMessageGenerator(err));
     }

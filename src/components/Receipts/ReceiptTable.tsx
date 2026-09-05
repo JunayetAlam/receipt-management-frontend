@@ -6,26 +6,21 @@ import {
   Receipt,
   Search,
   Plus,
-  RotateCcw,
-  Check,
   X,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  Pencil,
-  Trash2,
-  Banknote,
+  ChevronDown,
+  Phone,
   Clock,
   ShieldCheck,
   ShieldAlert,
   Archive,
-  Phone,
-  FileText,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   useGetAllReceiptsQuery,
-  useUpdateReceiptStatusMutation,
   useConfirmDeleteReceiptMutation,
   useRejectDeleteReceiptMutation,
   useRestoreReceiptMutation,
@@ -42,10 +37,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmPopup from "../Global/ConfirmPopup";
-import ReceiptDetailsSheet from "./ReceiptDetailsSheet";
 import ReceiptDeleteModal from "./ReceiptDeleteModal";
+import ReceiptStatusDropdown from "./ReceiptStatusDropdown";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
 
@@ -77,15 +85,12 @@ export default function ReceiptTable() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  // Modals & Sheets
-  const [selectedReceiptForDetails, setSelectedReceiptForDetails] = useState<TReceipt | null>(null);
-  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false);
+  // Modals
 
   const [selectedReceiptForDelete, setSelectedReceiptForDelete] = useState<TReceipt | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Mutations
-  const [updateReceiptStatus, { isLoading: isUpdatingStatus }] = useUpdateReceiptStatusMutation();
   const [confirmDelete, { isLoading: isConfirming }] = useConfirmDeleteReceiptMutation();
   const [rejectDelete, { isLoading: isRejecting }] = useRejectDeleteReceiptMutation();
   const [restoreReceipt, { isLoading: isRestoring }] = useRestoreReceiptMutation();
@@ -122,33 +127,9 @@ export default function ReceiptTable() {
   const receipts = response?.data || [];
   const meta = response?.meta;
 
-  const handleOpenDetails = (r: TReceipt) => {
-    setSelectedReceiptForDetails(r);
-    setDetailsSheetOpen(true);
-  };
-
   const handleOpenDelete = (r: TReceipt) => {
     setSelectedReceiptForDelete(r);
     setDeleteModalOpen(true);
-  };
-
-  // Admin Quick Status Actions
-  const handleAdminApprove = async (r: TReceipt) => {
-    try {
-      await updateReceiptStatus({ id: r.id, status: "APPROVED" }).unwrap();
-      toast.success(`Receipt ${r.receiptNumber} approved successfully!`);
-    } catch (err) {
-      toast.error(errorMessageGenerator(err));
-    }
-  };
-
-  const handleAdminReject = async (r: TReceipt) => {
-    try {
-      await updateReceiptStatus({ id: r.id, status: "REJECTED" }).unwrap();
-      toast.success(`Receipt ${r.receiptNumber} rejected.`);
-    } catch (err) {
-      toast.error(errorMessageGenerator(err));
-    }
   };
 
   const handleAdminConfirmDelete = async (r: TReceipt) => {
@@ -321,7 +302,7 @@ export default function ReceiptTable() {
           <table className="w-full text-left text-xs">
             <thead className="bg-muted/40 border-b border-border text-muted-foreground">
               <tr>
-                <th className="px-4 py-3 font-semibold">Receipt Number</th>
+                <th className="px-4 py-3 font-semibold min-w-[160px]">Receipt Number</th>
                 <th className="px-4 py-3 font-semibold">Customer</th>
                 <th className="px-4 py-3 font-semibold text-center">Items</th>
                 <th className="px-4 py-3 font-semibold text-right">Total Bill</th>
@@ -335,14 +316,14 @@ export default function ReceiptTable() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={idx}>
-                    <td className="px-4 py-3.5"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-4 py-3.5 min-w-[160px]"><Skeleton className="h-4 w-28" /></td>
                     <td className="px-4 py-3.5"><Skeleton className="h-4 w-32" /></td>
                     <td className="px-4 py-3.5 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
                     <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
                     <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
                     <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
                     <td className="px-4 py-3.5 text-center"><Skeleton className="h-5 w-20 mx-auto rounded-full" /></td>
-                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-7 w-24 ml-auto" /></td>
+                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-7 w-32 ml-auto" /></td>
                   </tr>
                 ))
               ) : receipts.length === 0 ? (
@@ -376,7 +357,7 @@ export default function ReceiptTable() {
                       )}
                     >
                       {/* Receipt Number & Date */}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 min-w-[160px] whitespace-nowrap">
                         <div className="flex flex-col min-w-0">
                           <span className="font-mono font-bold text-foreground text-xs">
                             {receipt.receiptNumber}
@@ -432,19 +413,8 @@ export default function ReceiptTable() {
 
                       {/* Status */}
                       <td className="px-4 py-3 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge
-                            variant="outline"
-                            className={
-                              receipt.status === "APPROVED"
-                                ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 text-[10px]"
-                                : receipt.status === "REJECTED"
-                                ? "bg-destructive/15 text-destructive border-destructive/30 text-[10px]"
-                                : "bg-amber-500/15 text-amber-600 border-amber-500/30 text-[10px]"
-                            }
-                          >
-                            {receipt.status}
-                          </Badge>
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <ReceiptStatusDropdown receipt={receipt} />
 
                           {receipt.isDeleteRequested && (
                             <Badge
@@ -459,105 +429,36 @@ export default function ReceiptTable() {
 
                       {/* Actions */}
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {/* Receipt Action: Details button when approved, or View Details + Edit when pending */}
-                          {!receipt.isDeleted && receipt.status === "APPROVED" ? (
-                            <Link href={`/receipts/${receipt.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="View Receipt Details"
-                                className="h-7 px-2 text-xs gap-1 text-primary hover:bg-primary/10"
-                              >
-                                <Eye className="size-3.5" /> Details
-                              </Button>
-                            </Link>
-                          ) : (
-                            <>
-                              {/* View Details */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="View Receipt Details"
-                                onClick={() => handleOpenDetails(receipt)}
-                                className="size-7 text-muted-foreground hover:text-foreground"
-                              >
-                                <Eye className="size-3.5" />
-                              </Button>
-
-                              {/* Edit Receipt */}
-                              {!receipt.isDeleted && (
-                                <Link href={`/receipts/${receipt.id}/edit`}>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    title="Edit Receipt"
-                                    className="size-7 text-muted-foreground hover:text-foreground"
-                                  >
-                                    <Pencil className="size-3.5" />
-                                  </Button>
-                                </Link>
-                              )}
-                            </>
-                          )}
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
+                          {/* Receipt Actions */}
+                          <Link href={`/receipts/${receipt.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="View Details / Edit"
+                              className="h-7 px-2.5 text-xs font-medium text-foreground hover:bg-muted"
+                            >
+                              Details/Edit
+                            </Button>
+                          </Link>
 
                           {/* View PDF / Invoice */}
                           {!receipt.isDeleted && (
                             <Link href={`/receipts/${receipt.id}/invoice`}>
                               <Button
-                                variant="ghost"
-                                size="icon"
+                                variant="outline"
+                                size="sm"
                                 title="View PDF / Invoice"
-                                className="size-7 text-muted-foreground hover:text-primary"
+                                className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/10"
                               >
-                                <FileText className="size-3.5" />
+                                Invoice
                               </Button>
                             </Link>
                           )}
 
-                          {/* Admin Quick Status: Approve / Reject Pending Receipt */}
-                          {isAdmin && receipt.status === "PENDING" && !receipt.isDeleted && (
-                            <div className="flex items-center gap-1 border-l border-border pl-1 ml-1">
-                              <ConfirmPopup
-                                title="Approve Receipt?"
-                                description={`Approve Receipt "${receipt.receiptNumber}"?`}
-                                confirmLabel="Approve"
-                                destructive={false}
-                                loading={isUpdatingStatus}
-                                onConfirm={() => handleAdminApprove(receipt)}
-                              >
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-7 px-2 text-[11px] gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
-                                  title="Approve Receipt"
-                                >
-                                  <Check className="size-3" /> Approve
-                                </Button>
-                              </ConfirmPopup>
-                              <ConfirmPopup
-                                title="Reject Receipt?"
-                                description={`Reject Receipt "${receipt.receiptNumber}"?`}
-                                confirmLabel="Reject"
-                                destructive={true}
-                                loading={isUpdatingStatus}
-                                onConfirm={() => handleAdminReject(receipt)}
-                              >
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="size-7 text-destructive border-destructive/30 hover:bg-destructive/10"
-                                  title="Reject Receipt"
-                                >
-                                  <X className="size-3" />
-                                </Button>
-                              </ConfirmPopup>
-                            </div>
-                          )}
-
                           {/* Admin Delete Request Confirmation */}
                           {isAdmin && receipt.isDeleteRequested ? (
-                            <div className="flex items-center gap-1 border-l border-border pl-1 ml-1">
+                            <div className="flex items-center gap-1.5 border-l border-border pl-1.5 ml-1">
                               <ConfirmPopup
                                 title="Approve Deletion Request?"
                                 description={`Confirm deletion of Receipt "${receipt.receiptNumber}"? Stock will be restored.`}
@@ -569,10 +470,10 @@ export default function ReceiptTable() {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  className="h-7 px-2 text-[11px] gap-1"
+                                  className="h-7 px-2.5 text-xs font-medium"
                                   title="Confirm Delete"
                                 >
-                                  <Check className="size-3" /> Delete
+                                  Delete
                                 </Button>
                               </ConfirmPopup>
                               <ConfirmPopup
@@ -585,11 +486,11 @@ export default function ReceiptTable() {
                               >
                                 <Button
                                   variant="outline"
-                                  size="icon"
-                                  className="size-7"
+                                  size="sm"
+                                  className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                                   title="Reject Delete Request"
                                 >
-                                  <X className="size-3" />
+                                  Reject
                                 </Button>
                               </ConfirmPopup>
                             </div>
@@ -606,10 +507,10 @@ export default function ReceiptTable() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2 text-[11px] gap-1 text-primary border-primary/40 hover:bg-primary/10"
+                                className="h-7 px-2.5 text-xs font-medium text-primary border-primary/40 hover:bg-primary/10"
                                 title="Restore Receipt"
                               >
-                                <RotateCcw className="size-3" /> Restore
+                                Restore
                               </Button>
                             </ConfirmPopup>
                           ) : (
@@ -618,20 +519,20 @@ export default function ReceiptTable() {
                               receipt.isDeleteRequested && !isAdmin ? (
                                 <Badge
                                   variant="secondary"
-                                  className="h-7 px-2 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
+                                  className="h-7 px-2.5 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
                                   title="Deletion request pending admin review"
                                 >
                                   Delete Requested
                                 </Badge>
                               ) : (
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
+                                  variant="outline"
+                                  size="sm"
                                   title={isAdmin ? "Delete Receipt" : "Request Delete"}
                                   onClick={() => handleOpenDelete(receipt)}
-                                  className="size-7 text-muted-foreground hover:text-destructive"
+                                  className="h-7 px-2.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10"
                                 >
-                                  <Trash2 className="size-3.5" />
+                                  {isAdmin ? "Delete" : "Request Delete"}
                                 </Button>
                               )
                             )
@@ -680,12 +581,7 @@ export default function ReceiptTable() {
         )}
       </div>
 
-      {/* Modals and Sheets */}
-      <ReceiptDetailsSheet
-        open={detailsSheetOpen}
-        onOpenChange={setDetailsSheetOpen}
-        receipt={selectedReceiptForDetails}
-      />
+      {/* Delete Modal */}
 
       <ReceiptDeleteModal
         open={deleteModalOpen}
