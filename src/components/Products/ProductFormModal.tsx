@@ -24,7 +24,7 @@ import {
   useUpdateProductMutation,
 } from "@/redux/api/productApi";
 import { ProductUnit, TProduct } from "@/types";
-import { Package } from "lucide-react";
+import { Package, FileSpreadsheet } from "lucide-react";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 
 const PRODUCT_UNITS: { label: string; value: ProductUnit }[] = [
@@ -42,12 +42,14 @@ interface ProductFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   productToEdit?: TProduct | null;
+  onOpenBulk?: () => void;
 }
 
 export default function ProductFormModal({
   open,
   onOpenChange,
   productToEdit,
+  onOpenBulk,
 }: ProductFormModalProps) {
   const isEditing = Boolean(productToEdit);
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
@@ -56,6 +58,7 @@ export default function ProductFormModal({
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<ProductUnit>("PIECE");
   const [sellingPrice, setSellingPrice] = useState("");
+  const [buyingPrice, setBuyingPrice] = useState("");
   const [stock, setStock] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,6 +68,9 @@ export default function ProductFormModal({
       setName(productToEdit.name || "");
       setUnit(productToEdit.unit || "PIECE");
       setSellingPrice(String(productToEdit.sellingPrice || ""));
+      setBuyingPrice(
+        productToEdit.buyingPrice != null ? String(productToEdit.buyingPrice) : ""
+      );
       setStock(String(productToEdit.stock ?? 0));
       setDescription(productToEdit.description || "");
       setErrors({});
@@ -72,6 +78,7 @@ export default function ProductFormModal({
       setName("");
       setUnit("PIECE");
       setSellingPrice("");
+      setBuyingPrice("");
       setStock("0");
       setDescription("");
       setErrors({});
@@ -79,6 +86,7 @@ export default function ProductFormModal({
   }, [productToEdit, open]);
 
   const numSelling = parseFloat(sellingPrice) || 0;
+  const numBuying = buyingPrice.trim() !== "" ? parseFloat(buyingPrice) : null;
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -87,6 +95,9 @@ export default function ProductFormModal({
     }
     if (!sellingPrice || isNaN(numSelling) || numSelling <= 0) {
       errs.sellingPrice = "Valid price greater than 0 is required";
+    }
+    if (numBuying !== null && (isNaN(numBuying) || numBuying < 0)) {
+      errs.buyingPrice = "Buying price cannot be negative";
     }
     if (stock && (isNaN(parseFloat(stock)) || parseFloat(stock) < 0)) {
       errs.stock = "Stock cannot be negative";
@@ -103,6 +114,7 @@ export default function ProductFormModal({
       name: name.trim(),
       unit,
       sellingPrice: numSelling,
+      buyingPrice: numBuying,
       stock: parseFloat(stock) || 0,
       description: description.trim() || null,
     };
@@ -128,11 +140,26 @@ export default function ProductFormModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Package className="size-5 text-primary" />
             {isEditing ? "Edit Product" : "Add New Product"}
           </DialogTitle>
+          {!isEditing && onOpenBulk && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onOpenChange(false);
+                onOpenBulk();
+              }}
+              className="h-7 text-xs text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 gap-1.5"
+            >
+              <FileSpreadsheet className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              Bulk / CSV Import
+            </Button>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -187,20 +214,39 @@ export default function ProductFormModal({
             </div>
           </div>
 
-          {/* Selling Price */}
-          <div className="space-y-1.5">
-            <Label htmlFor="selling-price">Selling Price (৳) *</Label>
-            <Input
-              id="selling-price"
-              type="number"
-              step="any"
-              placeholder="0.00"
-              value={sellingPrice}
-              onChange={(e) => setSellingPrice(e.target.value)}
-            />
-            {errors.sellingPrice && (
-              <p className="text-xs text-destructive">{errors.sellingPrice}</p>
-            )}
+          {/* Pricing Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="buying-price">Buying Price (৳)</Label>
+              <Input
+                id="buying-price"
+                type="number"
+                step="any"
+                min="0"
+                placeholder="0.00"
+                value={buyingPrice}
+                onChange={(e) => setBuyingPrice(e.target.value)}
+              />
+              {errors.buyingPrice && (
+                <p className="text-xs text-destructive">{errors.buyingPrice}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="selling-price">Selling Price (৳) *</Label>
+              <Input
+                id="selling-price"
+                type="number"
+                step="any"
+                min="0"
+                placeholder="0.00"
+                value={sellingPrice}
+                onChange={(e) => setSellingPrice(e.target.value)}
+              />
+              {errors.sellingPrice && (
+                <p className="text-xs text-destructive">{errors.sellingPrice}</p>
+              )}
+            </div>
           </div>
 
           {/* Description */}

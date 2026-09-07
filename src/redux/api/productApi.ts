@@ -35,6 +35,18 @@ export const productApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product", "ActivityLog"],
     }),
 
+    bulkCreateProducts: builder.mutation<
+      TResponse<TProduct[]>,
+      { products: Partial<TProduct>[] }
+    >({
+      query: (body) => ({
+        url: "/products/bulk",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Product", "ActivityLog"],
+    }),
+
     updateProduct: builder.mutation<
       TResponse<TProduct>,
       { id: string; body: Partial<TProduct> }
@@ -89,6 +101,7 @@ export const {
   useGetAllProductsQuery,
   useGetProductByIdQuery,
   useCreateProductMutation,
+  useBulkCreateProductsMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
   useConfirmDeleteProductMutation,

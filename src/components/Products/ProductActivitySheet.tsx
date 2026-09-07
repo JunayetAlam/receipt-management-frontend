@@ -112,10 +112,16 @@ export default function ProductActivitySheet({
           </SheetHeader>
 
           {product && (
-            <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-border/80 bg-background/80 p-2.5 text-xs">
+            <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg border border-border/80 bg-background/80 p-2.5 text-xs">
               <div>
-                <span className="text-muted-foreground block text-[10px]">Price</span>
+                <span className="text-muted-foreground block text-[10px]">Selling Price</span>
                 <span className="font-semibold text-foreground">৳{product.sellingPrice}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[10px]">Buying Price</span>
+                <span className="font-semibold text-foreground">
+                  {product.buyingPrice != null ? `৳${product.buyingPrice}` : "—"}
+                </span>
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">Stock</span>

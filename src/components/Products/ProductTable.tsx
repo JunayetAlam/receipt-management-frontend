@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Activity,
   Archive,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProductFormModal from "./ProductFormModal";
+import ProductBulkModal from "./ProductBulkModal";
 import ProductActivitySheet from "./ProductActivitySheet";
 import ProductDeleteModal from "./ProductDeleteModal";
 import ConfirmPopup from "../Global/ConfirmPopup";
@@ -79,6 +81,7 @@ export default function ProductTable() {
 
   // Modal States
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<TProduct | null>(null);
 
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
@@ -259,11 +262,22 @@ export default function ProductTable() {
           )}
         </div>
 
-        {/* Add Product Button */}
-        <Button onClick={handleOpenCreate} className="h-9 gap-1.5 text-xs font-semibold">
-          <Plus className="size-4" />
-          Add Product
-        </Button>
+        {/* Header Action Buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setBulkModalOpen(true)}
+            className="h-9 gap-1.5 text-xs font-semibold"
+          >
+            <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+            Bulk Import
+          </Button>
+
+          <Button onClick={handleOpenCreate} className="h-9 gap-1.5 text-xs font-semibold">
+            <Plus className="size-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -443,8 +457,21 @@ export default function ProductTable() {
                     </td>
 
                     {/* Price */}
-                    <td className="px-4 py-3.5 font-semibold text-foreground text-xs sm:text-sm">
-                      ৳{product.sellingPrice}
+                    <td className="px-4 py-3.5 text-xs sm:text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-foreground">
+                          ৳{product.sellingPrice}
+                        </span>
+                        {product.buyingPrice != null ? (
+                          <span className="text-[11px] text-muted-foreground font-mono">
+                            Buy: ৳{product.buyingPrice}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground/50 italic">
+                            Buy: —
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
@@ -636,6 +663,12 @@ export default function ProductTable() {
         open={formModalOpen}
         onOpenChange={setFormModalOpen}
         productToEdit={productToEdit}
+        onOpenBulk={() => setBulkModalOpen(true)}
+      />
+
+      <ProductBulkModal
+        open={bulkModalOpen}
+        onOpenChange={setBulkModalOpen}
       />
 
       <ProductActivitySheet
