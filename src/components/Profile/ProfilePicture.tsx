@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import defaultUser from "@/assets/user.png";
 import { useUpdateProfileImgMutation } from "@/redux/api/userApi";
@@ -26,6 +26,18 @@ export default function ProfilePicture({
       } catch (error) {
         console.error(error);
       }
+    }
+  };
+
+  const handleRemoveImage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const formData = new FormData();
+      formData.append("remove", "true");
+      await updateProfile(formData).unwrap();
+    } catch (error) {
+      console.error(error);
     }
   };
 
@@ -64,6 +76,17 @@ export default function ProfilePicture({
             </div>
           )}
         </Avatar>
+
+        {profileImg && !isLoading && (
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            title="Remove photo"
+            className="absolute top-0 right-0 w-7 h-7 rounded-full p-0 bg-red-600 text-white border-2 border-white shadow-sm flex items-center justify-center hover:bg-red-700 transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         <div className="absolute bottom-0 right-0">
           <div className="w-8 h-8 rounded-full p-0 bg-white border-2 border-white shadow-sm flex items-center justify-center">

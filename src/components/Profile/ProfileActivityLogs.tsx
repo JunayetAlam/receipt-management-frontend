@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -73,64 +81,64 @@ export default function ProfileActivityLogs() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground uppercase">
-            <tr>
-              <th className="px-4 py-3">Action</th>
-              <th className="px-4 py-3">Entity</th>
-              <th className="px-4 py-3">IP Address</th>
-              <th className="px-4 py-3">Timestamp</th>
-              <th className="px-4 py-3 text-right">Details</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Action</TableHead>
+              <TableHead>Entity</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Timestamp</TableHead>
+              <TableHead className="text-right">Details</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <tr key={i}>
-                  <td className="px-4 py-3">
+                <TableRow key={i}>
+                  <TableCell>
                     <Skeleton className="h-5 w-24 rounded-full" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-16" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-20" />
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <Skeleton className="h-4 w-28" />
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     <Skeleton className="h-7 w-14 ml-auto" />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             ) : logs.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                   <Activity className="size-6 mx-auto mb-1.5 opacity-40" />
                   <p className="text-sm">No activity records found.</p>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               logs.map((log) => (
-                <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">{getActionBadge(log.action)}</td>
-                  <td className="px-4 py-3">
+                <TableRow key={log.id}>
+                  <TableCell>{getActionBadge(log.action)}</TableCell>
+                  <TableCell>
                     <span className="font-medium text-foreground text-xs">{log.entityType}</span>
                     {log.entityId && (
                       <span className="text-[10px] text-muted-foreground block font-mono">
                         {log.entityId.slice(0, 8)}...
                       </span>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-mono">
                       <Globe className="size-3" />
                       {log.ipAddress || "—"}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
                       <Calendar className="size-3 text-muted-foreground/70" />
                       {new Date(log.createdAt).toLocaleString("en-US", {
@@ -138,8 +146,8 @@ export default function ProfileActivityLogs() {
                         timeStyle: "short",
                       })}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     {log.details && Object.keys(log.details).length > 0 ? (
                       <Button
                         variant="ghost"
@@ -153,12 +161,12 @@ export default function ProfileActivityLogs() {
                     ) : (
                       <span className="text-xs text-muted-foreground/40">—</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}

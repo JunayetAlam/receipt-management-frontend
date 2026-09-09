@@ -56,6 +56,14 @@ import ReceiptDeleteModal from "./ReceiptDeleteModal";
 import ReceiptStatusDropdown from "./ReceiptStatusDropdown";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return "—";
@@ -87,13 +95,17 @@ export default function ReceiptTable() {
 
   // Modals
 
-  const [selectedReceiptForDelete, setSelectedReceiptForDelete] = useState<TReceipt | null>(null);
+  const [selectedReceiptForDelete, setSelectedReceiptForDelete] =
+    useState<TReceipt | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Mutations
-  const [confirmDelete, { isLoading: isConfirming }] = useConfirmDeleteReceiptMutation();
-  const [rejectDelete, { isLoading: isRejecting }] = useRejectDeleteReceiptMutation();
-  const [restoreReceipt, { isLoading: isRestoring }] = useRestoreReceiptMutation();
+  const [confirmDelete, { isLoading: isConfirming }] =
+    useConfirmDeleteReceiptMutation();
+  const [rejectDelete, { isLoading: isRejecting }] =
+    useRejectDeleteReceiptMutation();
+  const [restoreReceipt, { isLoading: isRestoring }] =
+    useRestoreReceiptMutation();
 
   // Query Params
   const queryParams: Record<string, unknown> = {
@@ -123,7 +135,11 @@ export default function ReceiptTable() {
     queryParams.isDeleted = true;
   }
 
-  const { data: response, isLoading, isFetching } = useGetAllReceiptsQuery(queryParams);
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+  } = useGetAllReceiptsQuery(queryParams);
   const receipts = response?.data || [];
   const meta = response?.meta;
 
@@ -135,7 +151,9 @@ export default function ReceiptTable() {
   const handleAdminConfirmDelete = async (r: TReceipt) => {
     try {
       await confirmDelete(r.id).unwrap();
-      toast.success(`Receipt ${r.receiptNumber} deletion confirmed. Stock restored.`);
+      toast.success(
+        `Receipt ${r.receiptNumber} deletion confirmed. Stock restored.`,
+      );
     } catch (err) {
       toast.error(errorMessageGenerator(err));
     }
@@ -144,7 +162,9 @@ export default function ReceiptTable() {
   const handleAdminRejectDelete = async (r: TReceipt) => {
     try {
       await rejectDelete(r.id).unwrap();
-      toast.success(`Deletion request for Receipt ${r.receiptNumber} rejected.`);
+      toast.success(
+        `Deletion request for Receipt ${r.receiptNumber} rejected.`,
+      );
     } catch (err) {
       toast.error(errorMessageGenerator(err));
     }
@@ -196,7 +216,11 @@ export default function ReceiptTable() {
             </SelectTrigger>
             <SelectContent>
               {SORT_OPTIONS.map((opt) => (
-                <SelectItem key={opt.label} value={opt.label} className="text-xs">
+                <SelectItem
+                  key={opt.label}
+                  value={opt.label}
+                  className="text-xs"
+                >
                   {opt.label}
                 </SelectItem>
               ))}
@@ -206,7 +230,10 @@ export default function ReceiptTable() {
 
         <div className="flex items-center gap-2">
           <Link href="/receipts/create">
-            <Button size="sm" className="gap-1.5 font-semibold text-xs shadow-xs">
+            <Button
+              size="sm"
+              className="gap-1.5 font-semibold text-xs shadow-xs"
+            >
               <Plus className="size-4" /> Create Receipt
             </Button>
           </Link>
@@ -298,254 +325,238 @@ export default function ReceiptTable() {
 
       {/* Table Card */}
       <div className="rounded-xl border border-border/70 overflow-hidden bg-card shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-muted/40 border-b border-border text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-semibold min-w-[160px]">Receipt Number</th>
-                <th className="px-4 py-3 font-semibold">Customer</th>
-                <th className="px-4 py-3 font-semibold text-center">Items</th>
-                <th className="px-4 py-3 font-semibold text-right">Total Bill</th>
-                <th className="px-4 py-3 font-semibold text-right">Paid</th>
-                <th className="px-4 py-3 font-semibold text-right">Due</th>
-                <th className="px-4 py-3 font-semibold text-center">Status</th>
-                <th className="px-4 py-3 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, idx) => (
-                  <tr key={idx}>
-                    <td className="px-4 py-3.5 min-w-[160px]"><Skeleton className="h-4 w-28" /></td>
-                    <td className="px-4 py-3.5"><Skeleton className="h-4 w-32" /></td>
-                    <td className="px-4 py-3.5 text-center"><Skeleton className="h-4 w-8 mx-auto" /></td>
-                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
-                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
-                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-4 w-16 ml-auto" /></td>
-                    <td className="px-4 py-3.5 text-center"><Skeleton className="h-5 w-20 mx-auto rounded-full" /></td>
-                    <td className="px-4 py-3.5 text-right"><Skeleton className="h-7 w-32 ml-auto" /></td>
-                  </tr>
-                ))
-              ) : receipts.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <Receipt className="size-8 text-muted-foreground/40" />
-                      <p className="text-base font-medium text-foreground">No receipts found</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activeTab === "PENDING_DELETION"
-                          ? "No deletion requests pending admin confirmation."
-                          : "Try adjusting your search filters or create a new receipt."}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                receipts.map((receipt) => {
-                  const isLockedForCashier = !isAdmin && receipt.status === "APPROVED";
-                  const hasDue = receipt.dueAmount > 0;
-                  const formattedDate = formatDate(receipt.createdAt);
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-40">Receipt Number</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Total Bill</TableHead>
+              <TableHead>Paid</TableHead>
+              <TableHead>Due</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, idx) => (
+                <TableRow key={idx}>
+                  <TableCell className="min-w-40">
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-8" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-7 w-32 ml-auto" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : receipts.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="py-12 text-center text-muted-foreground"
+                >
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <Receipt className="size-8 text-muted-foreground/40" />
+                    <p className="text-base font-medium text-foreground">
+                      No receipts found
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {activeTab === "PENDING_DELETION"
+                        ? "No deletion requests pending admin confirmation."
+                        : "Try adjusting your search filters or create a new receipt."}
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              receipts.map((receipt) => {
+                const isLockedForCashier =
+                  !isAdmin && receipt.status === "APPROVED";
+                const hasDue = receipt.dueAmount > 0;
+                const formattedDate = formatDate(receipt.createdAt);
 
-                  return (
-                    <tr
-                      key={receipt.id}
-                      className={cn(
-                        "transition-colors hover:bg-muted/30",
-                        isFetching && "opacity-60",
-                        receipt.isDeleteRequested && "bg-rose-500/5 hover:bg-rose-500/10",
-                        receipt.isDeleted && "bg-muted/30 opacity-70",
-                      )}
-                    >
-                      {/* Receipt Number & Date */}
-                      <td className="px-4 py-3 min-w-[160px] whitespace-nowrap">
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-mono font-bold text-foreground text-xs">
-                            {receipt.receiptNumber}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {formattedDate}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Customer Info */}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-semibold text-foreground truncate max-w-[150px]">
-                            {receipt.customer?.name}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
-                            <Phone className="size-3 text-muted-foreground/70" />
-                            {receipt.customer?.countryCode || "+880"} {receipt.customer?.phoneNumber}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Items Count */}
-                      <td className="px-4 py-3 text-center">
-                        <span className="font-mono font-medium text-xs">
-                          {receipt._count?.items ?? receipt.items?.length ?? 0}
+                return (
+                  <TableRow
+                    key={receipt.id}
+                    className={cn(
+                      isFetching && "opacity-60",
+                      receipt.isDeleteRequested &&
+                        "bg-rose-500/5 hover:bg-rose-500/10",
+                      receipt.isDeleted && "bg-muted/30 opacity-70",
+                    )}
+                  >
+                    {/* Receipt Number & Date */}
+                    <TableCell className="min-w-40 whitespace-nowrap">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-mono font-bold text-foreground text-xs">
+                          {receipt.receiptNumber}
                         </span>
-                      </td>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formattedDate}
+                        </span>
+                      </div>
+                    </TableCell>
 
-                      {/* Total Amount */}
-                      <td className="px-4 py-3 text-right font-mono font-semibold text-foreground">
-                        ৳{receipt.totalAmount}
-                      </td>
+                    {/* Customer Info */}
+                    <TableCell>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-semibold text-foreground truncate max-w-[150px]">
+                          {receipt.customer?.name}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
+                          <Phone className="size-3 text-muted-foreground/70" />
+                          {receipt.customer?.countryCode || "+880"}{" "}
+                          {receipt.customer?.phoneNumber}
+                        </span>
+                      </div>
+                    </TableCell>
 
-                      {/* Paid Amount */}
-                      <td className="px-4 py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-medium">
-                        ৳{receipt.paidAmount}
-                      </td>
+                    {/* Items Count */}
+                    <TableCell>
+                      <span className="font-mono font-medium text-xs">
+                        {receipt._count?.items ?? receipt.items?.length ?? 0}
+                      </span>
+                    </TableCell>
 
-                      {/* Due Amount */}
-                      <td className="px-4 py-3 text-right">
-                        {hasDue ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/10 text-destructive border border-destructive/20">
-                            ৳{receipt.dueAmount}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                            PAID
-                          </span>
+                    {/* Total Amount */}
+                    <TableCell className="font-mono font-semibold text-foreground">
+                      ৳{receipt.totalAmount}
+                    </TableCell>
+
+                    {/* Paid Amount */}
+                    <TableCell className="font-mono text-emerald-600 dark:text-emerald-400 font-medium">
+                      ৳{receipt.paidAmount}
+                    </TableCell>
+
+                    {/* Due Amount */}
+                    <TableCell>
+                      {hasDue ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-rose-500/10 text-destructive border border-destructive/20">
+                          ৳{receipt.dueAmount}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                          PAID
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell>
+                      <div className="flex flex-col items-start gap-1">
+                        <ReceiptStatusDropdown receipt={receipt} />
+
+                        {receipt.isDeleteRequested && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] px-1.5 py-0 text-rose-600 bg-rose-500/10 border-rose-500/20"
+                          >
+                            Delete Req
+                          </Badge>
                         )}
-                      </td>
+                      </div>
+                    </TableCell>
 
-                      {/* Status */}
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <ReceiptStatusDropdown receipt={receipt} />
+                    {/* Actions */}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
+                        {/* Receipt Actions */}
+                        <Link href={`/receipts/${receipt.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="View Details / Edit"
+                            className="h-7 px-2.5 text-xs font-medium text-foreground hover:bg-muted"
+                          >
+                            Details/Edit
+                          </Button>
+                        </Link>
 
-                          {receipt.isDeleteRequested && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[9px] px-1.5 py-0 text-rose-600 bg-rose-500/10 border-rose-500/20"
-                            >
-                              Delete Req
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
-                          {/* Receipt Actions */}
-                          <Link href={`/receipts/${receipt.id}`}>
+                        {/* View PDF / Invoice */}
+                        {!receipt.isDeleted && (
+                          <Link href={`/receipts/${receipt.id}/invoice`}>
                             <Button
                               variant="outline"
                               size="sm"
-                              title="View Details / Edit"
-                              className="h-7 px-2.5 text-xs font-medium text-foreground hover:bg-muted"
+                              title="Print / View Invoice"
+                              className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                             >
-                              Details/Edit
+                              Invoice
                             </Button>
                           </Link>
+                        )}
 
-                          {/* View PDF / Invoice */}
-                          {!receipt.isDeleted && (
-                            <Link href={`/receipts/${receipt.id}/invoice`}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                title="View PDF / Invoice"
-                                className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/10"
-                              >
-                                Invoice
-                              </Button>
-                            </Link>
-                          )}
-
-                          {/* Admin Delete Request Confirmation */}
-                          {isAdmin && receipt.isDeleteRequested ? (
-                            <div className="flex items-center gap-1.5 border-l border-border pl-1.5 ml-1">
+                        {/* Admin Restore Button */}
+                        {receipt.isDeleted
+                          ? isAdmin && (
                               <ConfirmPopup
-                                title="Approve Deletion Request?"
-                                description={`Confirm deletion of Receipt "${receipt.receiptNumber}"? Stock will be restored.`}
-                                confirmLabel="Confirm Delete"
-                                destructive={true}
-                                loading={isConfirming}
-                                onConfirm={() => handleAdminConfirmDelete(receipt)}
-                              >
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  className="h-7 px-2.5 text-xs font-medium"
-                                  title="Confirm Delete"
-                                >
-                                  Delete
-                                </Button>
-                              </ConfirmPopup>
-                              <ConfirmPopup
-                                title="Reject Deletion Request?"
-                                description={`Reject deletion request for "${receipt.receiptNumber}"?`}
-                                confirmLabel="Reject"
+                                title="Restore Receipt?"
+                                description={`Restore Receipt "${receipt.receiptNumber}"? Stock will be re-deducted.`}
+                                confirmLabel="Restore"
                                 destructive={false}
-                                loading={isRejecting}
-                                onConfirm={() => handleAdminRejectDelete(receipt)}
+                                loading={isRestoring}
+                                onConfirm={() => handleAdminRestore(receipt)}
                               >
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="h-7 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-                                  title="Reject Delete Request"
+                                  className="h-7 px-2.5 text-xs font-medium text-primary border-primary/40 hover:bg-primary/10"
+                                  title="Restore Receipt"
                                 >
-                                  Reject
+                                  Restore
                                 </Button>
                               </ConfirmPopup>
-                            </div>
-                          ) : receipt.isDeleted && isAdmin ? (
-                            /* Admin Restore Deleted Receipt */
-                            <ConfirmPopup
-                              title="Restore Receipt?"
-                              description={`Restore Receipt "${receipt.receiptNumber}"? Stock will be re-deducted.`}
-                              confirmLabel="Restore"
-                              destructive={false}
-                              loading={isRestoring}
-                              onConfirm={() => handleAdminRestore(receipt)}
-                            >
+                            )
+                          : /* Normal Delete / Request Delete */
+                            !receipt.isDeleted &&
+                            (receipt.isDeleteRequested && !isAdmin ? (
+                              <Badge
+                                variant="secondary"
+                                className="h-7 px-2.5 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
+                                title="Deletion request pending admin review"
+                              >
+                                Delete Requested
+                              </Badge>
+                            ) : (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-7 px-2.5 text-xs font-medium text-primary border-primary/40 hover:bg-primary/10"
-                                title="Restore Receipt"
+                                title={
+                                  isAdmin ? "Delete Receipt" : "Request Delete"
+                                }
+                                onClick={() => handleOpenDelete(receipt)}
+                                className="h-7 px-2.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10"
                               >
-                                Restore
+                                {isAdmin ? "Delete" : "Request Delete"}
                               </Button>
-                            </ConfirmPopup>
-                          ) : (
-                            /* Normal Delete / Request Delete */
-                            !receipt.isDeleted && (
-                              receipt.isDeleteRequested && !isAdmin ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="h-7 px-2.5 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
-                                  title="Deletion request pending admin review"
-                                >
-                                  Delete Requested
-                                </Badge>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  title={isAdmin ? "Delete Receipt" : "Request Delete"}
-                                  onClick={() => handleOpenDelete(receipt)}
-                                  className="h-7 px-2.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10"
-                                >
-                                  {isAdmin ? "Delete" : "Request Delete"}
-                                </Button>
-                              )
-                            )
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                            ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
 
         {/* Pagination Footer */}
         {meta && totalPages > 1 && (

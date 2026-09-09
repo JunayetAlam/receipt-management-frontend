@@ -120,7 +120,7 @@ export default function ReceiptStatusDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="center"
+        align="start"
         className="min-w-[130px] p-1 text-xs"
         onFocusOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {

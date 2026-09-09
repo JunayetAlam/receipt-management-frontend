@@ -2,14 +2,58 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-   domains: [
-      'www.shutterstock.com',
-      'file.kelleybluebookimages.com',
-      'hips.hearstapps.com',
-      'encrypted-tbn0.gstatic.com',
-      'vehicle-images.dealerinspire.com',
-      'image.cnbcfm.com',
-      'localhost',
+    dangerouslyAllowLocalIP: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "www.shutterstock.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "file.kelleybluebookimages.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "hips.hearstapps.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn0.gstatic.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "vehicle-images.dealerinspire.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "image.cnbcfm.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "localhost",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        pathname: "/**",
+      },
     ],
   },
 };

@@ -294,3 +294,30 @@ export interface TReceiptFormItem {
   availableStock?: number | null; // for live stock tracking
 }
 
+export interface TShop {
+  id: string;
+  name: string;
+  tagline?: string | null;
+  logo?: string | null;
+  phoneNumbers: string[];
+  emails: string[];
+  locations: string[];
+  createdById?: string | null;
+  updatedById?: string | null;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+

@@ -34,7 +34,7 @@ const assetApi = baseApi.injectEndpoints({
       query: (assetIds: string[]) => ({
         url: "/assets/delete-multiple",
         method: "DELETE",
-        body: { ids: assetIds },
+        body: { ids: assetIds, paths: assetIds },
       }),
     }),
 

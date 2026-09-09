@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useBulkCreateProductsMutation } from "@/redux/api/productApi";
 import { ProductUnit } from "@/types";
 import {
@@ -104,7 +113,7 @@ export default function ProductBulkModal({
         });
 
         toast.success(
-          `Imported ${parsed.length} product(s) from CSV. You can review and edit below.`
+          `Imported ${parsed.length} product(s) from CSV. You can review and edit below.`,
         );
       } catch {
         toast.error("Failed to parse CSV file. Please verify format.");
@@ -135,10 +144,10 @@ export default function ProductBulkModal({
   const handleUpdateField = (
     id: string,
     field: keyof ParsedProductRow,
-    value: string
+    value: string,
   ) => {
     setRows((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
     );
   };
 
@@ -152,7 +161,7 @@ export default function ProductBulkModal({
   }, {});
 
   const hasDuplicateNames = Object.values(nameOccurrences).some(
-    (count) => count > 1
+    (count) => count > 1,
   );
 
   const validateRows = () => {
@@ -201,7 +210,9 @@ export default function ProductBulkModal({
 
   const handleSubmit = async () => {
     if (!validateRows()) {
-      toast.error("Please resolve highlighted validation errors before saving.");
+      toast.error(
+        "Please resolve highlighted validation errors before saving.",
+      );
       return;
     }
 
@@ -209,7 +220,8 @@ export default function ProductBulkModal({
       name: r.name.trim(),
       unit: r.unit,
       sellingPrice: parseFloat(r.sellingPrice),
-      buyingPrice: r.buyingPrice.trim() !== "" ? parseFloat(r.buyingPrice) : null,
+      buyingPrice:
+        r.buyingPrice.trim() !== "" ? parseFloat(r.buyingPrice) : null,
       stock: r.stock.trim() !== "" ? parseFloat(r.stock) : 0,
       description: r.description.trim() || null,
     }));
@@ -217,7 +229,7 @@ export default function ProductBulkModal({
     try {
       const res = await bulkCreateProducts({ products: payload }).unwrap();
       toast.success(
-        res.message || `Successfully created ${payload.length} products!`
+        res.message || `Successfully created ${payload.length} products!`,
       );
       setRows([createEmptyRow()]);
       onOpenChange(false);
@@ -228,7 +240,7 @@ export default function ProductBulkModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl! w-[95vw] p-0 max-h-[92vh] flex flex-col gap-0 overflow-hidden">
+      <DialogContent className="max-w-6xl! w-[95vw] p-0 max-h-[92vh] flex flex-col gap-0 overflow-hidden">
         {/* Header */}
         <div className="p-5 border-b border-border bg-muted/20">
           <DialogHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -241,7 +253,8 @@ export default function ProductBulkModal({
                   Bulk Add & Import Products
                 </DialogTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Import from CSV or enter multiple products at once into the table below.
+                  Import from CSV or enter multiple products at once into the
+                  table below.
                 </p>
               </div>
             </div>
@@ -309,7 +322,8 @@ export default function ProductBulkModal({
             <div className="mt-3 flex items-center gap-2 rounded-md bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-xs text-rose-600 dark:text-rose-400">
               <AlertCircle className="size-4 shrink-0" />
               <span>
-                Duplicate product names detected in the list! Please ensure all product names in this batch are unique.
+                Duplicate product names detected in the list! Please ensure all
+                product names in this batch are unique.
               </span>
             </div>
           )}
@@ -318,37 +332,38 @@ export default function ProductBulkModal({
         {/* Editable Products Grid */}
         <div className="flex-1 overflow-auto p-5">
           <div className="rounded-lg border border-border bg-card shadow-2xs overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border bg-muted/50 text-[11px] font-semibold uppercase text-muted-foreground sticky top-0 z-10">
-                <tr>
-                  <th className="px-3 py-2.5 w-10 text-center">#</th>
-                  <th className="px-3 py-2.5 min-w-[180px]">Product Name *</th>
-                  <th className="px-3 py-2.5 w-32">Unit *</th>
-                  <th className="px-3 py-2.5 w-32">Selling (৳) *</th>
-                  <th className="px-3 py-2.5 w-32">Buying (৳)</th>
-                  <th className="px-3 py-2.5 w-24">Stock</th>
-                  <th className="px-3 py-2.5 min-w-[140px]">Description</th>
-                  <th className="px-3 py-2.5 w-12 text-center"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 text-center">#</TableHead>
+                  <TableHead className="min-w-[180px]">Product Name *</TableHead>
+                  <TableHead className="w-32">Unit *</TableHead>
+                  <TableHead className="w-32">Selling (৳) *</TableHead>
+                  <TableHead className="w-32">Buying (৳)</TableHead>
+                  <TableHead className="w-24">Stock</TableHead>
+                  <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead className="w-12 text-center"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.map((row, index) => {
-                  const hasErr = row.errors && Object.keys(row.errors).length > 0;
+                  const hasErr =
+                    row.errors && Object.keys(row.errors).length > 0;
                   return (
-                    <tr
+                    <TableRow
                       key={row.id}
                       className={cn(
-                        "transition-colors hover:bg-muted/30",
-                        hasErr && "bg-rose-500/5"
+                        "align-top",
+                        hasErr && "bg-rose-500/5",
                       )}
                     >
                       {/* Index */}
-                      <td className="px-3 py-2 text-center font-mono text-muted-foreground">
+                      <TableCell className="text-center font-mono text-muted-foreground">
                         {index + 1}
-                      </td>
+                      </TableCell>
 
                       {/* Name */}
-                      <td className="px-3 py-2">
+                      <TableCell>
                         <Input
                           placeholder="e.g. Miniket Rice 25kg"
                           value={row.name}
@@ -358,7 +373,7 @@ export default function ProductBulkModal({
                           className={cn(
                             "h-8 text-xs",
                             row.errors?.name &&
-                              "border-destructive focus-visible:ring-destructive"
+                              "border-destructive focus-visible:ring-destructive",
                           )}
                         />
                         {row.errors?.name && (
@@ -366,18 +381,22 @@ export default function ProductBulkModal({
                             {row.errors.name}
                           </p>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Unit */}
-                      <td className="px-3 py-2">
+                      <TableCell>
                         <Select
                           value={row.unit}
-                          onValueChange={(val: ProductUnit) =>
-                            handleUpdateField(row.id, "unit", val)
+                          onValueChange={(val) =>
+                            handleUpdateField(
+                              row.id,
+                              "unit",
+                              val as ProductUnit,
+                            )
                           }
                         >
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
+                            <SelectValue placeholder="Unit" />
                           </SelectTrigger>
                           <SelectContent>
                             {PRODUCT_UNITS.map((u) => (
@@ -391,10 +410,10 @@ export default function ProductBulkModal({
                             ))}
                           </SelectContent>
                         </Select>
-                      </td>
+                      </TableCell>
 
                       {/* Selling Price */}
-                      <td className="px-3 py-2">
+                      <TableCell>
                         <Input
                           type="number"
                           step="any"
@@ -402,12 +421,16 @@ export default function ProductBulkModal({
                           placeholder="0.00"
                           value={row.sellingPrice}
                           onChange={(e) =>
-                            handleUpdateField(row.id, "sellingPrice", e.target.value)
+                            handleUpdateField(
+                              row.id,
+                              "sellingPrice",
+                              e.target.value,
+                            )
                           }
                           className={cn(
                             "h-8 text-xs",
                             row.errors?.sellingPrice &&
-                              "border-destructive focus-visible:ring-destructive"
+                              "border-destructive focus-visible:ring-destructive",
                           )}
                         />
                         {row.errors?.sellingPrice && (
@@ -415,10 +438,10 @@ export default function ProductBulkModal({
                             {row.errors.sellingPrice}
                           </p>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Buying Price */}
-                      <td className="px-3 py-2">
+                      <TableCell>
                         <Input
                           type="number"
                           step="any"
@@ -426,12 +449,16 @@ export default function ProductBulkModal({
                           placeholder="0.00"
                           value={row.buyingPrice}
                           onChange={(e) =>
-                            handleUpdateField(row.id, "buyingPrice", e.target.value)
+                            handleUpdateField(
+                              row.id,
+                              "buyingPrice",
+                              e.target.value,
+                            )
                           }
                           className={cn(
                             "h-8 text-xs",
                             row.errors?.buyingPrice &&
-                              "border-destructive focus-visible:ring-destructive"
+                              "border-destructive focus-visible:ring-destructive",
                           )}
                         />
                         {row.errors?.buyingPrice && (
@@ -439,10 +466,10 @@ export default function ProductBulkModal({
                             {row.errors.buyingPrice}
                           </p>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Stock */}
-                      <td className="px-3 py-2">
+                      <TableCell>
                         <Input
                           type="number"
                           step="any"
@@ -455,7 +482,7 @@ export default function ProductBulkModal({
                           className={cn(
                             "h-8 text-xs",
                             row.errors?.stock &&
-                              "border-destructive focus-visible:ring-destructive"
+                              "border-destructive focus-visible:ring-destructive",
                           )}
                         />
                         {row.errors?.stock && (
@@ -463,22 +490,27 @@ export default function ProductBulkModal({
                             {row.errors.stock}
                           </p>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Description */}
-                      <td className="px-3 py-2">
-                        <Input
+                      <TableCell>
+                        <Textarea
                           placeholder="Optional specifications..."
                           value={row.description}
                           onChange={(e) =>
-                            handleUpdateField(row.id, "description", e.target.value)
+                            handleUpdateField(
+                              row.id,
+                              "description",
+                              e.target.value,
+                            )
                           }
-                          className="h-8 text-xs"
+                          rows={2}
+                          className="min-h-[38px] text-xs py-1.5 resize-y rounded-xl"
                         />
-                      </td>
+                      </TableCell>
 
                       {/* Delete Row */}
-                      <td className="px-3 py-2 text-center">
+                      <TableCell className="text-center">
                         <Button
                           type="button"
                           variant="ghost"
@@ -489,18 +521,20 @@ export default function ProductBulkModal({
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Quick Helper Tip */}
           <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              💡 Tip: Click <strong>Sample CSV</strong> to download the expected template, then click <strong>Import CSV</strong> to populate this table instantly.
+              💡 Tip: Click <strong>Sample CSV</strong> to download the expected
+              template, then click <strong>Import CSV</strong> to populate this
+              table instantly.
             </span>
             <Button
               type="button"

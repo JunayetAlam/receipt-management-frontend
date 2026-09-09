@@ -50,6 +50,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { TActivityLog, User } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -347,163 +355,158 @@ export default function ActivityLogsTable() {
 
       {/* Logs Table */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3.5">User</th>
-                <th className="px-4 py-3.5">Action</th>
-                <th className="px-4 py-3.5">Entity</th>
-                <th className="px-4 py-3.5">IP Address</th>
-                <th className="px-4 py-3.5">Date & Time</th>
-                <th className="px-4 py-3.5 text-right">Details</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i}>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <Skeleton className="size-8 rounded-full" />
-                        <div className="space-y-1">
-                          <Skeleton className="h-3.5 w-24" />
-                          <Skeleton className="h-3 w-32" />
-                        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Entity</TableHead>
+              <TableHead>IP Address</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead className="text-right">Details</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5">
+                      <Skeleton className="size-8 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-3.5 w-24" />
+                        <Skeleton className="h-3 w-32" />
                       </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-5 w-28 rounded-full" />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-5 w-20 rounded-md" />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-4 w-24" />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Skeleton className="h-4 w-28" />
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <Skeleton className="h-7 w-16 ml-auto rounded-md" />
-                    </td>
-                  </tr>
-                ))
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <Activity className="size-8 text-muted-foreground/50" />
-                      <p className="text-base font-medium text-foreground">No activity logs found</p>
-                      <p className="text-xs text-muted-foreground">
-                        Try changing your filters or search terms.
-                      </p>
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => {
-                  const user = log.user;
-                  const displayName = user
-                    ? `${user.firstName} ${user.lastName}`.trim()
-                    : "System / Guest";
-                  const initials = user
-                    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
-                    : "SY";
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-28 rounded-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-20 rounded-md" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-28" />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Skeleton className="h-7 w-16 ml-auto rounded-md" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <Activity className="size-8 text-muted-foreground/50" />
+                    <p className="text-base font-medium text-foreground">No activity logs found</p>
+                    <p className="text-xs text-muted-foreground">
+                      Try changing your filters or search terms.
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              logs.map((log) => {
+                const user = log.user;
+                const displayName = user
+                  ? `${user.firstName} ${user.lastName}`.trim()
+                  : "System / Guest";
+                const initials = user
+                  ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+                  : "SY";
 
-                  return (
-                    <tr
-                      key={log.id}
-                      className={cn(
-                        "transition-colors hover:bg-muted/40",
-                        isFetching && "opacity-60",
-                      )}
-                    >
-                      {/* User Column */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="size-8 border border-border">
-                            {user?.profilePhoto ? (
-                              <AvatarImage src={user.profilePhoto} alt={displayName} />
-                            ) : null}
-                            <AvatarFallback className="text-xs font-semibold">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-foreground text-xs truncate max-w-[140px]">
-                                {displayName}
-                              </span>
-                              {user?.role && getRoleBadge(user.role)}
-                            </div>
-                            {user?.email && (
-                              <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">
-                                {user.email}
-                              </span>
-                            )}
+                return (
+                  <TableRow
+                    key={log.id}
+                    className={cn(isFetching && "opacity-60")}
+                  >
+                    {/* User Column */}
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="size-8 border border-border">
+                          {user?.profilePhoto ? (
+                            <AvatarImage src={user.profilePhoto} alt={displayName} />
+                          ) : null}
+                          <AvatarFallback className="text-xs font-semibold">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-foreground text-xs truncate max-w-[140px]">
+                              {displayName}
+                            </span>
+                            {user?.role && getRoleBadge(user.role)}
                           </div>
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="px-4 py-3.5">
-                        {getActionBadge(log.action)}
-                      </td>
-
-                      {/* Entity */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium text-foreground">
-                            {log.entityType}
-                          </span>
-                          {log.entityId && (
-                            <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">
-                              {log.entityId}
+                          {user?.email && (
+                            <span className="text-[11px] text-muted-foreground truncate max-w-[140px]">
+                              {user.email}
                             </span>
                           )}
                         </div>
-                      </td>
+                      </div>
+                    </TableCell>
 
-                      {/* IP Address */}
-                      <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-mono">
-                          <Globe className="size-3 text-muted-foreground/70" />
-                          {log.ipAddress || "—"}
+                    {/* Action */}
+                    <TableCell>
+                      {getActionBadge(log.action)}
+                    </TableCell>
+
+                    {/* Entity */}
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium text-foreground">
+                          {log.entityType}
                         </span>
-                      </td>
-
-                      {/* Date & Time */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Calendar className="size-3.5 text-muted-foreground/70" />
-                          <span>{formatDateTime(log.createdAt)}</span>
-                        </div>
-                      </td>
-
-                      {/* Details View */}
-                      <td className="px-4 py-3.5 text-right">
-                        {log.details && Object.keys(log.details).length > 0 ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDetailModalLog(log)}
-                            className="h-7 text-xs px-2 hover:bg-muted"
-                          >
-                            <Eye className="mr-1 size-3.5 text-muted-foreground" />
-                            Details
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground/50">—</span>
+                        {log.entityId && (
+                          <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[120px]">
+                            {log.entityId}
+                          </span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* IP Address */}
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                        <Globe className="size-3 text-muted-foreground/70" />
+                        {log.ipAddress || "—"}
+                      </span>
+                    </TableCell>
+
+                    {/* Date & Time */}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="size-3.5 text-muted-foreground/70" />
+                        <span>{formatDateTime(log.createdAt)}</span>
+                      </div>
+                    </TableCell>
+
+                    {/* Details View */}
+                    <TableCell className="text-right">
+                      {log.details && Object.keys(log.details).length > 0 ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDetailModalLog(log)}
+                          className="h-7 text-xs px-2 hover:bg-muted"
+                        >
+                          <Eye className="mr-1 size-3.5 text-muted-foreground" />
+                          Details
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
 
         {/* Pagination Footer */}
         {meta && meta.totalPage > 1 && (
