@@ -54,6 +54,11 @@ const nextConfig: NextConfig = {
         hostname: "127.0.0.1",
         pathname: "/**",
       },
+      {
+        protocol: "http",
+        hostname: "72.62.246.104",
+        pathname: "/**",
+      },
     ],
   },
 };
