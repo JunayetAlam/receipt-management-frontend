@@ -15,8 +15,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   Archive,
-  Loader2,
   AlertTriangle,
+  Printer,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -491,18 +492,29 @@ export default function ReceiptTable() {
                           </Button>
                         </Link>
 
-                        {/* View PDF / Invoice */}
                         {!receipt.isDeleted && (
-                          <Link href={`/receipts/${receipt.id}/invoice`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title="Print / View Invoice"
-                              className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-                            >
-                              Invoice
-                            </Button>
-                          </Link>
+                          <>
+                            <Link href={`/receipts/${receipt.id}/invoice`}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                title="View Invoice"
+                                className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1"
+                              >
+                                <FileText className="size-3.5" /> View Invoice
+                              </Button>
+                            </Link>
+                            <Link href={`/receipts/${receipt.id}/invoice?print=1`}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                title="Print Invoice"
+                                className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1"
+                              >
+                                <Printer className="size-3.5" /> Print Invoice
+                              </Button>
+                            </Link>
+                          </>
                         )}
 
                         {/* Admin Restore Button */}

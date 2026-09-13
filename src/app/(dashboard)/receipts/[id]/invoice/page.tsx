@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
-import ReceiptInvoiceView from "@/components/Receipts/ReceiptInvoiceView";
+import ReceiptInvoiceView from "@/components/Receipts/ReceipInvoiceView.tsx/ReceiptInvoiceView";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";

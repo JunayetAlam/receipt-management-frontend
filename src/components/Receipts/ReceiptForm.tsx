@@ -14,12 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   useCreateReceiptMutation,
@@ -35,14 +30,25 @@ import {
 } from "@/redux/api/customerApi";
 import { useGetMeQuery } from "@/redux/api/userApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
-import { ProductUnit, TReceipt, TReceiptFormItem, TCustomer, TProduct, TReceiptPayment } from "@/types";
+import {
+  ProductUnit,
+  TReceipt,
+  TReceiptFormItem,
+  TCustomer,
+  TProduct,
+  TReceiptPayment,
+} from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 import CustomerSelect from "./CustomerSelect";
 import ProductSelect from "./ProductSelect";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
 import PaymentModal from "./PaymentModal";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Plus,
   X,
@@ -87,7 +93,10 @@ const PRODUCT_UNITS: ProductUnit[] = [
   "OTHER",
 ];
 
-interface FormItemState extends Omit<TReceiptFormItem, "sellingPrice" | "quantity" | "discount"> {
+interface FormItemState extends Omit<
+  TReceiptFormItem,
+  "sellingPrice" | "quantity" | "discount"
+> {
   tempId: string;
   sellingPrice: number | string;
   quantity: number | string;
@@ -120,13 +129,16 @@ export default function ReceiptForm({
 
   // Payments State for Edit / Details mode
   const [payments, setPayments] = useState<TReceiptPayment[]>(
-    initialData?.payments || []
+    initialData?.payments || [],
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [selectedPaymentToEdit, setSelectedPaymentToEdit] = useState<TReceiptPayment | null>(null);
+  const [selectedPaymentToEdit, setSelectedPaymentToEdit] =
+    useState<TReceiptPayment | null>(null);
 
-  const [approvePayment, { isLoading: isApprovingPayment }] = useApprovePaymentMutation();
-  const [deletePayment, { isLoading: isDeletingPayment }] = useDeletePaymentMutation();
+  const [approvePayment, { isLoading: isApprovingPayment }] =
+    useApprovePaymentMutation();
+  const [deletePayment, { isLoading: isDeletingPayment }] =
+    useDeletePaymentMutation();
 
   const handleOpenAddPayment = () => {
     setSelectedPaymentToEdit(null);
@@ -192,43 +204,47 @@ export default function ReceiptForm({
   const [createReceipt, { isLoading: isCreating }] = useCreateReceiptMutation();
   const [updateReceipt, { isLoading: isUpdating }] = useUpdateReceiptMutation();
 
-  const { data: productsResponse, isLoading: isProductsLoading } = useGetAllProductsQuery({
-    isDeleted: false,
-    limit: 250,
-  });
+  const { data: productsResponse, isLoading: isProductsLoading } =
+    useGetAllProductsQuery({
+      isDeleted: false,
+      limit: 250,
+    });
   const products = productsResponse?.data || [];
 
-  const { data: customersResponse, isLoading: isCustomersLoading } = useGetAllCustomersQuery({
-    isDeleted: false,
-    limit: 250,
-  });
+  const { data: customersResponse, isLoading: isCustomersLoading } =
+    useGetAllCustomersQuery({
+      isDeleted: false,
+      limit: 250,
+    });
   const customers = customersResponse?.data || [];
 
   // Customer API mutations and queries
-  const [triggerLookup, { isFetching: isLookingUp }] = useLazyLookupCustomerByPhoneQuery();
-  const [createCustomerMutation, { isLoading: isCreatingCustomer }] = useCreateCustomerMutation();
+  const [triggerLookup, { isFetching: isLookingUp }] =
+    useLazyLookupCustomerByPhoneQuery();
+  const [createCustomerMutation, { isLoading: isCreatingCustomer }] =
+    useCreateCustomerMutation();
 
   // Unified Customer Form State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
-    initialData?.customerId || null
+    initialData?.customerId || null,
   );
   const [customerName, setCustomerName] = useState<string>(
-    initialData?.customer?.name || ""
+    initialData?.customer?.name || "",
   );
   const [customerCountryCode, setCustomerCountryCode] = useState<string>(
-    initialData?.customer?.countryCode || "+880"
+    initialData?.customer?.countryCode || "+880",
   );
   const [customerPhone, setCustomerPhone] = useState<string>(
-    initialData?.customer?.phoneNumber || ""
+    initialData?.customer?.phoneNumber || "",
   );
   const [customerEmail, setCustomerEmail] = useState<string>(
-    initialData?.customer?.email || ""
+    initialData?.customer?.email || "",
   );
   const [customerAddress, setCustomerAddress] = useState<string>(
-    initialData?.customer?.address || ""
+    initialData?.customer?.address || "",
   );
   const [isCustomerLocked, setIsCustomerLocked] = useState<boolean>(
-    Boolean(initialData?.customerId)
+    Boolean(initialData?.customerId),
   );
 
   // Items State
@@ -247,10 +263,10 @@ export default function ReceiptForm({
 
   // Overall Financials
   const [receiptDiscount, setReceiptDiscount] = useState<string>(
-    initialData ? String(initialData.discount || 0) : "0"
+    initialData ? String(initialData.discount || 0) : "0",
   );
   const [paidAmount, setPaidAmount] = useState<string>(
-    initialData ? String(initialData.paidAmount || 0) : "0"
+    initialData ? String(initialData.paidAmount || 0) : "0",
   );
   const [note, setNote] = useState<string>(initialData?.note || "");
 
@@ -282,7 +298,7 @@ export default function ReceiptForm({
             quantity: Number(it.quantity) || 1,
             discount: Number(it.discount) || 0,
             availableStock: it.product?.stock ?? null,
-          }))
+          })),
         );
       }
 
@@ -327,7 +343,9 @@ export default function ReceiptForm({
   const handleConfirmCustomer = async () => {
     const rawPhone = customerPhone.trim();
     if (!rawPhone || rawPhone.length < 4) {
-      toast.error("Please enter a valid phone number (minimum 4 digits) to confirm");
+      toast.error(
+        "Please enter a valid phone number (minimum 4 digits) to confirm",
+      );
       return;
     }
 
@@ -366,18 +384,23 @@ export default function ReceiptForm({
         if (reactivated) {
           setSelectedCustomerId(reactivated.id);
           setCustomerName(reactivated.name);
-          setCustomerCountryCode(reactivated.countryCode || customerCountryCode);
+          setCustomerCountryCode(
+            reactivated.countryCode || customerCountryCode,
+          );
           setCustomerPhone(reactivated.phoneNumber);
           setCustomerEmail(reactivated.email || "");
           setCustomerAddress(reactivated.address || "");
           setIsCustomerLocked(true);
-          toast.success(`Customer reactivated & details updated: ${reactivated.name}`);
+          toast.success(
+            `Customer reactivated & details updated: ${reactivated.name}`,
+          );
         }
         return;
       }
 
       // Case 3: Customer not found -> Create new customer on the fly
-      const fallbackName = customerName.trim() || `Customer-${rawPhone.slice(-4)}`;
+      const fallbackName =
+        customerName.trim() || `Customer-${rawPhone.slice(-4)}`;
       const createRes = await createCustomerMutation({
         name: fallbackName,
         countryCode: customerCountryCode,
@@ -415,7 +438,7 @@ export default function ReceiptForm({
           sellingPrice: product.sellingPrice,
           availableStock: product.stock,
         };
-      })
+      }),
     );
   };
 
@@ -429,7 +452,7 @@ export default function ReceiptForm({
           productName: name,
           availableStock: null,
         };
-      })
+      }),
     );
   };
 
@@ -443,12 +466,16 @@ export default function ReceiptForm({
           productName: "",
           availableStock: null,
         };
-      })
+      }),
     );
   };
 
   // Handle row item changes
-  const handleItemChange = (tempId: string, field: keyof FormItemState, value: any) => {
+  const handleItemChange = (
+    tempId: string,
+    field: keyof FormItemState,
+    value: any,
+  ) => {
     setItems((prev) =>
       prev.map((it) => {
         if (it.tempId !== tempId) return it;
@@ -477,7 +504,7 @@ export default function ReceiptForm({
         }
 
         return { ...it, [field]: value };
-      })
+      }),
     );
   };
 
@@ -529,8 +556,10 @@ export default function ReceiptForm({
       const discPercent = Math.max(0, Math.min(100, Number(it.discount) || 0));
 
       const rowSubtotal = Math.round(qty * price * 100) / 100;
-      const rowDiscountAmount = Math.round(((rowSubtotal * discPercent) / 100) * 100) / 100;
-      const rowTotal = Math.round(Math.max(0, rowSubtotal - rowDiscountAmount) * 100) / 100;
+      const rowDiscountAmount =
+        Math.round(((rowSubtotal * discPercent) / 100) * 100) / 100;
+      const rowTotal =
+        Math.round(Math.max(0, rowSubtotal - rowDiscountAmount) * 100) / 100;
 
       sub = Math.round((sub + rowTotal) * 100) / 100;
 
@@ -640,9 +669,14 @@ export default function ReceiptForm({
           router.push(`/receipts/${initialData.id}`);
         }
       } else {
-        await createReceipt(payload).unwrap();
+        const res: any = await createReceipt(payload).unwrap();
         toast.success("Receipt created successfully!");
-        router.push("/receipts");
+        const createdReceipt = res?.data?.receipt ?? res?.data;
+        const createdId = createdReceipt?.id as string | undefined;
+        if (Array.isArray(res?.data?.warnings)) {
+          res.data.warnings.forEach((w: string) => toast.warning(w));
+        }
+        router.push(createdId ? `/receipts/${createdId}` : "/receipts");
       }
     } catch (err) {
       toast.error(errorMessageGenerator(err));
@@ -652,62 +686,63 @@ export default function ReceiptForm({
   return (
     <>
       <form id="receipt-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* Top Header Actions (Sticky bar for quick access in Edit/Create mode) */}
+        {!isDetails && (
+          <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
+            <Link
+              href="/receipts"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Back to Receipt List</span>
+            </Link>
 
-      {/* Top Header Actions (Sticky bar for quick access in Edit/Create mode) */}
-      {!isDetails && (
-        <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
-          <Link
-            href="/receipts"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="size-3.5" />
-            <span>Back to Receipt List</span>
-          </Link>
+            {/* Top Right Action Buttons (Cancel + Update / Create) */}
+            {!isLocked && (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isCreating || isUpdating}
+                  onClick={() => {
+                    if (isEditing && initialData) {
+                      router.push(`/receipts/${initialData.id}`);
+                    } else {
+                      router.push("/receipts");
+                    }
+                  }}
+                  className="h-8 px-3 text-xs font-medium cursor-pointer"
+                >
+                  <X className="size-3.5 mr-1" /> Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isCreating || isUpdating}
+                  className="h-8 px-4 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
+                >
+                  {isCreating || isUpdating ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="size-3.5" />
+                      <span>
+                        {isEditing ? "Update Receipt" : "Create Receipt"}
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Top Right Action Buttons (Cancel + Update / Create) */}
-          {!isLocked && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isCreating || isUpdating}
-                onClick={() => {
-                  if (isEditing && initialData) {
-                    router.push(`/receipts/${initialData.id}`);
-                  } else {
-                    router.push("/receipts");
-                  }
-                }}
-                className="h-8 px-3 text-xs font-medium cursor-pointer"
-              >
-                <X className="size-3.5 mr-1" /> Cancel
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isCreating || isUpdating}
-                className="h-8 px-4 text-xs font-semibold shadow-xs cursor-pointer gap-1.5"
-              >
-                {isCreating || isUpdating ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-3.5" />
-                    <span>{isEditing ? "Update Receipt" : "Create Receipt"}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-6">
-        {/* Customer Selection Card */}
+        <div className="space-y-6">
+          {/* Customer Selection Card */}
           <Card className="border-border/70 shadow-xs">
             <CardHeader className="pb-3 border-b border-border/60">
               <div className="flex items-center justify-between">
@@ -735,7 +770,11 @@ export default function ReceiptForm({
                           </span>
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="top" align="end" className="max-w-xs text-xs p-2.5">
+                      <TooltipContent
+                        side="top"
+                        align="end"
+                        className="max-w-xs text-xs p-2.5"
+                      >
                         <p className="font-semibold text-foreground mb-0.5">
                           {isApproved ? "Approved Receipt" : "Receipt Locked"}
                         </p>
@@ -745,7 +784,8 @@ export default function ReceiptForm({
                             : "This receipt is in view mode. Product and billing edits are locked."}
                           {isAdmin && (
                             <span className="block mt-1 font-medium text-primary">
-                              As an Admin, you can still edit this receipt using the Edit button.
+                              As an Admin, you can still edit this receipt using
+                              the Edit button.
                             </span>
                           )}
                         </p>
@@ -795,7 +835,10 @@ export default function ReceiptForm({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* 1. Customer Name (React Select) */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="customer-name" className="text-sm font-medium">
+                  <Label
+                    htmlFor="customer-name"
+                    className="text-sm font-medium"
+                  >
                     Customer Name <span className="text-destructive">*</span>
                   </Label>
                   <CustomerSelect
@@ -813,7 +856,10 @@ export default function ReceiptForm({
 
                 {/* 2. Customer Phone Number */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="customer-phone" className="text-sm font-medium">
+                  <Label
+                    htmlFor="customer-phone"
+                    className="text-sm font-medium"
+                  >
                     Phone Number <span className="text-destructive">*</span>
                   </Label>
                   <CustomPhoneInput
@@ -844,7 +890,10 @@ export default function ReceiptForm({
 
                 {/* 3. Customer Email */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="customer-email" className="text-sm font-medium">
+                  <Label
+                    htmlFor="customer-email"
+                    className="text-sm font-medium"
+                  >
                     Email (Optional)
                   </Label>
                   <Input
@@ -859,7 +908,10 @@ export default function ReceiptForm({
 
                 {/* 4. Customer Address */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="customer-address" className="text-sm font-medium">
+                  <Label
+                    htmlFor="customer-address"
+                    className="text-sm font-medium"
+                  >
                     Address (Optional)
                   </Label>
                   <Input
@@ -879,9 +931,10 @@ export default function ReceiptForm({
             <CardHeader className="pb-3 border-b border-border/60">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Receipt className="size-4 text-primary" /> Receipt Items & Billing ({items.length})
+                  <Receipt className="size-4 text-primary" /> Receipt Items &
+                  Billing ({items.length})
                 </CardTitle>
-                {isLocked ? (
+                {isLocked && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="flex items-center gap-1.5 cursor-help">
@@ -896,7 +949,11 @@ export default function ReceiptForm({
                         </span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="top" align="end" className="max-w-xs text-xs p-2.5">
+                    <TooltipContent
+                      side="top"
+                      align="end"
+                      className="max-w-xs text-xs p-2.5"
+                    >
                       <p className="font-semibold text-foreground mb-0.5">
                         {isApproved ? "Approved Receipt" : "Receipt Locked"}
                       </p>
@@ -906,22 +963,13 @@ export default function ReceiptForm({
                           : "This receipt is in view mode. Product and billing edits are locked."}
                         {isAdmin && (
                           <span className="block mt-1 font-medium text-primary">
-                            As an Admin, you can still edit this receipt using the Edit button.
+                            As an Admin, you can still edit this receipt using
+                            the Edit button.
                           </span>
                         )}
                       </p>
                     </TooltipContent>
                   </Tooltip>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleAddItem}
-                    className="gap-1 text-xs"
-                  >
-                    <Plus className="size-3.5" /> Add Product
-                  </Button>
                 )}
               </div>
             </CardHeader>
@@ -978,7 +1026,15 @@ export default function ReceiptForm({
                               <span>Stock Shortage Warning</span>
                             </div>
                             <p className="text-[11px] text-muted-foreground leading-snug">
-                              Requested total <strong className="text-foreground font-mono">{totalRequestedForThisProduct} {it.unit}</strong> exceeds available stock (<strong className="text-foreground font-mono">{it.availableStock} {it.unit}</strong>).
+                              Requested total{" "}
+                              <strong className="text-foreground font-mono">
+                                {totalRequestedForThisProduct} {it.unit}
+                              </strong>{" "}
+                              exceeds available stock (
+                              <strong className="text-foreground font-mono">
+                                {it.availableStock} {it.unit}
+                              </strong>
+                              ).
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -988,7 +1044,9 @@ export default function ReceiptForm({
                         <ConfirmPopup
                           title="Remove Product"
                           description={`Are you sure you want to remove ${
-                            it.productName ? `"${it.productName}"` : "this product"
+                            it.productName
+                              ? `"${it.productName}"`
+                              : "this product"
                           } from the receipt?`}
                           confirmLabel="Remove"
                           cancelLabel="Cancel"
@@ -1022,8 +1080,12 @@ export default function ReceiptForm({
                           products={products}
                           selectedProductId={it.productId}
                           valueName={it.productName}
-                          onSelectProduct={(prod) => handleSelectProduct(it.tempId, prod)}
-                          onNameChange={(name) => handleCustomProductNameChange(it.tempId, name)}
+                          onSelectProduct={(prod) =>
+                            handleSelectProduct(it.tempId, prod)
+                          }
+                          onNameChange={(name) =>
+                            handleCustomProductNameChange(it.tempId, name)
+                          }
                           onClear={() => handleClearProduct(it.tempId)}
                           disabled={isLocked || isProductsLoading}
                           placeholder="Search product or type custom name..."
@@ -1037,7 +1099,13 @@ export default function ReceiptForm({
                         </label>
                         <Select
                           value={it.unit}
-                          onValueChange={(val) => handleItemChange(it.tempId, "unit", val as ProductUnit)}
+                          onValueChange={(val) =>
+                            handleItemChange(
+                              it.tempId,
+                              "unit",
+                              val as ProductUnit,
+                            )
+                          }
                           disabled={isLocked || it.productId !== null}
                         >
                           <SelectTrigger className="w-full h-8 text-xs font-mono rounded-2xl bg-input/50 border-transparent disabled:opacity-60">
@@ -1045,7 +1113,11 @@ export default function ReceiptForm({
                           </SelectTrigger>
                           <SelectContent>
                             {PRODUCT_UNITS.map((u) => (
-                              <SelectItem key={u} value={u} className="text-xs font-mono">
+                              <SelectItem
+                                key={u}
+                                value={u}
+                                className="text-xs font-mono"
+                              >
                                 {u}
                               </SelectItem>
                             ))}
@@ -1059,13 +1131,23 @@ export default function ReceiptForm({
                           Qty *
                         </label>
                         <Input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
+                          type="text"
+                          inputMode="decimal"
                           value={it.quantity}
-                          onChange={(e) =>
-                            handleItemChange(it.tempId, "quantity", e.target.value)
-                          }
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "" || /^\d*\.?\d*$/.test(v)) {
+                              handleItemChange(it.tempId, "quantity", v);
+                            }
+                          }}
+                          onFocus={(e) => {
+                            const input = e.currentTarget;
+                            requestAnimationFrame(() => input.select());
+                          }}
+                          onMouseUp={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.select();
+                          }}
                           disabled={isLocked}
                           className="text-xs font-mono text-right"
                         />
@@ -1082,7 +1164,11 @@ export default function ReceiptForm({
                           min="0"
                           value={it.sellingPrice}
                           onChange={(e) =>
-                            handleItemChange(it.tempId, "sellingPrice", e.target.value)
+                            handleItemChange(
+                              it.tempId,
+                              "sellingPrice",
+                              e.target.value,
+                            )
                           }
                           disabled={isLocked}
                           className="text-xs font-mono text-right"
@@ -1102,7 +1188,11 @@ export default function ReceiptForm({
                           placeholder="0"
                           value={it.discount}
                           onChange={(e) =>
-                            handleItemChange(it.tempId, "discount", e.target.value)
+                            handleItemChange(
+                              it.tempId,
+                              "discount",
+                              e.target.value,
+                            )
                           }
                           disabled={isLocked}
                           className="text-xs font-mono text-right"
@@ -1123,16 +1213,33 @@ export default function ReceiptForm({
                 );
               })}
 
+              {!isLocked && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAddItem}
+                  className="gap-1 text-xs w-full border-dashed"
+                >
+                  <Plus className="size-3.5" /> Add Product
+                </Button>
+              )}
+
               {/* Billing & Payment Calculations */}
               <div className="pt-5 mt-4 border-t border-border/70 space-y-4 text-sm">
                 <div className="flex justify-between items-center text-muted-foreground">
                   <span>Items Subtotal:</span>
-                  <span className="font-mono font-semibold text-foreground pr-[11px]">৳{subTotal}</span>
+                  <span className="font-mono font-semibold text-foreground pr-[11px]">
+                    ৳{subTotal}
+                  </span>
                 </div>
 
                 {/* Solid Receipt-Level Discount */}
                 <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/60">
-                  <Label htmlFor="receipt-discount" className="text-xs text-muted-foreground">
+                  <Label
+                    htmlFor="receipt-discount"
+                    className="text-xs text-muted-foreground"
+                  >
                     Receipt Discount (৳)
                   </Label>
                   <div className="w-40 sm:w-52">
@@ -1154,12 +1261,17 @@ export default function ReceiptForm({
                 {/* Total Amount */}
                 <div className="flex justify-between items-center text-base font-bold pt-2 border-t border-border/60 text-foreground">
                   <span>Net Total:</span>
-                  <span className="font-mono text-primary text-lg pr-[11px]">৳{totalAmount}</span>
+                  <span className="font-mono text-primary text-lg pr-[11px]">
+                    ৳{totalAmount}
+                  </span>
                 </div>
 
                 {/* Paid Amount */}
                 <div className="flex items-center justify-between gap-4 pt-2 border-t border-border/60">
-                  <Label htmlFor="paid-amount" className="text-xs text-muted-foreground">
+                  <Label
+                    htmlFor="paid-amount"
+                    className="text-xs text-muted-foreground"
+                  >
                     Paid Amount (৳)
                   </Label>
                   <div className="w-40 sm:w-52">
@@ -1182,7 +1294,8 @@ export default function ReceiptForm({
                   <div className="pt-3 border-t border-border/60 space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                        <Clock className="size-3" /> Payment History ({payments.length})
+                        <Clock className="size-3" /> Payment History (
+                        {payments.length})
                       </span>
                       {dueAmount > 0 && (
                         <Button
@@ -1289,12 +1402,14 @@ export default function ReceiptForm({
                                   <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
                                     {p.createdBy && (
                                       <span>
-                                        By {p.createdBy.firstName} {p.createdBy.lastName}
+                                        By {p.createdBy.firstName}{" "}
+                                        {p.createdBy.lastName}
                                       </span>
                                     )}
                                     {p.approvedBy && isApprovedPayment && (
                                       <span>
-                                        (Approved by {p.approvedBy.firstName} {p.approvedBy.lastName})
+                                        (Approved by {p.approvedBy.firstName}{" "}
+                                        {p.approvedBy.lastName})
                                       </span>
                                     )}
                                   </div>
@@ -1334,7 +1449,10 @@ export default function ReceiptForm({
 
                 {/* Receipt Note */}
                 <div className="space-y-1.5 pt-2 border-t border-border/60">
-                  <Label htmlFor="receipt-note" className="text-xs text-muted-foreground">
+                  <Label
+                    htmlFor="receipt-note"
+                    className="text-xs text-muted-foreground"
+                  >
                     Receipt Note (Optional)
                   </Label>
                   <Textarea
@@ -1371,22 +1489,22 @@ export default function ReceiptForm({
               </div>
             </div>
           )}
-      </div>
-    </form>
+        </div>
+      </form>
 
-    {initialData && (
-      <PaymentModal
-        open={isPaymentModalOpen}
-        onOpenChange={setIsPaymentModalOpen}
-        receiptId={initialData.id}
-        receiptNumber={initialData.receiptNumber}
-        totalAmount={totalAmount}
-        paidAmount={Math.max(0, Number(paidAmount) || 0)}
-        dueAmount={dueAmount}
-        paymentToEdit={selectedPaymentToEdit}
-        onSuccess={handlePaymentSuccess}
-      />
-    )}
-  </>
-);
+      {initialData && (
+        <PaymentModal
+          open={isPaymentModalOpen}
+          onOpenChange={setIsPaymentModalOpen}
+          receiptId={initialData.id}
+          receiptNumber={initialData.receiptNumber}
+          totalAmount={totalAmount}
+          paidAmount={Math.max(0, Number(paidAmount) || 0)}
+          dueAmount={dueAmount}
+          paymentToEdit={selectedPaymentToEdit}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+    </>
+  );
 }

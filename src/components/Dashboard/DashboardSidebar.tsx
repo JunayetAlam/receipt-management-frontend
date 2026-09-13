@@ -1,12 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   Contact,
   History,
   LayoutDashboard,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   ReceiptText,
   Store,
   Users,
@@ -15,14 +19,90 @@ import { cn } from "@/lib/utils";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const SIDEBAR_COLLAPSED_KEY = "rms-sidebar-collapsed";
+
+type NavItem = {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+function SidebarItem({
+  item,
+  isActive,
+  collapsed,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  collapsed: boolean;
+}) {
+  const Icon = item.icon;
+
+  const link = (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex items-center rounded-md text-sm transition-colors",
+        collapsed ? "justify-center px-0 py-2.5" : "gap-2 px-3 py-2",
+        isActive
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className={cn("truncate", collapsed && "sr-only")}>{item.name}</span>
+    </Link>
+  );
+
+  if (!collapsed) {
+    return link;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8}>
+        {item.name}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
   const [isAdmin] = useIsAdmin();
   const { data: shopResponse } = useGetShopDetailsQuery();
   const shop = shopResponse?.data;
+  const [collapsed, setCollapsed] = useState(false);
 
-  const navItems = [
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true");
+    } catch {
+      // Ignore storage access errors (private mode, etc.)
+    }
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((previous) => {
+      const next = !previous;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      } catch {
+        // Ignore storage access errors (private mode, etc.)
+      }
+      return next;
+    });
+  };
+
+  const navItems: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Shop Details", href: "/shop-details", icon: Store },
     { name: "Receipts", href: "/receipts", icon: ReceiptText },
@@ -36,56 +116,96 @@ export default function DashboardSidebar() {
       : []),
   ];
 
+  const toggleLabel = collapsed ? "Expand sidebar" : "Minimize sidebar";
+
   return (
-    <aside className="flex min-h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      <div className="border-b border-sidebar-border px-4 py-4 min-h-[64px] flex items-center">
+    <aside
+      className={cn(
+        "sticky top-0 z-20 flex h-svh shrink-0 flex-col self-start overflow-visible border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-in-out",
+        collapsed ? "w-16" : "w-64",
+      )}
+    >
+      <div
+        className={cn(
+          "flex min-h-16 items-center border-b border-sidebar-border",
+          collapsed ? "justify-center px-2 py-3" : "px-4 py-4",
+        )}
+      >
         {shop?.logo ? (
-          <Link href="/dashboard" className="flex items-center group py-1">
+          <Link href="/dashboard" className="flex items-center justify-center">
             <Image
               src={shop.logo}
               alt={shop.name || "Shop Logo"}
-              width={200}
-              height={200}
-              className="max-h-14 w-auto max-w-[220px] object-contain"
+              width={collapsed ? 32 : 200}
+              height={collapsed ? 32 : 200}
+              className={cn(
+                "object-contain",
+                collapsed ? "size-8" : "max-h-14 w-auto max-w-[220px]",
+              )}
             />
           </Link>
         ) : (
-          <Link href="/dashboard" className="block min-w-0">
-            <p className="text-sm font-semibold truncate text-sidebar-foreground">
-              {shop?.name || "Receipt Management"}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {shop?.tagline || "Internal shop tool"}
-            </p>
+          <Link
+            href="/dashboard"
+            className={cn("block min-w-0", collapsed && "flex justify-center")}
+            aria-label={shop?.name || "Receipt Management"}
+          >
+            {collapsed ? (
+              <Store className="size-5" />
+            ) : (
+              <>
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">
+                  {shop?.name || "Receipt Management"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {shop?.tagline || "Internal shop tool"}
+                </p>
+              </>
+            )}
           </Link>
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 pb-10">
         {navItems.map((item) => {
-          const Icon = item.icon;
           const isActive =
             item.href === "/dashboard"
               ? pathname === item.href
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
-            <Link
+            <SidebarItem
               key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <Icon className="size-4" />
-              {item.name}
-            </Link>
+              item={item}
+              isActive={isActive}
+              collapsed={collapsed}
+            />
           );
         })}
       </nav>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={toggleCollapsed}
+            aria-label={toggleLabel}
+            aria-expanded={!collapsed}
+            className="absolute bottom-4 right-0 z-30 translate-x-1/2 rounded-full bg-background shadow-sm"
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="size-4" />
+            ) : (
+              <PanelLeftClose className="size-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {toggleLabel}
+        </TooltipContent>
+      </Tooltip>
     </aside>
   );
 }

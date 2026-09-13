@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   FileText,
+  Printer,
   Pencil,
   Trash2,
   RotateCcw,
@@ -120,16 +121,31 @@ export default function ReceiptDetailsPage() {
             {/* Status Change Dropdown */}
             <ReceiptStatusDropdown receipt={receipt} />
 
-            {/* View Invoice */}
-            <Link href={`/receipts/${receipt.id}/invoice`}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10 font-medium"
-              >
-                <FileText className="size-3.5" /> Invoice (A4)
-              </Button>
-            </Link>
+            {/* View Invoice / Print Invoice */}
+            {!receipt.isDeleted && (
+              <>
+                <Link href={`/receipts/${receipt.id}/invoice`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    title="View Invoice"
+                    className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <FileText className="size-3.5" /> View Invoice
+                  </Button>
+                </Link>
+                <Link href={`/receipts/${receipt.id}/invoice?print=1`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    title="Print Invoice"
+                    className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <Printer className="size-3.5" /> Print Invoice
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {/* Edit receipt if allowed */}
             {!receipt.isDeleted && (isAdmin || receipt.status !== "APPROVED") && (
