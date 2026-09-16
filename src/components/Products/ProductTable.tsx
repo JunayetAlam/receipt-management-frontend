@@ -590,7 +590,11 @@ export default function ProductTable() {
 
                       {/* Stock */}
                       <TableCell>
-                        {product.stock <= 0 ? (
+                        {product.stock < 0 ? (
+                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-semibold">
+                            Oversold ({product.stock} {product.unit})
+                          </Badge>
+                        ) : product.stock === 0 ? (
                           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-semibold">
                             Out of stock (0)
                           </Badge>

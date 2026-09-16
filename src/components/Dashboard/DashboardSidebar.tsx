@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   ReceiptText,
   Store,
+  Undo2,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,7 @@ export default function DashboardSidebar() {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Shop Details", href: "/shop-details", icon: Store },
     { name: "Receipts", href: "/receipts", icon: ReceiptText },
+    { name: "Return Invoices", href: "/return-invoices", icon: Undo2 },
     { name: "Products", href: "/products", icon: Package },
     { name: "Customers", href: "/customers", icon: Contact },
     ...(isAdmin

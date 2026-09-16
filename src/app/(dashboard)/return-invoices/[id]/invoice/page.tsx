@@ -1,0 +1,46 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { useGetReturnInvoiceByIdQuery } from "@/redux/api/returnInvoiceApi";
+import ReturnInvoiceView from "@/components/ReturnInvoices/ReturnInvoiceView/ReturnInvoiceView";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+
+export default function ReturnInvoicePrintPage() {
+  const params = useParams();
+  const id = params?.id as string;
+  const { data, isLoading, isError } = useGetReturnInvoiceByIdQuery(id, {
+    skip: !id,
+  });
+  const returnInvoice = data?.data;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-10 px-4">
+        <div className="max-w-[210mm] mx-auto space-y-6">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-[297mm] w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !returnInvoice) {
+    return (
+      <div className="min-h-screen py-12 px-4 text-center space-y-4">
+        <p className="text-destructive font-semibold">
+          Return invoice not found
+        </p>
+        <Link href="/return-invoices">
+          <Button variant="outline" size="sm" className="gap-2">
+            <ArrowLeft className="size-4" /> Back
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return <ReturnInvoiceView returnInvoice={returnInvoice} />;
+}

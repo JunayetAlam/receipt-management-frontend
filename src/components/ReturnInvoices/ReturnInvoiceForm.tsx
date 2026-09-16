@@ -1,0 +1,626 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { toast } from "sonner";
+import {
+  ArrowLeft,
+  Loader2,
+  Package,
+  Save,
+  Search,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useCreateReturnInvoiceMutation,
+  useGetReturnableItemsByReceiptQuery,
+  useUpdateReturnInvoiceMutation,
+} from "@/redux/api/returnInvoiceApi";
+import { useGetAllReceiptsQuery, useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
+import { TReturnInvoice, TReturnableReceiptItem } from "@/types";
+import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
+import { cn } from "@/lib/utils";
+
+interface LineState {
+  selected: boolean;
+  quantity: number;
+}
+
+interface ReturnInvoiceFormProps {
+  initialData?: TReturnInvoice;
+  isEditing?: boolean;
+  isDetails?: boolean;
+}
+
+function lineTotal(item: TReturnableReceiptItem, qty: number) {
+  const sub = qty * item.sellingPrice;
+  const disc = (sub * (item.discount || 0)) / 100;
+  return Math.round(Math.max(0, sub - disc) * 100) / 100;
+}
+
+export default function ReturnInvoiceForm({
+  initialData,
+  isEditing = false,
+  isDetails = false,
+}: ReturnInvoiceFormProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedReceiptId =
+    searchParams.get("receiptId") || initialData?.receiptId || "";
+
+  const readOnly = isDetails;
+
+  const [receiptId, setReceiptId] = useState(preselectedReceiptId);
+  const [receiptSearch, setReceiptSearch] = useState("");
+  const [lines, setLines] = useState<Record<string, LineState>>({});
+  const [discount, setDiscount] = useState(
+    initialData ? String(initialData.discount || 0) : "0",
+  );
+  const [refundedAmount, setRefundedAmount] = useState(
+    initialData ? String(initialData.refundedAmount || 0) : "0",
+  );
+  const [note, setNote] = useState(initialData?.note || "");
+
+  const [createReturn, { isLoading: isCreating }] =
+    useCreateReturnInvoiceMutation();
+  const [updateReturn, { isLoading: isUpdating }] =
+    useUpdateReturnInvoiceMutation();
+
+  const { data: receiptsRes, isLoading: isReceiptsLoading } =
+    useGetAllReceiptsQuery(
+      {
+        isDeleted: false,
+        limit: 50,
+        ...(receiptSearch.trim()
+          ? { searchTerm: receiptSearch.trim() }
+          : {}),
+      },
+      { skip: !!isEditing || !!isDetails || !!preselectedReceiptId },
+    );
+
+  const { data: selectedReceiptRes } = useGetReceiptByIdQuery(receiptId, {
+    skip: !receiptId || isEditing || isDetails,
+  });
+
+  const {
+    data: returnableRes,
+    isLoading: isReturnableLoading,
+    isFetching: isReturnableFetching,
+  } = useGetReturnableItemsByReceiptQuery(
+    {
+      receiptId,
+      excludeReturnInvoiceId: isEditing ? initialData?.id : undefined,
+    },
+    { skip: !receiptId || readOnly },
+  );
+
+  const returnableItems = returnableRes?.data?.items || [];
+  const returnableReceipt = returnableRes?.data?.receipt;
+  const selectedReceipt = selectedReceiptRes?.data;
+
+  // Hydrate lines when returnable items load (create/edit)
+  useEffect(() => {
+    if (readOnly || !returnableItems.length) return;
+
+    setLines((prev) => {
+      const next: Record<string, LineState> = {};
+      for (const item of returnableItems) {
+        const existingInitial = initialData?.items?.find(
+          (it) => it.receiptItemId === item.receiptItemId,
+        );
+        const prevLine = prev[item.receiptItemId];
+        const maxQty = item.remainingReturnable;
+        if (existingInitial && isEditing) {
+          next[item.receiptItemId] = {
+            selected: true,
+            quantity: Math.min(existingInitial.quantity, maxQty || existingInitial.quantity),
+          };
+        } else if (prevLine) {
+          next[item.receiptItemId] = {
+            selected: prevLine.selected && maxQty > 0,
+            quantity: Math.min(prevLine.quantity || 1, Math.max(maxQty, 0)),
+          };
+        } else {
+          next[item.receiptItemId] = {
+            selected: false,
+            quantity: maxQty > 0 ? 1 : 0,
+          };
+        }
+      }
+      return next;
+    });
+  }, [returnableItems, readOnly, isEditing, initialData]);
+
+  useEffect(() => {
+    if (preselectedReceiptId) setReceiptId(preselectedReceiptId);
+  }, [preselectedReceiptId]);
+
+  const displayItems: Array<{
+    receiptItemId: string;
+    productName: string;
+    unit: string;
+    sellingPrice: number;
+    discount: number;
+    originalQuantity?: number;
+    alreadyReturned?: number;
+    remainingReturnable?: number;
+    quantity: number;
+    totalPrice: number;
+  }> = useMemo(() => {
+    if (readOnly && initialData) {
+      return initialData.items.map((it) => ({
+        receiptItemId: it.receiptItemId,
+        productName: it.productName,
+        unit: it.unit,
+        sellingPrice: it.sellingPrice,
+        discount: it.discount,
+        quantity: it.quantity,
+        totalPrice: it.totalPrice,
+      }));
+    }
+
+    return returnableItems
+      .filter((it) => lines[it.receiptItemId]?.selected)
+      .map((it) => {
+        const qty = lines[it.receiptItemId]?.quantity || 0;
+        return {
+          receiptItemId: it.receiptItemId,
+          productName: it.productName,
+          unit: it.unit,
+          sellingPrice: it.sellingPrice,
+          discount: it.discount,
+          originalQuantity: it.originalQuantity,
+          alreadyReturned: it.alreadyReturned,
+          remainingReturnable: it.remainingReturnable,
+          quantity: qty,
+          totalPrice: lineTotal(it, qty),
+        };
+      });
+  }, [readOnly, initialData, returnableItems, lines]);
+
+  const subTotal = useMemo(
+    () =>
+      Math.round(
+        displayItems.reduce((sum, it) => sum + it.totalPrice, 0) * 100,
+      ) / 100,
+    [displayItems],
+  );
+  const discVal = Math.max(0, Number(discount) || 0);
+  const totalAmount = Math.round(Math.max(0, subTotal - discVal) * 100) / 100;
+  const refunded = Math.max(0, Number(refundedAmount) || 0);
+  const dueRefund = Math.round(Math.max(0, totalAmount - refunded) * 100) / 100;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (readOnly) return;
+
+    if (!receiptId) {
+      toast.error("Please select a source receipt");
+      return;
+    }
+
+    const items = Object.entries(lines)
+      .filter(([, v]) => v.selected && v.quantity > 0)
+      .map(([receiptItemId, v]) => ({
+        receiptItemId,
+        quantity: Number(v.quantity),
+      }));
+
+    if (items.length === 0) {
+      toast.error("Select at least one product to return");
+      return;
+    }
+
+    for (const item of items) {
+      const meta = returnableItems.find(
+        (r) => r.receiptItemId === item.receiptItemId,
+      );
+      if (!meta) continue;
+      if (item.quantity > meta.remainingReturnable) {
+        toast.error(
+          `"${meta.productName}" quantity cannot exceed ${meta.remainingReturnable}`,
+        );
+        return;
+      }
+    }
+
+    const payload = {
+      ...(isEditing ? {} : { receiptId }),
+      items,
+      discount: discVal,
+      refundedAmount: refunded,
+      note: note.trim() || null,
+    };
+
+    try {
+      if (isEditing && initialData) {
+        const res = await updateReturn({
+          id: initialData.id,
+          body: payload,
+        }).unwrap();
+        toast.success("Return invoice updated successfully");
+        (res?.data?.warnings || []).forEach((w: string) => toast.warning(w));
+        router.push(`/return-invoices/${initialData.id}`);
+      } else {
+        const res = await createReturn(payload).unwrap();
+        toast.success("Return invoice created successfully");
+        const id = res?.data?.returnInvoice?.id;
+        router.push(id ? `/return-invoices/${id}` : "/return-invoices");
+      }
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+    }
+  };
+
+  const receiptLabel =
+    returnableReceipt?.receiptNumber ||
+    selectedReceipt?.receiptNumber ||
+    initialData?.receipt?.receiptNumber ||
+    "";
+
+  const customerName =
+    returnableReceipt?.customer?.name ||
+    selectedReceipt?.customer?.name ||
+    initialData?.receipt?.customer?.name ||
+    "";
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {!readOnly && (
+        <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
+          <Link
+            href="/return-invoices"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-3.5" /> Back to Return Invoices
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => router.push("/return-invoices")}
+            >
+              <X className="size-3.5 mr-1" /> Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              disabled={isCreating || isUpdating}
+            >
+              {isCreating || isUpdating ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Save className="size-3.5" />
+              )}
+              {isEditing ? "Update Return" : "Create Return"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Source receipt */}
+      <Card className="shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Source Receipt</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {readOnly || isEditing ? (
+            <div className="text-sm space-y-1">
+              <p>
+                <span className="text-muted-foreground">Receipt: </span>
+                <Link
+                  href={`/receipts/${receiptId || initialData?.receiptId}`}
+                  className="font-mono font-semibold text-primary hover:underline"
+                >
+                  {receiptLabel}
+                </Link>
+              </p>
+              {customerName && (
+                <p>
+                  <span className="text-muted-foreground">Customer: </span>
+                  <span className="font-medium">{customerName}</span>
+                </p>
+              )}
+            </div>
+          ) : preselectedReceiptId ? (
+            <div className="text-sm space-y-1">
+              <p>
+                <span className="text-muted-foreground">Receipt: </span>
+                <span className="font-mono font-semibold">{receiptLabel || "…"}</span>
+              </p>
+              {customerName && (
+                <p>
+                  <span className="text-muted-foreground">Customer: </span>
+                  {customerName}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="text-xs">Select receipt *</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search receipt # or customer..."
+                  value={receiptSearch}
+                  onChange={(e) => setReceiptSearch(e.target.value)}
+                  className="pl-9 text-xs h-9"
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y">
+                {isReceiptsLoading ? (
+                  <div className="p-3 space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                ) : (receiptsRes?.data || []).length === 0 ? (
+                  <p className="p-3 text-xs text-muted-foreground">
+                    No receipts found
+                  </p>
+                ) : (
+                  (receiptsRes?.data || []).map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setReceiptId(r.id)}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-xs hover:bg-muted/60 transition-colors",
+                        receiptId === r.id && "bg-primary/10",
+                      )}
+                    >
+                      <span className="font-mono font-semibold">
+                        {r.receiptNumber}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · {r.customer?.name} · ৳{r.totalAmount}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Products */}
+      <Card className="shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Package className="size-4" /> Return Products
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!receiptId && !readOnly ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">
+              Select a receipt to load returnable products.
+            </p>
+          ) : isReturnableLoading || isReturnableFetching ? (
+            <div className="space-y-2 py-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : readOnly ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b text-muted-foreground text-left">
+                    <th className="py-2 pr-2 w-8">#</th>
+                    <th className="py-2 pr-2">Product</th>
+                    <th className="py-2 pr-2">Unit</th>
+                    <th className="py-2 pr-2 text-right">Qty</th>
+                    <th className="py-2 pr-2 text-right">Price</th>
+                    <th className="py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayItems.map((it, index) => (
+                    <tr key={it.receiptItemId} className="border-b border-border/50">
+                      <td className="py-2 pr-2 font-mono text-muted-foreground">
+                        {index + 1}
+                      </td>
+                      <td className="py-2 pr-2 font-medium">{it.productName}</td>
+                      <td className="py-2 pr-2">{it.unit}</td>
+                      <td className="py-2 pr-2 text-right font-mono">{it.quantity}</td>
+                      <td className="py-2 pr-2 text-right font-mono">
+                        ৳{it.sellingPrice}
+                      </td>
+                      <td className="py-2 text-right font-mono font-semibold">
+                        ৳{it.totalPrice.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : returnableItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-6 text-center">
+              No returnable products left on this receipt.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {returnableItems.map((item, index) => {
+                const line = lines[item.receiptItemId] || {
+                  selected: false,
+                  quantity: 1,
+                };
+                const disabled = item.remainingReturnable <= 0;
+                return (
+                  <div
+                    key={item.receiptItemId}
+                    className={cn(
+                      "flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border p-3",
+                      line.selected
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border/70",
+                      disabled && "opacity-50",
+                    )}
+                  >
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-semibold text-muted-foreground">
+                        {index + 1}
+                      </span>
+                      <input
+                        type="checkbox"
+                        className="mt-1 size-4 accent-primary cursor-pointer"
+                        checked={line.selected}
+                        disabled={disabled || readOnly}
+                        onChange={(e) => {
+                          setLines((prev) => ({
+                            ...prev,
+                            [item.receiptItemId]: {
+                              ...line,
+                              selected: e.target.checked,
+                              quantity:
+                                line.quantity > 0
+                                  ? line.quantity
+                                  : Math.min(1, item.remainingReturnable),
+                            },
+                          }));
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {item.productName}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground font-mono">
+                          Sold {item.originalQuantity} · Returned{" "}
+                          {item.alreadyReturned} · Left{" "}
+                          {item.remainingReturnable} {item.unit} · ৳
+                          {item.sellingPrice}
+                          {item.discount > 0 ? ` · Disc ${item.discount}%` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 sm:w-40">
+                      <Label className="text-[11px] text-muted-foreground shrink-0">
+                        Qty
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={item.remainingReturnable}
+                        step="any"
+                        disabled={!line.selected || disabled || readOnly}
+                        value={line.quantity}
+                        onChange={(e) => {
+                          const raw = Number(e.target.value);
+                          const qty = Math.min(
+                            Math.max(0, raw || 0),
+                            item.remainingReturnable,
+                          );
+                          setLines((prev) => ({
+                            ...prev,
+                            [item.receiptItemId]: {
+                              ...line,
+                              quantity: qty,
+                              selected: qty > 0 ? true : line.selected,
+                            },
+                          }));
+                        }}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Totals */}
+      <Card className="shadow-xs">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Return Totals</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Overall discount (৳)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                value={discount}
+                disabled={readOnly}
+                onChange={(e) => setDiscount(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Refunded amount (৳)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                value={refundedAmount}
+                disabled={readOnly}
+                onChange={(e) => setRefundedAmount(e.target.value)}
+                className="h-8 text-xs font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Note</Label>
+              <Textarea
+                value={note}
+                disabled={readOnly}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                className="text-xs"
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border border-border/70 p-4 space-y-2 text-sm h-fit">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span className="font-mono font-semibold">
+                ৳{subTotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Discount</span>
+              <span className="font-mono text-rose-600">
+                -৳{discVal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-2">
+              <span className="font-semibold">Net Credit</span>
+              <span className="font-mono font-bold">
+                ৳{totalAmount.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Refunded</span>
+              <span className="font-mono text-emerald-700">
+                ৳{refunded.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t-2 border-foreground pt-2">
+              <span className="font-bold">Refund Due</span>
+              <span
+                className={cn(
+                  "font-mono font-extrabold",
+                  dueRefund > 0 ? "text-rose-600" : "text-foreground",
+                )}
+              >
+                ৳{dueRefund.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </form>
+  );
+}

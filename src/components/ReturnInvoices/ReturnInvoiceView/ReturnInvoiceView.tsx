@@ -4,24 +4,22 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Printer, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-import { TReceipt, TReceiptItem } from "@/types";
+import { TReceipt, TReceiptItem, TReturnInvoice } from "@/types";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import Image from "next/image";
-import RIV_ProductTable from "./RIV_ProductTable";
-import RIV_Details from "./RIV_Details";
-import ReceiptStyle from "./receipt-style";
-import RIV_Footer from "./RIV_Footer";
-import RIV_Calculation from "./RIV_Calculation";
-import RIV_ContinuationBar from "./RIV_ContinuationBar";
+import RIV_ProductTable from "@/components/Receipts/ReceipInvoiceView.tsx/RIV_ProductTable";
+import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
+import RIV_Footer from "@/components/Receipts/ReceipInvoiceView.tsx/RIV_Footer";
+import RIV_ContinuationBar from "@/components/Receipts/ReceipInvoiceView.tsx/RIV_ContinuationBar";
 import {
   INVOICE_CONTENT_FOOTER_GAP,
   paginateInvoicePages,
-  type InvoicePage,
-} from "./paginateInvoicePages";
+} from "@/components/Receipts/ReceipInvoiceView.tsx/paginateInvoicePages";
+import RetIV_Details from "./RetIV_Details";
+import RetIV_Calculation from "./RetIV_Calculation";
 
-interface ReceiptInvoiceViewProps {
-  receipt: TReceipt;
+interface ReturnInvoiceViewProps {
+  returnInvoice: TReturnInvoice;
 }
 
 type InvoiceMetrics = {
@@ -40,12 +38,12 @@ const FALLBACK_METRICS: InvoiceMetrics = {
   pageHeight: 1122.5,
   compactFooterHeight: 52,
   lastFooterHeight: 168,
-  detailsHeight: 130,
+  detailsHeight: 150,
   continuationBarHeight: 36,
   tableHeaderHeight: 36,
   rowHeight: 37,
   balanceRowHeight: 40,
-  calculationHeight: 280,
+  calculationHeight: 160,
 };
 
 function metricsEqual(a: InvoiceMetrics, b: InvoiceMetrics) {
@@ -54,9 +52,27 @@ function metricsEqual(a: InvoiceMetrics, b: InvoiceMetrics) {
   );
 }
 
-export default function ReceiptInvoiceView({
-  receipt,
-}: ReceiptInvoiceViewProps) {
+function toReceiptItems(returnInvoice: TReturnInvoice): TReceiptItem[] {
+  return (returnInvoice.items || []).map((it) => ({
+    id: it.id,
+    receiptId: it.receiptId,
+    productId: it.productId,
+    productName: it.productName,
+    unit: it.unit,
+    sellingPrice: it.sellingPrice,
+    quantity: it.quantity,
+    discount: it.discount,
+    subTotal: it.totalPrice,
+    totalPrice: it.totalPrice,
+    createdAt: it.createdAt,
+    updatedAt: it.updatedAt,
+    product: it.product,
+  }));
+}
+
+export default function ReturnInvoiceView({
+  returnInvoice,
+}: ReturnInvoiceViewProps) {
   const rulerRef = useRef<HTMLDivElement>(null);
   const detailsProbeRef = useRef<HTMLDivElement>(null);
   const barProbeRef = useRef<HTMLDivElement>(null);
@@ -71,49 +87,46 @@ export default function ReceiptInvoiceView({
     useGetShopDetailsQuery();
   const shop = shopResponse?.data;
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const items = useMemo(
+    () => toReceiptItems(returnInvoice),
+    [returnInvoice],
+  );
+
+  const continuationReceipt = useMemo(
+    () =>
+      ({
+        id: returnInvoice.id,
+        receiptNumber: returnInvoice.returnNumber,
+        createdAt: returnInvoice.createdAt,
+      }) as TReceipt,
+    [returnInvoice],
+  );
+
+  const handlePrint = () => window.print();
 
   const shopName = shop?.name || "Rupayon Biddut";
-
   const contactPhones =
-    shop?.phoneNumbers && shop.phoneNumbers.length > 0
-      ? shop.phoneNumbers.join(", ")
-      : !shop
-        ? "+880 1712-345678, +880 1912-345678"
-        : "";
-
+    shop?.phoneNumbers?.length ? shop.phoneNumbers.join(", ") : "";
   const contactLocations =
-    shop?.locations && shop.locations.length > 0
-      ? shop.locations.join(" | ")
-      : !shop
-        ? "Court Para, N.S. Road, Kushtia - 7000"
-        : "";
-
-  const contactEmails =
-    shop?.emails && shop.emails.length > 0
-      ? shop.emails.join(", ")
-      : !shop
-        ? "contact@rupayonbiddut.com"
-        : "";
+    shop?.locations?.length ? shop.locations.join(" | ") : "";
+  const contactEmails = shop?.emails?.length ? shop.emails.join(", ") : "";
 
   const probeItem: TReceiptItem = useMemo(() => {
-    if (receipt.items?.[0]) return receipt.items[0];
+    if (items[0]) return items[0];
     return {
-      id: "probe-item",
-      receiptId: receipt.id,
-      productName: "Measurement item",
+      id: "probe",
+      receiptId: returnInvoice.receiptId,
+      productName: "Measurement",
       unit: "PIECE",
       sellingPrice: 0,
       quantity: 1,
       discount: 0,
       subTotal: 0,
       totalPrice: 0,
-      createdAt: receipt.createdAt,
-      updatedAt: receipt.createdAt,
+      createdAt: returnInvoice.createdAt,
+      updatedAt: returnInvoice.createdAt,
     };
-  }, [receipt]);
+  }, [items, returnInvoice]);
 
   useEffect(() => {
     const readMetrics = (): InvoiceMetrics => {
@@ -121,14 +134,11 @@ export default function ReceiptInvoiceView({
       const headerEl = tableRoot?.querySelector(
         '[data-probe="header"]',
       ) as HTMLElement | null;
-      const itemEl = tableRoot?.querySelector(
-        '[data-row="item"]',
+      const rowEl = tableRoot?.querySelector(
+        "tbody tr:not([data-row])",
       ) as HTMLElement | null;
       const bfEl = tableRoot?.querySelector(
         '[data-row="balance-bf"]',
-      ) as HTMLElement | null;
-      const cfEl = tableRoot?.querySelector(
-        '[data-row="balance-cf"]',
       ) as HTMLElement | null;
 
       return {
@@ -146,59 +156,47 @@ export default function ReceiptInvoiceView({
           FALLBACK_METRICS.continuationBarHeight,
         tableHeaderHeight:
           headerEl?.offsetHeight || FALLBACK_METRICS.tableHeaderHeight,
-        rowHeight: itemEl?.offsetHeight || FALLBACK_METRICS.rowHeight,
-        balanceRowHeight: Math.max(
-          bfEl?.offsetHeight || 0,
-          cfEl?.offsetHeight || 0,
-          FALLBACK_METRICS.balanceRowHeight,
-        ),
+        rowHeight: rowEl?.offsetHeight || FALLBACK_METRICS.rowHeight,
+        balanceRowHeight:
+          bfEl?.offsetHeight || FALLBACK_METRICS.balanceRowHeight,
         calculationHeight:
           calcProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.calculationHeight,
       };
     };
 
-    const update = () => {
+    const apply = () => {
       const next = readMetrics();
       setMetrics((prev) => (metricsEqual(prev, next) ? prev : next));
     };
 
-    update();
-
-    if (typeof ResizeObserver === "undefined") return;
-
-    const observer = new ResizeObserver(() => update());
-    const nodes = [
-      rulerRef.current,
-      detailsProbeRef.current,
-      barProbeRef.current,
-      tableProbeRef.current,
-      calcProbeRef.current,
-      compactFooterProbeRef.current,
-      lastFooterProbeRef.current,
-    ];
-    nodes.forEach((node) => {
-      if (node) observer.observe(node);
+    apply();
+    const ro = new ResizeObserver(apply);
+    [
+      rulerRef,
+      detailsProbeRef,
+      barProbeRef,
+      tableProbeRef,
+      calcProbeRef,
+      compactFooterProbeRef,
+      lastFooterProbeRef,
+    ].forEach((r) => {
+      if (r.current) ro.observe(r.current);
     });
+    return () => ro.disconnect();
+  }, [returnInvoice, shop]);
 
-    return () => observer.disconnect();
-  }, [receipt, shop]);
-
-  const pages: InvoicePage[] = useMemo(
+  const pages = useMemo(
     () =>
       paginateInvoicePages({
-        items: receipt.items || [],
+        items,
         ...metrics,
       }),
-    [receipt.items, metrics],
+    [items, metrics],
   );
 
   const pageCount = pages.length;
-  const footerContacts = {
-    contactPhones,
-    contactLocations,
-    contactEmails,
-  };
+  const footerContacts = { contactPhones, contactLocations, contactEmails };
 
   useEffect(() => {
     if (didAutoPrint.current || isShopLoading) return;
@@ -206,7 +204,6 @@ export default function ReceiptInvoiceView({
     if (new URLSearchParams(window.location.search).get("print") !== "1") {
       return;
     }
-
     const timer = window.setTimeout(() => {
       if (didAutoPrint.current) return;
       didAutoPrint.current = true;
@@ -221,30 +218,24 @@ export default function ReceiptInvoiceView({
         );
       }
     }, 600);
-
     return () => window.clearTimeout(timer);
   }, [isShopLoading, pageCount, metrics]);
 
   return (
     <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
       <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href={`/receipts/${receipt.id}`}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shadow-xs bg-card"
-          >
-            <ArrowLeft className="size-4" /> Back to Receipt
+        <Link href={`/return-invoices/${returnInvoice.id}`}>
+          <Button variant="outline" size="sm" className="gap-2 shadow-xs bg-card">
+            <ArrowLeft className="size-4" /> Back to Return
           </Button>
         </Link>
-
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
+          <span className="text-xs font-mono font-medium text-slate-600 bg-white border px-2.5 py-1 rounded-md shadow-xs">
             {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
           </span>
           <Button
             onClick={handlePrint}
-            className="gap-2 bg-primary text-primary-foreground font-semibold shadow-xs hover:opacity-95 cursor-pointer"
+            className="gap-2 font-semibold shadow-xs"
             size="sm"
           >
             <Printer className="size-4" /> Print / Save as PDF
@@ -253,86 +244,52 @@ export default function ReceiptInvoiceView({
       </div>
 
       <div
-        aria-hidden="true"
+        aria-hidden
         className="absolute w-[210mm] overflow-hidden pointer-events-none print:hidden"
-        style={{
-          left: "-9999px",
-          top: 0,
-          visibility: "hidden",
-        }}
+        style={{ left: "-9999px", top: 0, visibility: "hidden" }}
       >
-        <div
-          ref={rulerRef}
-          style={{ height: "297mm", width: "210mm" }}
-        />
-        <div className="px-10">
-          <div ref={detailsProbeRef}>
-            <RIV_Details shop={shop} receipt={receipt} />
-          </div>
+        <div ref={rulerRef} style={{ height: "297mm", width: "210mm" }} />
+        <div className="px-10" ref={detailsProbeRef}>
+          <RetIV_Details shop={shop} returnInvoice={returnInvoice} />
         </div>
-        <div className="px-10">
-          <div ref={barProbeRef}>
-            <RIV_ContinuationBar
-              shopName={shopName}
-              receipt={receipt}
-              pageNo={2}
-              pageCount={2}
-            />
-          </div>
+        <div className="px-10" ref={barProbeRef}>
+          <RIV_ContinuationBar
+            shopName={shopName}
+            receipt={continuationReceipt}
+            pageNo={2}
+            pageCount={2}
+          />
         </div>
         <div ref={tableProbeRef} className="px-10">
           <RIV_ProductTable
             items={[probeItem]}
-            startIndex={0}
-            broughtForward={100}
-            carriedForward={200}
-            fromPage={1}
-            toPage={2}
             showBroughtForward
             showCarryForward
+            broughtForward={100}
+            carriedForward={200}
           />
         </div>
-        <div className="px-10">
-          <div ref={calcProbeRef}>
-            <RIV_Calculation receipt={receipt} />
-          </div>
+        <div className="px-10" ref={calcProbeRef}>
+          <RetIV_Calculation returnInvoice={returnInvoice} />
         </div>
         <div ref={compactFooterProbeRef}>
-          <RIV_Footer
-            isLastPage={false}
-            pageNo={1}
-            pageCount={2}
-            {...footerContacts}
-          />
+          <RIV_Footer isLastPage={false} pageNo={1} pageCount={2} {...footerContacts} />
         </div>
         <div ref={lastFooterProbeRef}>
-          <RIV_Footer
-            isLastPage
-            pageNo={1}
-            pageCount={1}
-            {...footerContacts}
-          />
+          <RIV_Footer isLastPage pageNo={1} pageCount={1} {...footerContacts} />
         </div>
       </div>
 
-      <div
-        id="a4-invoice-sheet"
-        className="flex flex-col items-center gap-6 print:gap-0"
-      >
+      <div id="a4-invoice-sheet" className="flex flex-col items-center gap-6 print:gap-0">
         {pages.map((page) => {
           const footerHeight = page.isLast
             ? metrics.lastFooterHeight
             : metrics.compactFooterHeight;
-
           return (
             <div
               key={page.pageNo}
-              className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none print:max-w-none overflow-hidden"
-              style={{
-                width: "210mm",
-                height: "297mm",
-                boxSizing: "border-box",
-              }}
+              className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none overflow-hidden"
+              style={{ width: "210mm", height: "297mm", boxSizing: "border-box" }}
             >
               {page.pageNo === 1 && shop?.logo && (
                 <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
@@ -345,7 +302,6 @@ export default function ReceiptInvoiceView({
                   />
                 </div>
               )}
-
               <div
                 className="px-10 pt-10"
                 style={{
@@ -353,16 +309,15 @@ export default function ReceiptInvoiceView({
                 }}
               >
                 {page.pageNo === 1 ? (
-                  <RIV_Details shop={shop} receipt={receipt} />
+                  <RetIV_Details shop={shop} returnInvoice={returnInvoice} />
                 ) : (
                   <RIV_ContinuationBar
                     shopName={shopName}
-                    receipt={receipt}
+                    receipt={continuationReceipt}
                     pageNo={page.pageNo}
                     pageCount={pageCount}
                   />
                 )}
-
                 <div className="pt-4">
                   <RIV_ProductTable
                     items={page.items}
@@ -375,12 +330,10 @@ export default function ReceiptInvoiceView({
                     showCarryForward={page.showCarryForward}
                   />
                 </div>
-
                 {page.showCalculation && (
-                  <RIV_Calculation receipt={receipt} />
+                  <RetIV_Calculation returnInvoice={returnInvoice} />
                 )}
               </div>
-
               <div className="absolute left-0 right-0 bottom-0">
                 <RIV_Footer
                   isLastPage={page.isLast}
@@ -393,7 +346,6 @@ export default function ReceiptInvoiceView({
           );
         })}
       </div>
-
       <ReceiptStyle />
     </div>
   );

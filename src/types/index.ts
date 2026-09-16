@@ -201,6 +201,8 @@ export interface TReceiptItem {
   discount: number; // percentage (0 - 100)
   subTotal: number;
   totalPrice: number;
+  alreadyReturned?: number;
+  remainingReturnable?: number;
   createdAt: string;
   updatedAt: string;
   product?: {
@@ -264,6 +266,7 @@ export interface TReceipt {
   } | null;
   items: TReceiptItem[];
   payments: TReceiptPayment[];
+  returnInvoices?: TReturnInvoice[];
   _count?: {
     items: number;
     payments: number;
@@ -292,6 +295,111 @@ export interface TReceiptFormItem {
   quantity: number;
   discount: number; // percentage
   availableStock?: number | null; // for live stock tracking
+}
+
+export interface TReturnInvoiceItem {
+  id: string;
+  returnInvoiceId: string;
+  receiptId: string;
+  receiptItemId: string;
+  productId?: string | null;
+  productName: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  quantity: number;
+  discount: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  product?: {
+    id: string;
+    name: string;
+    stock: number;
+    unit: ProductUnit;
+  } | null;
+  receiptItem?: {
+    id: string;
+    productName: string;
+    quantity: number;
+    sellingPrice: number;
+    discount: number;
+    unit: ProductUnit;
+  } | null;
+}
+
+export interface TReturnInvoice {
+  id: string;
+  returnNumber: string;
+  receiptId: string;
+  receipt?: {
+    id: string;
+    receiptNumber: string;
+    customerId?: string;
+    totalAmount?: number;
+    paidAmount?: number;
+    dueAmount?: number;
+    customer?: {
+      id: string;
+      name: string;
+      countryCode?: string;
+      phoneNumber: string;
+      email?: string | null;
+      address?: string | null;
+    };
+  } | null;
+  subTotal: number;
+  discount: number;
+  totalAmount: number;
+  refundedAmount: number;
+  dueRefundAmount: number;
+  status: ReceiptStatus;
+  note?: string | null;
+  isDeleted: boolean;
+  isDeleteRequested: boolean;
+  deleteRequestedAt?: string | null;
+  deleteReason?: string | null;
+  deleteRequestedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  items: TReturnInvoiceItem[];
+  _count?: {
+    items: number;
+  };
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  updatedBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TReturnableReceiptItem {
+  receiptItemId: string;
+  productId?: string | null;
+  productName: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  discount: number;
+  originalQuantity: number;
+  alreadyReturned: number;
+  remainingReturnable: number;
+  product?: {
+    id: string;
+    name: string;
+    stock: number;
+    unit: ProductUnit;
+  } | null;
 }
 
 export interface TShop {

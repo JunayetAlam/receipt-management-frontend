@@ -299,5 +299,23 @@ input[type="number"] {
   appearance: textfield !important;
 }
 
+/* Receipt form: highlight existing product row when duplicate is selected */
+@keyframes receipt-row-highlight {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 55%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 80%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 16%, transparent);
+  }
+}
+
+.receipt-item-row-highlight {
+  border-color: var(--primary) !important;
+  animation: receipt-row-highlight 0.7s ease-in-out 3;
+}
+
 
 

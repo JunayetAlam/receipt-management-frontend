@@ -154,7 +154,15 @@ export default function ProductSelect({
               <span className="font-medium text-foreground truncate leading-tight">
                 {prod.name}
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono mt-0.5">
+              <span
+                className={`text-[11px] font-mono mt-0.5 ${
+                  prod.stock < 0
+                    ? "text-rose-600 dark:text-rose-400 font-semibold"
+                    : prod.stock === 0
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground"
+                }`}
+              >
                 Stock: {prod.stock} {prod.unit} · ৳{prod.sellingPrice}
               </span>
             </div>

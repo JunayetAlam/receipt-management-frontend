@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,8 @@ const PRODUCT_UNITS: ProductUnit[] = [
   "OTHER",
 ];
 
+const normalizeProductName = (name: string) => name.trim().toLowerCase();
+
 interface FormItemState extends Omit<
   TReceiptFormItem,
   "sellingPrice" | "quantity" | "discount"
@@ -101,6 +103,65 @@ interface FormItemState extends Omit<
   sellingPrice: number | string;
   quantity: number | string;
   discount: number | string;
+}
+
+/** Merge legacy duplicate product rows so edit/save passes uniqueness rules. */
+function mergeLegacyDuplicateItems(
+  rawItems: {
+    id?: string;
+    productId?: string | null;
+    productName: string;
+    unit: ProductUnit;
+    sellingPrice: number;
+    quantity: number;
+    discount: number;
+    product?: { stock?: number } | null;
+  }[],
+): FormItemState[] {
+  const merged: FormItemState[] = [];
+  const productIdIndex = new Map<string, number>();
+  const customNameIndex = new Map<string, number>();
+
+  rawItems.forEach((it, idx) => {
+    const base: FormItemState = {
+      tempId: it.id || `item-${idx}`,
+      productId: it.productId || null,
+      productName: it.productName,
+      unit: it.unit,
+      sellingPrice: Number(it.sellingPrice) || 0,
+      quantity: Number(it.quantity) || 1,
+      discount: Number(it.discount) || 0,
+      availableStock: it.product?.stock ?? null,
+    };
+
+    if (base.productId) {
+      const existingIdx = productIdIndex.get(base.productId);
+      if (existingIdx !== undefined) {
+        const existing = merged[existingIdx];
+        existing.quantity =
+          (Number(existing.quantity) || 0) + (Number(base.quantity) || 0);
+        return;
+      }
+      productIdIndex.set(base.productId, merged.length);
+      merged.push(base);
+      return;
+    }
+
+    const nameKey = normalizeProductName(base.productName);
+    if (nameKey) {
+      const existingIdx = customNameIndex.get(nameKey);
+      if (existingIdx !== undefined) {
+        const existing = merged[existingIdx];
+        existing.quantity =
+          (Number(existing.quantity) || 0) + (Number(base.quantity) || 0);
+        return;
+      }
+      customNameIndex.set(nameKey, merged.length);
+    }
+    merged.push(base);
+  });
+
+  return merged;
 }
 
 interface ReceiptFormProps {
@@ -260,6 +321,38 @@ export default function ReceiptForm({
       availableStock: null,
     },
   ]);
+  const [highlightedTempId, setHighlightedTempId] = useState<string | null>(
+    null,
+  );
+  const itemRowRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const focusExistingItemRow = useCallback((tempId: string) => {
+    setHighlightedTempId(tempId);
+    requestAnimationFrame(() => {
+      itemRowRefs.current.get(tempId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedTempId(null);
+      highlightTimeoutRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Overall Financials
   const [receiptDiscount, setReceiptDiscount] = useState<string>(
@@ -288,18 +381,7 @@ export default function ReceiptForm({
       }
 
       if (initialData.items && initialData.items.length > 0) {
-        setItems(
-          initialData.items.map((it, idx) => ({
-            tempId: it.id || `item-${idx}`,
-            productId: it.productId || null,
-            productName: it.productName,
-            unit: it.unit,
-            sellingPrice: Number(it.sellingPrice) || 0,
-            quantity: Number(it.quantity) || 1,
-            discount: Number(it.discount) || 0,
-            availableStock: it.product?.stock ?? null,
-          })),
-        );
+        setItems(mergeLegacyDuplicateItems(initialData.items));
       }
 
       if (initialData.payments) {
@@ -427,6 +509,17 @@ export default function ReceiptForm({
 
   // Product Selection Handlers
   const handleSelectProduct = (tempId: string, product: TProduct) => {
+    const existing = items.find(
+      (it) => it.tempId !== tempId && it.productId === product.id,
+    );
+    if (existing) {
+      toast.info(
+        `"${product.name}" is already on this receipt. Update quantity on that row.`,
+      );
+      focusExistingItemRow(existing.tempId);
+      return;
+    }
+
     setItems((prev) =>
       prev.map((it) => {
         if (it.tempId !== tempId) return it;
@@ -443,6 +536,23 @@ export default function ReceiptForm({
   };
 
   const handleCustomProductNameChange = (tempId: string, name: string) => {
+    const nameKey = normalizeProductName(name);
+    if (nameKey) {
+      const existing = items.find(
+        (it) =>
+          it.tempId !== tempId &&
+          !it.productId &&
+          normalizeProductName(it.productName) === nameKey,
+      );
+      if (existing) {
+        toast.info(
+          `"${existing.productName}" is already on this receipt. Update quantity on that row.`,
+        );
+        focusExistingItemRow(existing.tempId);
+        return;
+      }
+    }
+
     setItems((prev) =>
       prev.map((it) => {
         if (it.tempId !== tempId) return it;
@@ -476,6 +586,19 @@ export default function ReceiptForm({
     field: keyof FormItemState,
     value: any,
   ) => {
+    if (field === "productId" && value && value !== "custom") {
+      const existing = items.find(
+        (it) => it.tempId !== tempId && it.productId === value,
+      );
+      if (existing) {
+        toast.info(
+          `"${existing.productName}" is already on this receipt. Update quantity on that row.`,
+        );
+        focusExistingItemRow(existing.tempId);
+        return;
+      }
+    }
+
     setItems((prev) =>
       prev.map((it) => {
         if (it.tempId !== tempId) return it;
@@ -642,6 +765,38 @@ export default function ReceiptForm({
         toast.error(`Item #${i + 1} selling price cannot be negative`);
         return;
       }
+    }
+
+    const seenProductIds = new Set<string>();
+    const seenCustomNames = new Set<string>();
+    for (const it of items) {
+      if (it.productId) {
+        if (seenProductIds.has(it.productId)) {
+          const first = items.find((row) => row.productId === it.productId);
+          toast.error(
+            "Duplicate product on receipt; each product can only appear once",
+          );
+          if (first) focusExistingItemRow(first.tempId);
+          return;
+        }
+        seenProductIds.add(it.productId);
+        continue;
+      }
+      const nameKey = normalizeProductName(it.productName);
+      if (!nameKey) continue;
+      if (seenCustomNames.has(nameKey)) {
+        const first = items.find(
+          (row) =>
+            !row.productId &&
+            normalizeProductName(row.productName) === nameKey,
+        );
+        toast.error(
+          "Duplicate product on receipt; each product can only appear once",
+        );
+        if (first) focusExistingItemRow(first.tempId);
+        return;
+      }
+      seenCustomNames.add(nameKey);
     }
 
     const payload = {
@@ -975,7 +1130,8 @@ export default function ReceiptForm({
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               {/* Desktop Column Headers for Clean 1-Line Table View */}
-              <div className="hidden md:grid md:grid-cols-[4fr_1.8fr_1.4fr_2fr_1.4fr_2fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
+              <div className="hidden md:grid md:grid-cols-[2rem_4fr_1.8fr_1.4fr_2fr_1.4fr_2fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
+                <div className="text-center">#</div>
                 <div>Product Name *</div>
                 <div>Unit</div>
                 <div className="text-right">Qty *</div>
@@ -997,10 +1153,15 @@ export default function ReceiptForm({
                 return (
                   <div
                     key={it.tempId}
+                    ref={(el) => {
+                      itemRowRefs.current.set(it.tempId, el);
+                    }}
                     className={`relative rounded-xl border p-2.5 space-y-2 transition-colors ${
-                      hasStockWarning
-                        ? "border-amber-500/60 bg-amber-500/5 dark:bg-amber-500/10"
-                        : "border-border/70 bg-card hover:border-border"
+                      highlightedTempId === it.tempId
+                        ? "receipt-item-row-highlight border-primary"
+                        : hasStockWarning
+                          ? "border-amber-500/60 bg-amber-500/5 dark:bg-amber-500/10"
+                          : "border-border/70 bg-card hover:border-border"
                     }`}
                   >
                     {/* Top-Right Corner Actions: Stock Warning Tooltip & Cross Button */}
@@ -1070,7 +1231,17 @@ export default function ReceiptForm({
                     </div>
 
                     {/* All Inputs in One Single Line (on md+) */}
-                    <div className="grid grid-cols-1 md:grid-cols-[4fr_1.8fr_1.4fr_2fr_1.4fr_2fr] gap-2 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-[2rem_4fr_1.8fr_1.4fr_2fr_1.4fr_2fr] gap-2 items-center">
+                      {/* 0. Row index */}
+                      <div className="flex items-center gap-2 md:justify-center">
+                        <span className="md:hidden text-[11px] font-medium text-muted-foreground">
+                          #
+                        </span>
+                        <span className="inline-flex size-6 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-semibold text-muted-foreground">
+                          {index + 1}
+                        </span>
+                      </div>
+
                       {/* 1. Merged Product Name & Selection (React Select) */}
                       <div>
                         <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">

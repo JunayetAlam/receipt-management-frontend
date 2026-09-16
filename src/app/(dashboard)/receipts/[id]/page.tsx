@@ -144,6 +144,16 @@ export default function ReceiptDetailsPage() {
                     <Printer className="size-3.5" /> Print Invoice
                   </Button>
                 </Link>
+                <Link href={`/return-invoices/create?receiptId=${receipt.id}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    title="Create Return Invoice"
+                    className="h-8 gap-1.5 text-xs font-medium"
+                  >
+                    <RotateCcw className="size-3.5" /> Create Return
+                  </Button>
+                </Link>
               </>
             )}
 
@@ -257,7 +267,62 @@ export default function ReceiptDetailsPage() {
           </Link>
         </div>
       ) : (
-        <ReceiptForm initialData={receipt} isEditing={true} isDetails={true} />
+        <>
+          <ReceiptForm initialData={receipt} isEditing={true} isDetails={true} />
+
+          {(receipt.returnInvoices || []).filter((r) => !r.isDeleted).length >
+            0 && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold">Return Invoices</h2>
+                <Link
+                  href={`/return-invoices/create?receiptId=${receipt.id}`}
+                  className="text-xs text-primary hover:underline"
+                >
+                  + New return
+                </Link>
+              </div>
+              <div className="divide-y border rounded-lg overflow-hidden">
+                {(receipt.returnInvoices || [])
+                  .filter((r) => !r.isDeleted)
+                  .map((ret) => (
+                    <div
+                      key={ret.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2.5 text-xs bg-background"
+                    >
+                      <div className="min-w-0">
+                        <Link
+                          href={`/return-invoices/${ret.id}`}
+                          className="font-mono font-semibold text-primary hover:underline"
+                        >
+                          {ret.returnNumber}
+                        </Link>
+                        <p className="text-muted-foreground mt-0.5 truncate">
+                          {(ret.items || [])
+                            .map((it) => `${it.productName} × ${it.quantity}`)
+                            .join(", ") || "No items"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-mono font-semibold">
+                          ৳{Number(ret.totalAmount).toFixed(2)}
+                        </span>
+                        <Link href={`/return-invoices/${ret.id}/invoice`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[11px]"
+                          >
+                            Invoice
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Delete / Request Delete Modal */}

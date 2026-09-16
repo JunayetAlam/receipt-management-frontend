@@ -125,8 +125,15 @@ export default function ProductActivitySheet({
               </div>
               <div>
                 <span className="text-muted-foreground block text-[10px]">Stock</span>
-                <span className="font-semibold text-foreground">
+                <span
+                  className={`font-semibold ${
+                    product.stock < 0
+                      ? "text-rose-600 dark:text-rose-400"
+                      : "text-foreground"
+                  }`}
+                >
                   {product.stock} {product.unit}
+                  {product.stock < 0 ? " (oversold)" : ""}
                 </span>
               </div>
             </div>
