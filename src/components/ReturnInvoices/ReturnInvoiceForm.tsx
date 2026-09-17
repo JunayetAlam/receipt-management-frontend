@@ -9,7 +9,6 @@ import {
   Loader2,
   Package,
   Save,
-  Search,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,14 +23,17 @@ import {
   useUpdateReturnInvoiceMutation,
 } from "@/redux/api/returnInvoiceApi";
 import { useGetAllReceiptsQuery, useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
-import { TReturnInvoice, TReturnableReceiptItem } from "@/types";
+import { TReturnInvoice } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { derivePositionAfterReturn } from "@/utils/deriveReceiptSettlement";
 import { cn } from "@/lib/utils";
+import ReceiptSelect from "./ReceiptSelect";
 
 interface LineState {
   selected: boolean;
   quantity: number;
+  sellingPrice: number;
+  discount: number;
 }
 
 interface ReturnInvoiceFormProps {
@@ -40,14 +42,14 @@ interface ReturnInvoiceFormProps {
   isDetails?: boolean;
 }
 
-function lineTotal(item: TReturnableReceiptItem, qty: number) {
-  const sub = qty * item.sellingPrice;
-  const disc = (sub * (item.discount || 0)) / 100;
-  return Math.round(Math.max(0, sub - disc) * 100) / 100;
-}
-
 function round2(n: number) {
   return Math.round(n * 100) / 100;
+}
+
+function lineTotal(qty: number, sellingPrice: number, discount: number) {
+  const sub = qty * sellingPrice;
+  const disc = (sub * (discount || 0)) / 100;
+  return round2(Math.max(0, sub - disc));
 }
 
 export default function ReturnInvoiceForm({
@@ -64,6 +66,9 @@ export default function ReturnInvoiceForm({
 
   const [receiptId, setReceiptId] = useState(preselectedReceiptId);
   const [receiptSearch, setReceiptSearch] = useState("");
+  const receiptSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [lines, setLines] = useState<Record<string, LineState>>({});
   const [discount, setDiscount] = useState(
     initialData ? String(initialData.discount || 0) : "0",
@@ -73,6 +78,13 @@ export default function ReturnInvoiceForm({
   );
   const [note, setNote] = useState(initialData?.note || "");
   const refundTouchedRef = useRef(!!isEditing || !!isDetails);
+
+  const handleReceiptSearch = (term: string) => {
+    if (receiptSearchTimer.current) clearTimeout(receiptSearchTimer.current);
+    receiptSearchTimer.current = setTimeout(() => {
+      setReceiptSearch(term);
+    }, 300);
+  };
 
   const [createReturn, { isLoading: isCreating }] =
     useCreateReturnInvoiceMutation();
@@ -153,16 +165,22 @@ export default function ReturnInvoiceForm({
               existingInitial.quantity,
               maxQty || existingInitial.quantity,
             ),
+            sellingPrice: existingInitial.sellingPrice,
+            discount: existingInitial.discount,
           };
         } else if (prevLine) {
           next[item.receiptItemId] = {
             selected: prevLine.selected && maxQty > 0,
             quantity: Math.min(prevLine.quantity || 1, Math.max(maxQty, 0)),
+            sellingPrice: prevLine.sellingPrice ?? item.sellingPrice,
+            discount: prevLine.discount ?? item.discount,
           };
         } else {
           next[item.receiptItemId] = {
             selected: false,
             quantity: maxQty > 0 ? 1 : 0,
+            sellingPrice: item.sellingPrice,
+            discount: item.discount,
           };
         }
       }
@@ -207,18 +225,21 @@ export default function ReturnInvoiceForm({
     return returnableItems
       .filter((it) => lines[it.receiptItemId]?.selected)
       .map((it) => {
-        const qty = lines[it.receiptItemId]?.quantity || 0;
+        const line = lines[it.receiptItemId];
+        const qty = line?.quantity || 0;
+        const sellingPrice = line?.sellingPrice ?? it.sellingPrice;
+        const discountPct = line?.discount ?? it.discount;
         return {
           receiptItemId: it.receiptItemId,
           productName: it.productName,
           unit: it.unit,
-          sellingPrice: it.sellingPrice,
-          discount: it.discount,
+          sellingPrice,
+          discount: discountPct,
           originalQuantity: it.originalQuantity,
           alreadyReturned: it.alreadyReturned,
           remainingReturnable: it.remainingReturnable,
           quantity: qty,
-          totalPrice: lineTotal(it, qty),
+          totalPrice: lineTotal(qty, sellingPrice, discountPct),
         };
       });
   }, [readOnly, initialData, returnableItems, lines]);
@@ -289,6 +310,8 @@ export default function ReturnInvoiceForm({
       .map(([receiptItemId, v]) => ({
         receiptItemId,
         quantity: Number(v.quantity),
+        sellingPrice: Math.max(0, Number(v.sellingPrice) || 0),
+        discount: Math.max(0, Math.min(100, Number(v.discount) || 0)),
       }));
 
     if (items.length === 0) {
@@ -466,49 +489,28 @@ export default function ReturnInvoiceForm({
           ) : (
             <div className="space-y-2">
               <Label className="text-xs">Select receipt *</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search receipt # or customer..."
-                  value={receiptSearch}
-                  onChange={(e) => setReceiptSearch(e.target.value)}
-                  className="pl-9 text-xs h-9"
-                />
-              </div>
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y">
-                {isReceiptsLoading ? (
-                  <div className="p-3 space-y-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                  </div>
-                ) : (receiptsRes?.data || []).length === 0 ? (
-                  <p className="p-3 text-xs text-muted-foreground">
-                    No receipts found
-                  </p>
-                ) : (
-                  (receiptsRes?.data || []).map((r) => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => setReceiptId(r.id)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 text-xs hover:bg-muted/60 transition-colors",
-                        receiptId === r.id && "bg-primary/10",
-                      )}
-                    >
-                      <span className="font-mono font-semibold">
-                        {r.receiptNumber}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {" "}
-                        · {r.customer?.name} · ৳{r.totalAmount}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
+              <ReceiptSelect
+                receipts={receiptsRes?.data || []}
+                selectedReceiptId={receiptId}
+                selectedReceipt={selectedReceipt}
+                isLoading={isReceiptsLoading}
+                onSelect={(id) => setReceiptId(id)}
+                onClear={() => {
+                  setReceiptId("");
+                  setReceiptSearch("");
+                }}
+                onSearch={handleReceiptSearch}
+              />
+              {receiptId && customerName && (
+                <p className="text-xs text-muted-foreground">
+                  Customer:{" "}
+                  <span className="font-medium text-foreground">
+                    {customerName}
+                  </span>
+                </p>
+              )}
               {receiptId && previousReturnNumber && (
-                <p className="text-xs text-muted-foreground pt-1">
+                <p className="text-xs text-muted-foreground">
                   Previous return{" "}
                   <span className="font-mono font-semibold text-foreground">
                     {previousReturnNumber}
@@ -548,6 +550,7 @@ export default function ReturnInvoiceForm({
                     <th className="py-2 pr-2">Unit</th>
                     <th className="py-2 pr-2 text-right">Qty</th>
                     <th className="py-2 pr-2 text-right">Price</th>
+                    <th className="py-2 pr-2 text-right">Disc %</th>
                     <th className="py-2 text-right">Total</th>
                   </tr>
                 </thead>
@@ -568,6 +571,9 @@ export default function ReturnInvoiceForm({
                       <td className="py-2 pr-2 text-right font-mono">
                         ৳{it.sellingPrice}
                       </td>
+                      <td className="py-2 pr-2 text-right font-mono">
+                        {it.discount > 0 ? `${it.discount}%` : "—"}
+                      </td>
                       <td className="py-2 text-right font-mono font-semibold">
                         ৳{it.totalPrice.toFixed(2)}
                       </td>
@@ -582,46 +588,70 @@ export default function ReturnInvoiceForm({
             </p>
           ) : (
             <div className="space-y-2">
+              <div className="hidden md:grid md:grid-cols-[3.25rem_minmax(0,3.2fr)_1.3fr_1.6fr_1.3fr_1.6fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
+                <div className="text-center">#</div>
+                <div>Product</div>
+                <div className="text-right">Qty *</div>
+                <div className="text-right">Price (৳) *</div>
+                <div className="text-right">Disc (%)</div>
+                <div className="text-right">Total (৳)</div>
+              </div>
               {returnableItems.map((item, index) => {
                 const line = lines[item.receiptItemId] || {
                   selected: false,
-                  quantity: 1,
+                  quantity: item.remainingReturnable > 0 ? 1 : 0,
+                  sellingPrice: item.sellingPrice,
+                  discount: item.discount,
                 };
                 const disabled = item.remainingReturnable <= 0;
+                const fieldsDisabled = !line.selected || disabled || readOnly;
+                const rowTotal = lineTotal(
+                  line.quantity,
+                  line.sellingPrice,
+                  line.discount,
+                );
+                const patchLine = (patch: Partial<LineState>) => {
+                  setLines((prev) => {
+                    const current = prev[item.receiptItemId] || line;
+                    return {
+                      ...prev,
+                      [item.receiptItemId]: { ...current, ...patch },
+                    };
+                  });
+                };
                 return (
                   <div
                     key={item.receiptItemId}
                     className={cn(
-                      "flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border p-3",
+                      "rounded-xl border p-2.5 space-y-2",
                       line.selected
                         ? "border-primary/40 bg-primary/5"
                         : "border-border/70",
                       disabled && "opacity-50",
                     )}
                   >
-                    <div className="flex items-start gap-2 flex-1 min-w-0">
-                      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-semibold text-muted-foreground">
-                        {index + 1}
-                      </span>
-                      <input
-                        type="checkbox"
-                        className="mt-1 size-4 accent-primary cursor-pointer"
-                        checked={line.selected}
-                        disabled={disabled || readOnly}
-                        onChange={(e) => {
-                          setLines((prev) => ({
-                            ...prev,
-                            [item.receiptItemId]: {
-                              ...line,
+                    <div className="grid grid-cols-1 md:grid-cols-[3.25rem_minmax(0,3.2fr)_1.3fr_1.6fr_1.3fr_1.6fr] gap-2 items-center">
+                      <div className="flex items-center gap-1.5 md:justify-center">
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary cursor-pointer"
+                          checked={line.selected}
+                          disabled={disabled || readOnly}
+                          onChange={(e) => {
+                            patchLine({
                               selected: e.target.checked,
                               quantity:
                                 line.quantity > 0
                                   ? line.quantity
                                   : Math.min(1, item.remainingReturnable),
-                            },
-                          }));
-                        }}
-                      />
+                            });
+                          }}
+                        />
+                        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-semibold text-muted-foreground">
+                          {index + 1}
+                        </span>
+                      </div>
+
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">
                           {item.productName}
@@ -629,40 +659,88 @@ export default function ReturnInvoiceForm({
                         <p className="text-[11px] text-muted-foreground font-mono">
                           Sold {item.originalQuantity} · Returned{" "}
                           {item.alreadyReturned} · Left{" "}
-                          {item.remainingReturnable} {item.unit} · ৳
-                          {item.sellingPrice}
-                          {item.discount > 0 ? ` · Disc ${item.discount}%` : ""}
+                          {item.remainingReturnable} {item.unit}
                         </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:w-40">
-                      <Label className="text-[11px] text-muted-foreground shrink-0">
-                        Qty
-                      </Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={item.remainingReturnable}
-                        step="any"
-                        disabled={!line.selected || disabled || readOnly}
-                        value={line.quantity}
-                        onChange={(e) => {
-                          const raw = Number(e.target.value);
-                          const qty = Math.min(
-                            Math.max(0, raw || 0),
-                            item.remainingReturnable,
-                          );
-                          setLines((prev) => ({
-                            ...prev,
-                            [item.receiptItemId]: {
-                              ...line,
+
+                      <div>
+                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                          Qty *
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={item.remainingReturnable}
+                          step="any"
+                          disabled={fieldsDisabled}
+                          value={line.quantity}
+                          onChange={(e) => {
+                            const qty = Math.min(
+                              Math.max(0, Number(e.target.value) || 0),
+                              item.remainingReturnable,
+                            );
+                            patchLine({
                               quantity: qty,
                               selected: qty > 0 ? true : line.selected,
-                            },
-                          }));
-                        }}
-                        className="h-8 text-xs font-mono"
-                      />
+                            });
+                          }}
+                          className="h-8 text-xs font-mono text-right"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                          Price (৳) *
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          disabled={fieldsDisabled}
+                          value={line.sellingPrice}
+                          onChange={(e) =>
+                            patchLine({
+                              sellingPrice: Math.max(
+                                0,
+                                Number(e.target.value) || 0,
+                              ),
+                            })
+                          }
+                          className="h-8 text-xs font-mono text-right"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                          Disc (%)
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step="0.01"
+                          disabled={fieldsDisabled}
+                          value={line.discount}
+                          onChange={(e) =>
+                            patchLine({
+                              discount: Math.max(
+                                0,
+                                Math.min(100, Number(e.target.value) || 0),
+                              ),
+                            })
+                          }
+                          className="h-8 text-xs font-mono text-right"
+                        />
+                      </div>
+
+                      <div className="text-right">
+                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                          Total (৳)
+                        </label>
+                        <span className="text-sm font-semibold font-mono text-foreground block">
+                          ৳{rowTotal.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -736,51 +814,47 @@ export default function ReturnInvoiceForm({
                 +৳{subTotal.toFixed(2)}
               </span>
             </div>
-            {discVal > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Discount</span>
-                <span className="font-mono font-semibold text-rose-600">
-                  -৳{discVal.toFixed(2)}
-                </span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Discount</span>
+              <span className="font-mono font-semibold text-rose-600">
+                -৳{discVal.toFixed(2)}
+              </span>
+            </div>
 
             <div className="border-t pt-2 space-y-2">
               <div className="flex justify-between">
                 <span className="font-semibold">Total</span>
                 <span className="font-mono font-bold">
-                  +৳{round2(previousDue + totalAmount).toFixed(2)}
+                  +৳{totalAmount.toFixed(2)}
                 </span>
               </div>
 
-              {previousDue > 0 && (
+              {previousPosition.netDue > 0 ? (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Previous Due</span>
-                  <span className="font-mono font-semibold text-rose-600">
-                    -৳{previousDue.toFixed(2)}
+                  <span className="text-muted-foreground">
+                    Previous Customer Due
                   </span>
-                </div>
-              )}
-              {previousDue <= 0 && previousPosition.netDue > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Previous Due</span>
                   <span className="font-mono font-semibold text-rose-600">
                     -৳{previousPosition.netDue.toFixed(2)}
                   </span>
                 </div>
+              ) : previousPosition.netRefundable > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Previous Refund Due
+                  </span>
+                  <span className="font-mono font-semibold">
+                    +৳{previousPosition.netRefundable.toFixed(2)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Previous Due</span>
+                  <span className="font-mono font-semibold text-rose-600">
+                    -৳0.00
+                  </span>
+                </div>
               )}
-              {previousDue <= 0 &&
-                previousPosition.netDue <= 0 &&
-                previousPosition.netRefundable > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Previous Refundable
-                    </span>
-                    <span className="font-mono font-semibold">
-                      +৳{previousPosition.netRefundable.toFixed(2)}
-                    </span>
-                  </div>
-                )}
 
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Current Refund</span>
@@ -793,20 +867,20 @@ export default function ReturnInvoiceForm({
                 <div className="flex justify-between border-t-2 border-foreground pt-2">
                   <span className="font-bold">Refund Due</span>
                   <span className="font-mono font-extrabold text-rose-600">
-                    +৳{currentPosition.netRefundable.toFixed(2)}
+                    ৳{currentPosition.netRefundable.toFixed(2)}
                   </span>
                 </div>
               ) : currentPosition.netDue > 0 ? (
                 <div className="flex justify-between border-t-2 border-foreground pt-2">
                   <span className="font-bold">Customer Due</span>
                   <span className="font-mono font-extrabold text-rose-600">
-                    +৳{currentPosition.netDue.toFixed(2)}
+                    ৳{currentPosition.netDue.toFixed(2)}
                   </span>
                 </div>
               ) : (
                 <div className="flex justify-between border-t-2 border-foreground pt-2">
                   <span className="font-bold">Balance</span>
-                  <span className="font-mono font-extrabold">+৳0.00</span>
+                  <span className="font-mono font-extrabold">৳0.00</span>
                 </div>
               )}
             </div>

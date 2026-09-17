@@ -3,21 +3,19 @@ import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import { derivePositionAfterReturn } from "@/utils/deriveReceiptSettlement";
 import React from "react";
 
-function round2(n: number) {
-  return Math.round(n * 100) / 100;
-}
-
 function MoneyRow({
   label,
   amount,
   sign,
   emphasize,
+  hideSign,
   className,
 }: {
   label: string;
   amount: number;
   sign: "+" | "-";
   emphasize?: boolean;
+  hideSign?: boolean;
   className?: string;
 }) {
   const color =
@@ -41,7 +39,7 @@ function MoneyRow({
       <span
         className={`font-mono ${emphasize ? "font-extrabold text-xl" : "font-semibold text-sm"} ${className || color}`}
       >
-        {sign}
+        {hideSign ? "" : sign}
         {formatInvoiceMoney(Math.abs(amount))}
       </span>
     </div>
@@ -56,7 +54,6 @@ export default function RetIV_Calculation({
   const subTotal = Number(returnInvoice.subTotal) || 0;
   const discount = Number(returnInvoice.discount) || 0;
   const netCredit = Number(returnInvoice.totalAmount) || 0;
-  const previousDue = Number(returnInvoice.previousDueAmount) || 0;
   const currentRefund = Number(returnInvoice.refundedAmount) || 0;
 
   const previousPosition = returnInvoice.previousPosition || {
@@ -64,18 +61,9 @@ export default function RetIV_Calculation({
     netRefundable: 0,
   };
 
-  // Intermediate: prior unpaid refund obligation + this net credit
-  const dueOrRefundable = round2(previousDue + netCredit);
-
   const currentPosition =
     returnInvoice.currentPosition ||
     derivePositionAfterReturn(previousPosition, netCredit, currentRefund);
-
-  const showBillPreviousDue = previousDue <= 0 && previousPosition.netDue > 0;
-  const showBillPreviousRefundable =
-    previousDue <= 0 &&
-    previousPosition.netDue <= 0 &&
-    previousPosition.netRefundable > 0;
 
   return (
     <div
@@ -84,30 +72,25 @@ export default function RetIV_Calculation({
     >
       <div className="w-full sm:w-1/2 print:w-1/2 space-y-1 text-xs">
         <MoneyRow label="Subtotal" amount={subTotal} sign="+" />
-
-        {discount > 0 && (
-          <MoneyRow label="Discount" amount={discount} sign="-" />
-        )}
+        <MoneyRow label="Discount" amount={discount} sign="-" />
 
         <div className="border-t border-slate-300 pt-1 mt-1 space-y-1">
-          <MoneyRow label="Total" amount={dueOrRefundable} sign="+" />
+          <MoneyRow label="Total" amount={netCredit} sign="+" />
 
-          {previousDue > 0 && (
-            <MoneyRow label="Previous Due" amount={previousDue} sign="-" />
-          )}
-          {showBillPreviousDue && (
+          {previousPosition.netDue > 0 ? (
             <MoneyRow
-              label="Previous Due"
+              label="Previous Customer Due"
               amount={previousPosition.netDue}
               sign="-"
             />
-          )}
-          {showBillPreviousRefundable && (
+          ) : previousPosition.netRefundable > 0 ? (
             <MoneyRow
-              label="Previous Refundable"
+              label="Previous Refund Due"
               amount={previousPosition.netRefundable}
               sign="+"
             />
+          ) : (
+            <MoneyRow label="Previous Due" amount={0} sign="-" />
           )}
 
           <MoneyRow label="Current Refund" amount={currentRefund} sign="-" />
@@ -119,6 +102,7 @@ export default function RetIV_Calculation({
                 amount={currentPosition.netRefundable}
                 sign="+"
                 emphasize
+                hideSign
                 className="text-rose-600"
               />
             ) : currentPosition.netDue > 0 ? (
@@ -127,6 +111,7 @@ export default function RetIV_Calculation({
                 amount={currentPosition.netDue}
                 sign="+"
                 emphasize
+                hideSign
                 className="text-rose-600"
               />
             ) : (
@@ -135,6 +120,7 @@ export default function RetIV_Calculation({
                 amount={0}
                 sign="+"
                 emphasize
+                hideSign
                 className="text-slate-900"
               />
             )}
