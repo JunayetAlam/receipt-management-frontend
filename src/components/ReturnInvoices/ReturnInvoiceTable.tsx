@@ -342,11 +342,7 @@ export default function ReturnInvoiceTable() {
                               variant="ghost"
                               size="sm"
                               className="h-7 text-[11px] text-destructive"
-                              title={
-                                row.isLatest === false
-                                  ? "Only the latest return can be deleted"
-                                  : "Delete"
-                              }
+                              title="Delete"
                               onClick={() => {
                                 setSelectedForDelete(row);
                                 setDeleteModalOpen(true);
