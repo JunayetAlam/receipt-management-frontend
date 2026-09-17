@@ -36,6 +36,39 @@ function EditReturnInvoiceInner() {
     );
   }
 
+  if (returnInvoice.isDeleted) {
+    return (
+      <div className="text-center space-y-3">
+        <p className="text-destructive font-semibold">
+          Deleted return invoices cannot be edited
+        </p>
+        <Link href={`/return-invoices/${returnInvoice.id}`}>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="size-4 mr-1" /> Back to details
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (returnInvoice.isLatest === false) {
+    return (
+      <div className="text-center space-y-3">
+        <p className="font-semibold">
+          Only the latest return invoice on this receipt can be edited
+        </p>
+        <p className="text-xs text-muted-foreground font-mono">
+          {returnInvoice.returnNumber}
+        </p>
+        <Link href={`/return-invoices/${returnInvoice.id}`}>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="size-4 mr-1" /> Back to details
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <>
       <p className="text-xs font-mono text-muted-foreground -mt-2 mb-2">

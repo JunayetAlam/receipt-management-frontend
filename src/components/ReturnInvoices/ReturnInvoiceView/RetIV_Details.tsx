@@ -69,6 +69,14 @@ export default function RetIV_Details({
               {returnInvoice.receipt?.receiptNumber || "—"}
             </span>
           </div>
+          {returnInvoice.previousReturnInvoice?.returnNumber && (
+            <div className="flex justify-between sm:justify-end items-center gap-8">
+              <span className="font-bold text-slate-800 text-sm">Prev Return</span>
+              <span className="font-mono font-semibold text-slate-900 text-sm">
+                {returnInvoice.previousReturnInvoice.returnNumber}
+              </span>
+            </div>
+          )}
           <div className="flex justify-between sm:justify-end items-center gap-8">
             <span className="font-bold text-slate-800 text-sm">Date</span>
             <span className="font-mono text-slate-900 text-sm">

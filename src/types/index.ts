@@ -327,10 +327,36 @@ export interface TReturnInvoiceItem {
   } | null;
 }
 
-export interface TReturnInvoice {
+/** Derived money fields — computed on the server from product lines + chain. */
+export interface TReturnInvoiceMoney {
+  subTotal: number;
+  totalAmount: number;
+  previousDueAmount: number;
+  dueRefundAmount: number;
+}
+
+export interface TPreviousPosition {
+  netDue: number;
+  netRefundable: number;
+}
+
+/** Same shape — bill position after applying this return. */
+export type TCurrentPosition = TPreviousPosition;
+
+export interface TPreviousReturnSummary extends TReturnInvoiceMoney {
+  id: string;
+  returnNumber: string;
+  discount: number;
+  refundedAmount: number;
+  createdAt?: string;
+}
+
+export interface TReturnInvoice extends TReturnInvoiceMoney {
   id: string;
   returnNumber: string;
   receiptId: string;
+  previousReturnInvoiceId?: string | null;
+  previousReturnInvoice?: TPreviousReturnSummary | null;
   receipt?: {
     id: string;
     receiptNumber: string;
@@ -347,11 +373,8 @@ export interface TReturnInvoice {
       address?: string | null;
     };
   } | null;
-  subTotal: number;
   discount: number;
-  totalAmount: number;
   refundedAmount: number;
-  dueRefundAmount: number;
   status: ReceiptStatus;
   note?: string | null;
   isDeleted: boolean;
@@ -364,6 +387,14 @@ export interface TReturnInvoice {
     lastName: string;
     email?: string;
   } | null;
+  /** True when this is the latest active return on its receipt (LIFO tip). */
+  isLatest?: boolean;
+  /** True when a soft-deleted return can be restored (no newer active exists). */
+  canRestore?: boolean;
+  /** Bill position before this return: customer due or shop refundable. */
+  previousPosition?: TPreviousPosition;
+  /** Bill position after this return's credit + cash refund. */
+  currentPosition?: TCurrentPosition;
   items: TReturnInvoiceItem[];
   _count?: {
     items: number;

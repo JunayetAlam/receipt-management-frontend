@@ -63,8 +63,8 @@ type TabType = "ALL" | "PENDING" | "APPROVED" | "PENDING_DELETION" | "ARCHIVED";
 const SORT_OPTIONS = [
   { label: "Newest First", sortBy: "createdAt", sortOrder: "desc" },
   { label: "Oldest First", sortBy: "createdAt", sortOrder: "asc" },
-  { label: "Total: High to Low", sortBy: "totalAmount", sortOrder: "desc" },
-  { label: "Total: Low to High", sortBy: "totalAmount", sortOrder: "asc" },
+  { label: "Refunded: High to Low", sortBy: "refundedAmount", sortOrder: "desc" },
+  { label: "Refunded: Low to High", sortBy: "refundedAmount", sortOrder: "asc" },
 ];
 
 export default function ReturnInvoiceTable() {
@@ -336,11 +336,17 @@ export default function ReturnInvoiceTable() {
                               Details
                             </Button>
                           </Link>
-                          {(isAdmin || row.status !== "APPROVED") && (
+                          {(isAdmin || row.status !== "APPROVED") &&
+                            row.isLatest !== false && (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-7 text-[11px] text-destructive"
+                              title={
+                                row.isLatest === false
+                                  ? "Only the latest return can be deleted"
+                                  : "Delete"
+                              }
                               onClick={() => {
                                 setSelectedForDelete(row);
                                 setDeleteModalOpen(true);
@@ -351,11 +357,14 @@ export default function ReturnInvoiceTable() {
                           )}
                         </>
                       )}
-                      {isAdmin && row.isDeleteRequested && !row.isDeleted && (
+                      {isAdmin &&
+                        row.isDeleteRequested &&
+                        !row.isDeleted &&
+                        row.isLatest !== false && (
                         <>
                           <ConfirmPopup
                             title="Confirm deletion?"
-                            description={`Delete ${row.returnNumber}? Stock will be adjusted.`}
+                            description={`Delete ${row.returnNumber}? Stock will be adjusted. Only the latest return can be deleted.`}
                             confirmLabel="Confirm"
                             destructive
                             loading={isConfirming}
@@ -400,10 +409,10 @@ export default function ReturnInvoiceTable() {
                           </ConfirmPopup>
                         </>
                       )}
-                      {isAdmin && row.isDeleted && (
+                      {isAdmin && row.isDeleted && row.canRestore !== false && (
                         <ConfirmPopup
                           title="Restore return invoice?"
-                          description={`Restore ${row.returnNumber}? Stock will be restored again.`}
+                          description={`Restore ${row.returnNumber}? Stock will be restored again. Not allowed if a newer return already exists.`}
                           confirmLabel="Restore"
                           loading={isRestoring}
                           onConfirm={async () => {
@@ -423,6 +432,14 @@ export default function ReturnInvoiceTable() {
                             Restore
                           </Button>
                         </ConfirmPopup>
+                      )}
+                      {isAdmin && row.isDeleted && row.canRestore === false && (
+                        <span
+                          className="text-[10px] text-muted-foreground px-1"
+                          title="A newer return invoice already exists"
+                        >
+                          Locked
+                        </span>
                       )}
                     </div>
                   </TableCell>

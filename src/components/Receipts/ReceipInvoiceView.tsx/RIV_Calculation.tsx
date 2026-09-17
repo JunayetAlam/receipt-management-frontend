@@ -1,6 +1,7 @@
 import { TReceipt } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
+import { deriveReceiptSettlement } from "@/utils/deriveReceiptSettlement";
 import React from "react";
 
 export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
@@ -12,16 +13,25 @@ export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
     );
 
   const returns = (receipt.returnInvoices || []).filter((r) => !r.isDeleted);
-  const totalReturned = Math.round(
-    returns.reduce((sum, r) => sum + (Number(r.totalAmount) || 0), 0) * 100,
-  ) / 100;
-  const netSaleAfterReturns = Math.round(
-    Math.max(0, (Number(receipt.totalAmount) || 0) - totalReturned) * 100,
-  ) / 100;
-  const paid = Number(receipt.paidAmount) || 0;
-  const netDue = Math.round(Math.max(0, netSaleAfterReturns - paid) * 100) / 100;
-  const netRefundable =
-    Math.round(Math.max(0, paid - netSaleAfterReturns) * 100) / 100;
+  const hasReturns = returns.length > 0;
+
+  const totalCredits = returns.reduce(
+    (sum, r) => sum + (Number(r.totalAmount) || 0),
+    0,
+  );
+  const totalRefunded = returns.reduce(
+    (sum, r) => sum + (Number(r.refundedAmount) || 0),
+    0,
+  );
+
+  const settlement = deriveReceiptSettlement({
+    receiptTotal: Number(receipt.totalAmount) || 0,
+    paidAmount: Number(receipt.paidAmount) || 0,
+    creditsBefore: totalCredits,
+    thisCredit: 0,
+    refundedBefore: totalRefunded,
+    thisRefunded: 0,
+  });
 
   return (
     <div
@@ -77,94 +87,134 @@ export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
           </div>
         )}
 
-        <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900">
-          <span className="font-bold text-base">Total Due</span>
-          <span
-            className={`font-mono font-extrabold text-xl ${
-              receipt.dueAmount > 0 ? "text-rose-600" : "text-slate-900"
-            }`}
-          >
-            {formatInvoiceMoney(receipt.dueAmount)}
-          </span>
-        </div>
+        {/* Without returns: original sale balance. With returns: settled below. */}
+        {!hasReturns && (
+          <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900">
+            <span className="font-bold text-base">Total Due</span>
+            <span
+              className={`font-mono font-extrabold text-xl ${
+                receipt.dueAmount > 0 ? "text-rose-600" : "text-slate-900"
+              }`}
+            >
+              {formatInvoiceMoney(receipt.dueAmount)}
+            </span>
+          </div>
+        )}
 
-        {returns.length > 0 && (
+        {hasReturns && (
           <div className="pt-3 mt-2 border-t border-dashed border-slate-300 space-y-1.5">
             <p className="font-bold text-sm text-slate-900 tracking-wide">
               Returns
             </p>
-            {returns.map((ret) => (
-              <div key={ret.id} className="space-y-0.5">
-                <div className="flex justify-between items-center text-slate-700">
-                  <span className="font-semibold text-xs">
-                    {ret.returnNumber}{" "}
-                    <span className="font-normal text-slate-500">
-                      ({formatInvoiceDate(ret.createdAt)})
+            {returns.map((ret) => {
+              const credit = Number(ret.totalAmount) || 0;
+              const discount = Number(ret.discount) || 0;
+              const refunded = Number(ret.refundedAmount) || 0;
+              const subTotal =
+                Number(ret.subTotal) ||
+                Math.round((credit + discount) * 100) / 100;
+
+              return (
+                <div key={ret.id} className="space-y-0.5 pb-1">
+                  <div className="flex justify-between items-center text-slate-700">
+                    <span className="font-semibold text-xs">
+                      {ret.returnNumber}{" "}
+                      <span className="font-normal text-slate-500">
+                        ({formatInvoiceDate(ret.createdAt)})
+                      </span>
                     </span>
-                  </span>
-                  <span className="font-mono font-semibold text-xs text-rose-600">
-                    -{formatInvoiceMoney(ret.totalAmount)}
-                  </span>
+                    <span className="font-mono font-semibold text-xs text-slate-700">
+                      {formatInvoiceMoney(subTotal)}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between items-center text-slate-500 pl-0.5">
+                      <span className="text-[10px]">Discount</span>
+                      <span className="font-mono text-[10px] text-rose-600">
+                        -{formatInvoiceMoney(discount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-slate-700 pl-0.5">
+                    <span className="text-[10px] font-semibold">Net Credit</span>
+                    <span className="font-mono text-[10px] font-semibold text-rose-600">
+                      -{formatInvoiceMoney(credit)}
+                    </span>
+                  </div>
+                  {refunded > 0 && (
+                    <div className="flex justify-between items-center text-slate-700 pl-0.5">
+                      <span className="text-[10px] font-semibold">
+                        Refunded
+                      </span>
+                      <span className="font-mono text-[10px] font-semibold text-emerald-700">
+                        {formatInvoiceMoney(refunded)}
+                      </span>
+                    </div>
+                  )}
+                  {(ret.items || []).length > 0 && (
+                    <p className="text-[10px] text-slate-500 leading-snug pl-0.5">
+                      {(ret.items || [])
+                        .map((it) => `${it.productName} × ${it.quantity}`)
+                        .join(", ")}
+                    </p>
+                  )}
                 </div>
-                {(ret.items || []).length > 0 && (
-                  <p className="text-[10px] text-slate-500 leading-snug pl-0.5">
-                    {(ret.items || [])
-                      .map((it) => `${it.productName} × ${it.quantity}`)
-                      .join(", ")}
-                  </p>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
             <div className="flex justify-between items-center text-slate-800 pt-1 border-t border-slate-200">
               <span className="font-semibold text-sm">Total Returned</span>
               <span className="font-mono font-bold text-sm text-rose-600">
-                -{formatInvoiceMoney(totalReturned)}
+                -{formatInvoiceMoney(settlement.totalCredits)}
               </span>
             </div>
 
+            {settlement.totalRefunded > 0 && (
+              <div className="flex justify-between items-center text-slate-800">
+                <span className="font-semibold text-sm">Total Refunded</span>
+                <span className="font-mono font-bold text-sm text-emerald-700">
+                  {formatInvoiceMoney(settlement.totalRefunded)}
+                </span>
+              </div>
+            )}
+
             <div className="pt-1.5 space-y-1 border-t border-slate-200">
-              <div className="flex justify-between items-center text-slate-700">
-                <span className="font-semibold text-xs">Sale Net Total</span>
-                <span className="font-mono text-xs">
-                  {formatInvoiceMoney(receipt.totalAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-slate-700">
-                <span className="font-semibold text-xs">(-) Total Returned</span>
-                <span className="font-mono text-xs text-rose-600">
-                  -{formatInvoiceMoney(totalReturned)}
-                </span>
-              </div>
               <div className="flex justify-between items-center text-slate-900">
                 <span className="font-semibold text-sm">
                   Net Sale After Returns
                 </span>
                 <span className="font-mono font-bold text-sm">
-                  {formatInvoiceMoney(netSaleAfterReturns)}
+                  {formatInvoiceMoney(settlement.netSaleAfterReturns)}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-slate-700">
-                <span className="font-semibold text-xs">Paid</span>
-                <span className="font-mono text-xs text-emerald-700">
-                  {formatInvoiceMoney(paid)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-slate-900 border-t border-slate-900 pt-1">
-                <span className="font-bold text-sm">Net Due</span>
-                <span
-                  className={`font-mono font-extrabold text-base ${
-                    netDue > 0 ? "text-rose-600" : "text-slate-900"
-                  }`}
-                >
-                  {formatInvoiceMoney(netDue)}
-                </span>
-              </div>
-              {netRefundable > 0 && (
-                <div className="flex justify-between items-center text-slate-900">
-                  <span className="font-bold text-sm">Net Refundable</span>
-                  <span className="font-mono font-extrabold text-base text-emerald-700">
-                    {formatInvoiceMoney(netRefundable)}
+
+              {settlement.totalRefunded > 0 && (
+                <div className="flex justify-between items-center text-slate-700">
+                  <span className="font-semibold text-xs">
+                    Net Paid (after refunds)
+                  </span>
+                  <span className="font-mono text-xs text-emerald-700">
+                    {formatInvoiceMoney(settlement.netPaid)}
+                  </span>
+                </div>
+              )}
+
+              {settlement.netRefundable > 0 ? (
+                <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-1">
+                  <span className="font-bold text-base">Net Refundable</span>
+                  <span className="font-mono font-extrabold text-xl text-emerald-700">
+                    {formatInvoiceMoney(settlement.netRefundable)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-1">
+                  <span className="font-bold text-base">Net Due</span>
+                  <span
+                    className={`font-mono font-extrabold text-xl ${
+                      settlement.netDue > 0 ? "text-rose-600" : "text-slate-900"
+                    }`}
+                  >
+                    {formatInvoiceMoney(settlement.netDue)}
                   </span>
                 </div>
               )}

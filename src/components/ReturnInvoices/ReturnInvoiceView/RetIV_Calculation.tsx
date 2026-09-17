@@ -1,59 +1,144 @@
 import { TReturnInvoice } from "@/types";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
+import { derivePositionAfterReturn } from "@/utils/deriveReceiptSettlement";
 import React from "react";
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function MoneyRow({
+  label,
+  amount,
+  sign,
+  emphasize,
+  className,
+}: {
+  label: string;
+  amount: number;
+  sign: "+" | "-";
+  emphasize?: boolean;
+  className?: string;
+}) {
+  const color =
+    sign === "+"
+      ? emphasize
+        ? "text-slate-900"
+        : "text-slate-900"
+      : "text-rose-600";
+
+  return (
+    <div className="flex justify-between items-center text-slate-700">
+      <span
+        className={
+          emphasize
+            ? "font-bold text-base text-slate-900"
+            : "font-semibold text-sm"
+        }
+      >
+        {label}
+      </span>
+      <span
+        className={`font-mono ${emphasize ? "font-extrabold text-xl" : "font-semibold text-sm"} ${className || color}`}
+      >
+        {sign}
+        {formatInvoiceMoney(Math.abs(amount))}
+      </span>
+    </div>
+  );
+}
 
 export default function RetIV_Calculation({
   returnInvoice,
 }: {
   returnInvoice: TReturnInvoice;
 }) {
+  const subTotal = Number(returnInvoice.subTotal) || 0;
+  const discount = Number(returnInvoice.discount) || 0;
+  const netCredit = Number(returnInvoice.totalAmount) || 0;
+  const previousDue = Number(returnInvoice.previousDueAmount) || 0;
+  const currentRefund = Number(returnInvoice.refundedAmount) || 0;
+
+  const previousPosition = returnInvoice.previousPosition || {
+    netDue: 0,
+    netRefundable: 0,
+  };
+
+  // Intermediate: prior unpaid refund obligation + this net credit
+  const dueOrRefundable = round2(previousDue + netCredit);
+
+  const currentPosition =
+    returnInvoice.currentPosition ||
+    derivePositionAfterReturn(previousPosition, netCredit, currentRefund);
+
+  const showBillPreviousDue = previousDue <= 0 && previousPosition.netDue > 0;
+  const showBillPreviousRefundable =
+    previousDue <= 0 &&
+    previousPosition.netDue <= 0 &&
+    previousPosition.netRefundable > 0;
+
   return (
     <div
       className="flex justify-end pt-1 pr-2.5"
       style={{ breakInside: "avoid", pageBreakInside: "avoid" }}
     >
       <div className="w-full sm:w-1/2 print:w-1/2 space-y-1 text-xs">
-        <div className="flex justify-between items-center text-slate-700">
-          <span className="font-semibold text-sm">Subtotal</span>
-          <span className="font-mono font-semibold text-sm text-slate-900">
-            {formatInvoiceMoney(returnInvoice.subTotal)}
-          </span>
-        </div>
+        <MoneyRow label="Subtotal" amount={subTotal} sign="+" />
 
-        {returnInvoice.discount > 0 && (
-          <div className="flex justify-between items-center text-slate-700">
-            <span className="font-semibold text-sm">Discount</span>
-            <span className="font-mono font-semibold text-sm text-rose-600">
-              -{formatInvoiceMoney(returnInvoice.discount)}
-            </span>
-          </div>
+        {discount > 0 && (
+          <MoneyRow label="Discount" amount={discount} sign="-" />
         )}
 
-        <div className="flex justify-between items-center text-slate-900 pt-1 border-t border-slate-200">
-          <span className="font-semibold text-sm">Net Credit</span>
-          <span className="font-mono font-bold text-sm text-slate-900">
-            {formatInvoiceMoney(returnInvoice.totalAmount)}
-          </span>
-        </div>
+        <div className="border-t border-slate-300 pt-1 mt-1 space-y-1">
+          <MoneyRow label="Total" amount={dueOrRefundable} sign="+" />
 
-        <div className="flex justify-between items-center text-slate-700">
-          <span className="font-semibold text-sm">Refunded</span>
-          <span className="font-mono font-semibold text-sm text-emerald-700">
-            {formatInvoiceMoney(returnInvoice.refundedAmount)}
-          </span>
-        </div>
+          {previousDue > 0 && (
+            <MoneyRow label="Previous Due" amount={previousDue} sign="-" />
+          )}
+          {showBillPreviousDue && (
+            <MoneyRow
+              label="Previous Due"
+              amount={previousPosition.netDue}
+              sign="-"
+            />
+          )}
+          {showBillPreviousRefundable && (
+            <MoneyRow
+              label="Previous Refundable"
+              amount={previousPosition.netRefundable}
+              sign="+"
+            />
+          )}
 
-        <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900">
-          <span className="font-bold text-base">Refund Due</span>
-          <span
-            className={`font-mono font-extrabold text-xl ${
-              returnInvoice.dueRefundAmount > 0
-                ? "text-rose-600"
-                : "text-slate-900"
-            }`}
-          >
-            {formatInvoiceMoney(returnInvoice.dueRefundAmount)}
-          </span>
+          <MoneyRow label="Current Refund" amount={currentRefund} sign="-" />
+
+          <div className="border-t-2 border-slate-900 pt-1 mt-1">
+            {currentPosition.netRefundable > 0 ? (
+              <MoneyRow
+                label="Refund Due"
+                amount={currentPosition.netRefundable}
+                sign="+"
+                emphasize
+                className="text-rose-600"
+              />
+            ) : currentPosition.netDue > 0 ? (
+              <MoneyRow
+                label="Customer Due"
+                amount={currentPosition.netDue}
+                sign="+"
+                emphasize
+                className="text-rose-600"
+              />
+            ) : (
+              <MoneyRow
+                label="Balance"
+                amount={0}
+                sign="+"
+                emphasize
+                className="text-slate-900"
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

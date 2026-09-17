@@ -116,7 +116,9 @@ export default function ReturnInvoiceDetailsPage() {
                   <Printer className="size-3.5" /> Print
                 </Button>
               </Link>
-              {(isAdmin || returnInvoice.status !== "APPROVED") && (
+              {(isAdmin || returnInvoice.status !== "APPROVED") &&
+                returnInvoice.isLatest !== false &&
+                !returnInvoice.isDeleted && (
                 <Link href={`/return-invoices/${returnInvoice.id}/edit`}>
                   <Button
                     variant="outline"
@@ -132,11 +134,12 @@ export default function ReturnInvoiceDetailsPage() {
 
           {isAdmin &&
           returnInvoice.isDeleteRequested &&
-          !returnInvoice.isDeleted ? (
+          !returnInvoice.isDeleted &&
+          returnInvoice.isLatest !== false ? (
             <div className="flex items-center gap-1.5 border-l pl-1.5 ml-1">
               <ConfirmPopup
                 title="Confirm deletion?"
-                description={`Delete ${returnInvoice.returnNumber}?`}
+                description={`Delete ${returnInvoice.returnNumber}? Only the latest return can be deleted.`}
                 confirmLabel="Confirm"
                 destructive
                 loading={isConfirming}
@@ -181,10 +184,10 @@ export default function ReturnInvoiceDetailsPage() {
                 </Button>
               </ConfirmPopup>
             </div>
-          ) : returnInvoice.isDeleted && isAdmin ? (
+          ) : returnInvoice.isDeleted && isAdmin && returnInvoice.canRestore !== false ? (
             <ConfirmPopup
               title="Restore?"
-              description={`Restore ${returnInvoice.returnNumber}?`}
+              description={`Restore ${returnInvoice.returnNumber}? Not allowed if a newer return already exists.`}
               confirmLabel="Restore"
               loading={isRestoring}
               onConfirm={async () => {
@@ -204,8 +207,13 @@ export default function ReturnInvoiceDetailsPage() {
                 <RotateCcw className="size-3.5" /> Restore
               </Button>
             </ConfirmPopup>
+          ) : returnInvoice.isDeleted && isAdmin && returnInvoice.canRestore === false ? (
+            <span className="text-xs text-muted-foreground px-2">
+              Restore locked (newer return exists)
+            </span>
           ) : (
-            !returnInvoice.isDeleted && (
+            !returnInvoice.isDeleted &&
+            returnInvoice.isLatest !== false && (
               <Button
                 variant="outline"
                 size="sm"

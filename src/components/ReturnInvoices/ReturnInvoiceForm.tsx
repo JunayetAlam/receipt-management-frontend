@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import {
 import { useGetAllReceiptsQuery, useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
 import { TReturnInvoice, TReturnableReceiptItem } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
+import { derivePositionAfterReturn } from "@/utils/deriveReceiptSettlement";
 import { cn } from "@/lib/utils";
 
 interface LineState {
@@ -43,6 +44,10 @@ function lineTotal(item: TReturnableReceiptItem, qty: number) {
   const sub = qty * item.sellingPrice;
   const disc = (sub * (item.discount || 0)) / 100;
   return Math.round(Math.max(0, sub - disc) * 100) / 100;
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 export default function ReturnInvoiceForm({
@@ -64,9 +69,10 @@ export default function ReturnInvoiceForm({
     initialData ? String(initialData.discount || 0) : "0",
   );
   const [refundedAmount, setRefundedAmount] = useState(
-    initialData ? String(initialData.refundedAmount || 0) : "0",
+    initialData ? String(initialData.refundedAmount ?? 0) : "0",
   );
   const [note, setNote] = useState(initialData?.note || "");
+  const refundTouchedRef = useRef(!!isEditing || !!isDetails);
 
   const [createReturn, { isLoading: isCreating }] =
     useCreateReturnInvoiceMutation();
@@ -103,7 +109,30 @@ export default function ReturnInvoiceForm({
 
   const returnableItems = returnableRes?.data?.items || [];
   const returnableReceipt = returnableRes?.data?.receipt;
+  const previousReturn =
+    returnableRes?.data?.previousReturn ||
+    initialData?.previousReturnInvoice ||
+    null;
   const selectedReceipt = selectedReceiptRes?.data;
+
+  const previousDue = useMemo(() => {
+    if (readOnly || isEditing) {
+      return round2(Number(initialData?.previousDueAmount) || 0);
+    }
+    return round2(
+      Number(
+        returnableRes?.data?.previousDueAmount ??
+          previousReturn?.dueRefundAmount ??
+          0,
+      ) || 0,
+    );
+  }, [
+    readOnly,
+    isEditing,
+    initialData?.previousDueAmount,
+    returnableRes?.data?.previousDueAmount,
+    previousReturn?.dueRefundAmount,
+  ]);
 
   // Hydrate lines when returnable items load (create/edit)
   useEffect(() => {
@@ -120,7 +149,10 @@ export default function ReturnInvoiceForm({
         if (existingInitial && isEditing) {
           next[item.receiptItemId] = {
             selected: true,
-            quantity: Math.min(existingInitial.quantity, maxQty || existingInitial.quantity),
+            quantity: Math.min(
+              existingInitial.quantity,
+              maxQty || existingInitial.quantity,
+            ),
           };
         } else if (prevLine) {
           next[item.receiptItemId] = {
@@ -141,6 +173,12 @@ export default function ReturnInvoiceForm({
   useEffect(() => {
     if (preselectedReceiptId) setReceiptId(preselectedReceiptId);
   }, [preselectedReceiptId]);
+
+  // Reset refund default when switching source receipt on create
+  useEffect(() => {
+    if (isEditing || readOnly) return;
+    refundTouchedRef.current = false;
+  }, [receiptId, isEditing, readOnly]);
 
   const displayItems: Array<{
     receiptItemId: string;
@@ -187,15 +225,55 @@ export default function ReturnInvoiceForm({
 
   const subTotal = useMemo(
     () =>
-      Math.round(
-        displayItems.reduce((sum, it) => sum + it.totalPrice, 0) * 100,
-      ) / 100,
+      round2(displayItems.reduce((sum, it) => sum + it.totalPrice, 0)),
     [displayItems],
   );
   const discVal = Math.max(0, Number(discount) || 0);
-  const totalAmount = Math.round(Math.max(0, subTotal - discVal) * 100) / 100;
-  const refunded = Math.max(0, Number(refundedAmount) || 0);
-  const dueRefund = Math.round(Math.max(0, totalAmount - refunded) * 100) / 100;
+  const totalAmount = round2(Math.max(0, subTotal - discVal));
+  const maxRefundable = round2(previousDue + totalAmount);
+
+  // Default refunded amount = this return's net credit (create flow)
+  useEffect(() => {
+    if (readOnly || isEditing || refundTouchedRef.current) return;
+    setRefundedAmount(String(totalAmount));
+  }, [totalAmount, readOnly, isEditing]);
+
+  const refunded = Math.min(
+    Math.max(0, Number(refundedAmount) || 0),
+    maxRefundable,
+  );
+
+  const previousPosition = useMemo(() => {
+    if (readOnly) {
+      return (
+        initialData?.previousPosition || { netDue: 0, netRefundable: 0 }
+      );
+    }
+    return (
+      returnableRes?.data?.previousPosition ||
+      initialData?.previousPosition || {
+        netDue: 0,
+        netRefundable: 0,
+      }
+    );
+  }, [
+    readOnly,
+    initialData?.previousPosition,
+    returnableRes?.data?.previousPosition,
+  ]);
+
+  const currentPosition = useMemo(() => {
+    if (readOnly && initialData?.currentPosition) {
+      return initialData.currentPosition;
+    }
+    return derivePositionAfterReturn(previousPosition, totalAmount, refunded);
+  }, [
+    readOnly,
+    initialData?.currentPosition,
+    previousPosition,
+    totalAmount,
+    refunded,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,6 +307,13 @@ export default function ReturnInvoiceForm({
         );
         return;
       }
+    }
+
+    if (refunded > maxRefundable) {
+      toast.error(
+        `Refunded amount cannot exceed previous due + net credit (৳${maxRefundable.toFixed(2)})`,
+      );
+      return;
     }
 
     const payload = {
@@ -270,6 +355,10 @@ export default function ReturnInvoiceForm({
     selectedReceipt?.customer?.name ||
     initialData?.receipt?.customer?.name ||
     "";
+
+  const previousReturnNumber =
+    previousReturn?.returnNumber ||
+    initialData?.previousReturnInvoice?.returnNumber;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -331,17 +420,46 @@ export default function ReturnInvoiceForm({
                   <span className="font-medium">{customerName}</span>
                 </p>
               )}
+              {previousReturnNumber && (
+                <p>
+                  <span className="text-muted-foreground">Previous return: </span>
+                  <Link
+                    href={`/return-invoices/${previousReturn?.id || initialData?.previousReturnInvoiceId}`}
+                    className="font-mono font-semibold text-primary hover:underline"
+                  >
+                    {previousReturnNumber}
+                  </Link>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · refund due ৳{previousDue.toFixed(2)}
+                  </span>
+                </p>
+              )}
             </div>
           ) : preselectedReceiptId ? (
             <div className="text-sm space-y-1">
               <p>
                 <span className="text-muted-foreground">Receipt: </span>
-                <span className="font-mono font-semibold">{receiptLabel || "…"}</span>
+                <span className="font-mono font-semibold">
+                  {receiptLabel || "…"}
+                </span>
               </p>
               {customerName && (
                 <p>
                   <span className="text-muted-foreground">Customer: </span>
                   {customerName}
+                </p>
+              )}
+              {previousReturnNumber && (
+                <p>
+                  <span className="text-muted-foreground">Previous return: </span>
+                  <span className="font-mono font-semibold">
+                    {previousReturnNumber}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · refund due ৳{previousDue.toFixed(2)}
+                  </span>
                 </p>
               )}
             </div>
@@ -389,6 +507,15 @@ export default function ReturnInvoiceForm({
                   ))
                 )}
               </div>
+              {receiptId && previousReturnNumber && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Previous return{" "}
+                  <span className="font-mono font-semibold text-foreground">
+                    {previousReturnNumber}
+                  </span>{" "}
+                  · refund due ৳{previousDue.toFixed(2)}
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -426,13 +553,18 @@ export default function ReturnInvoiceForm({
                 </thead>
                 <tbody>
                   {displayItems.map((it, index) => (
-                    <tr key={it.receiptItemId} className="border-b border-border/50">
+                    <tr
+                      key={it.receiptItemId}
+                      className="border-b border-border/50"
+                    >
                       <td className="py-2 pr-2 font-mono text-muted-foreground">
                         {index + 1}
                       </td>
                       <td className="py-2 pr-2 font-medium">{it.productName}</td>
                       <td className="py-2 pr-2">{it.unit}</td>
-                      <td className="py-2 pr-2 text-right font-mono">{it.quantity}</td>
+                      <td className="py-2 pr-2 text-right font-mono">
+                        {it.quantity}
+                      </td>
                       <td className="py-2 pr-2 text-right font-mono">
                         ৳{it.sellingPrice}
                       </td>
@@ -560,16 +692,31 @@ export default function ReturnInvoiceForm({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Refunded amount (৳)</Label>
+              <Label className="text-xs">
+                Refunded amount (৳)
+                <span className="text-muted-foreground font-normal">
+                  {" "}
+                  · max ৳{maxRefundable.toFixed(2)}
+                </span>
+              </Label>
               <Input
                 type="number"
                 min={0}
+                max={maxRefundable}
                 step="any"
                 value={refundedAmount}
                 disabled={readOnly}
-                onChange={(e) => setRefundedAmount(e.target.value)}
+                onChange={(e) => {
+                  refundTouchedRef.current = true;
+                  setRefundedAmount(e.target.value);
+                }}
                 className="h-8 text-xs font-mono"
               />
+              {!readOnly && !isEditing && (
+                <p className="text-[11px] text-muted-foreground">
+                  Defaults to this return&apos;s net credit.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Note</Label>
@@ -586,38 +733,91 @@ export default function ReturnInvoiceForm({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-mono font-semibold">
-                ৳{subTotal.toFixed(2)}
+                +৳{subTotal.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Discount</span>
-              <span className="font-mono text-rose-600">
-                -৳{discVal.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between border-t pt-2">
-              <span className="font-semibold">Net Credit</span>
-              <span className="font-mono font-bold">
-                ৳{totalAmount.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Refunded</span>
-              <span className="font-mono text-emerald-700">
-                ৳{refunded.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between border-t-2 border-foreground pt-2">
-              <span className="font-bold">Refund Due</span>
-              <span
-                className={cn(
-                  "font-mono font-extrabold",
-                  dueRefund > 0 ? "text-rose-600" : "text-foreground",
+            {discVal > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="font-mono font-semibold text-rose-600">
+                  -৳{discVal.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            <div className="border-t pt-2 space-y-2">
+              <div className="flex justify-between">
+                <span className="font-semibold">Total</span>
+                <span className="font-mono font-bold">
+                  +৳{round2(previousDue + totalAmount).toFixed(2)}
+                </span>
+              </div>
+
+              {previousDue > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Previous Due</span>
+                  <span className="font-mono font-semibold text-rose-600">
+                    -৳{previousDue.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {previousDue <= 0 && previousPosition.netDue > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Previous Due</span>
+                  <span className="font-mono font-semibold text-rose-600">
+                    -৳{previousPosition.netDue.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {previousDue <= 0 &&
+                previousPosition.netDue <= 0 &&
+                previousPosition.netRefundable > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Previous Refundable
+                    </span>
+                    <span className="font-mono font-semibold">
+                      +৳{previousPosition.netRefundable.toFixed(2)}
+                    </span>
+                  </div>
                 )}
-              >
-                ৳{dueRefund.toFixed(2)}
-              </span>
+
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Current Refund</span>
+                <span className="font-mono font-semibold text-rose-600">
+                  -৳{refunded.toFixed(2)}
+                </span>
+              </div>
+
+              {currentPosition.netRefundable > 0 ? (
+                <div className="flex justify-between border-t-2 border-foreground pt-2">
+                  <span className="font-bold">Refund Due</span>
+                  <span className="font-mono font-extrabold text-rose-600">
+                    +৳{currentPosition.netRefundable.toFixed(2)}
+                  </span>
+                </div>
+              ) : currentPosition.netDue > 0 ? (
+                <div className="flex justify-between border-t-2 border-foreground pt-2">
+                  <span className="font-bold">Customer Due</span>
+                  <span className="font-mono font-extrabold text-rose-600">
+                    +৳{currentPosition.netDue.toFixed(2)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between border-t-2 border-foreground pt-2">
+                  <span className="font-bold">Balance</span>
+                  <span className="font-mono font-extrabold">+৳0.00</span>
+                </div>
+              )}
             </div>
+
+            <p className="text-[10px] text-muted-foreground pt-1">
+              {currentPosition.netRefundable > 0
+                ? "Shop needs to pay the customer"
+                : currentPosition.netDue > 0
+                  ? "Customer still owes on this bill"
+                  : "Bill is settled after this return"}
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -1,4 +1,6 @@
 import {
+  TPreviousPosition,
+  TPreviousReturnSummary,
   TResponse,
   TReturnableReceiptItem,
   TReturnInvoice,
@@ -43,6 +45,9 @@ export const returnInvoiceApi = baseApi.injectEndpoints({
           dueAmount: number;
         };
         items: TReturnableReceiptItem[];
+        previousReturn: TPreviousReturnSummary | null;
+        previousDueAmount: number;
+        previousPosition: TPreviousPosition;
       }>,
       { receiptId: string; excludeReturnInvoiceId?: string }
     >({
