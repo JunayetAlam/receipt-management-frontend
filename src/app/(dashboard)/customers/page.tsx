@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import CustomerTable from "@/components/Customers/CustomerTable";
+import CustomerStatsCards from "@/components/Customers/CustomerStatsCards";
 
 export const metadata: Metadata = {
   title: "Manage Customers | Receipt Management",
@@ -12,6 +13,7 @@ export default function CustomersPage() {
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
         Manage Customers
       </h1>
+      <CustomerStatsCards />
       <CustomerTable />
     </div>
   );

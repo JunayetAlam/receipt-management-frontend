@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   ReceiptText,
   Store,
+  TrendingUp,
   Undo2,
   Users,
 } from "lucide-react";
@@ -112,6 +113,7 @@ export default function DashboardSidebar() {
     { name: "Customers", href: "/customers", icon: Contact },
     ...(isAdmin
       ? [
+          { name: "Product Profit", href: "/product-profit", icon: TrendingUp },
           { name: "Users", href: "/users", icon: Users },
           { name: "Activity Logs", href: "/activity-logs", icon: History },
         ]

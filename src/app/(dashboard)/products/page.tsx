@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ProductTable from "@/components/Products/ProductTable";
+import ProductStatsCards from "@/components/Products/ProductStatsCards";
 
 export const metadata: Metadata = {
   title: "Manage Products | Receipt Management",
@@ -12,6 +13,7 @@ export default function ProductsPage() {
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
         Manage Products
       </h1>
+      <ProductStatsCards />
       <ProductTable />
     </div>
   );

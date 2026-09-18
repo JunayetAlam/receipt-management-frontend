@@ -147,6 +147,75 @@ export interface TProduct {
   updatedAt: string;
 }
 
+export interface TCustomerStats {
+  totalCustomers: number;
+  totalDue: number;
+}
+
+export interface TProductStats {
+  totalProducts: number;
+  totalStock: number;
+  totalSoldQty: number;
+}
+
+export type ProductProfitSortField =
+  | "name"
+  | "soldQty"
+  | "salesTotal"
+  | "purchaseCost"
+  | "profit"
+  | "profitPercent"
+  | "avgPurchase"
+  | "avgSale";
+
+export interface TProductProfitReceiptRef {
+  id: string;
+  receiptNumber: string;
+  quantity: number;
+}
+
+export interface TProductProfitRow {
+  productId: string;
+  productName: string;
+  unit: ProductUnit | string;
+  soldQty: number;
+  salesTotal: number;
+  purchaseCost: number;
+  /** Qty where buy was missing and sell unit price was used as cost */
+  assumedBuyFromSellQty: number;
+  /** @deprecated use assumedBuyFromSellQty */
+  missingCostQty?: number;
+  avgPurchase: number | null;
+  avgSale: number | null;
+  profit: number;
+  profitPercent: number | null;
+  receipts: TProductProfitReceiptRef[];
+}
+
+export interface TProductProfitSummary {
+  soldQty: number;
+  salesTotal: number;
+  purchaseCost: number;
+  profit: number;
+  profitPercent: number | null;
+  productCount: number;
+}
+
+export interface TProductProfitFilters {
+  startDate: string | null;
+  endDate: string | null;
+  searchTerm: string | null;
+  sortBy: ProductProfitSortField;
+  sortOrder: "asc" | "desc";
+  timezone: string;
+}
+
+export interface TProductProfitReport {
+  products: TProductProfitRow[];
+  summary: TProductProfitSummary;
+  filters: TProductProfitFilters;
+}
+
 export interface TCustomer {
   id: string;
   name: string;
@@ -154,6 +223,11 @@ export interface TCustomer {
   phoneNumber: string;
   email?: string | null;
   address?: string | null;
+  totalDue?: number;
+  totalPaid?: number;
+  totalDiscount?: number;
+  totalRefunded?: number;
+  totalRefundDue?: number;
   isDeleted: boolean;
   isDeleteRequested: boolean;
   deleteRequestedAt?: string | null;

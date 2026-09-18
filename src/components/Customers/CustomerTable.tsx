@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Users,
   UserPlus,
@@ -20,6 +21,7 @@ import {
   Mail,
   MapPin,
   Contact,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +50,7 @@ import CustomerDeleteModal from "./CustomerDeleteModal";
 import ConfirmPopup from "../Global/ConfirmPopup";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
+import { formatSignedDue } from "@/utils/formatInvoiceMoney";
 import {
   Table,
   TableBody,
@@ -168,6 +171,19 @@ export default function CustomerTable() {
     setPage(1);
   };
 
+  const exportHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("sortBy", selectedSort.sortBy);
+    params.set("sortOrder", selectedSort.sortOrder);
+    if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
+    if (activeTab === "ARCHIVED") params.set("isDeleted", "true");
+    else params.set("isDeleted", "false");
+    if (activeTab === "PENDING_DELETION") {
+      params.set("isDeleteRequested", "true");
+    }
+    return `/customers/export?${params.toString()}`;
+  }, [selectedSort, searchTerm, activeTab]);
+
   return (
     <div className="space-y-4">
       {/* Top Header Controls: Tabs & Add Button */}
@@ -227,11 +243,22 @@ export default function CustomerTable() {
           )}
         </div>
 
-        {/* Add Customer Button */}
-        <Button onClick={handleOpenCreate} className="h-9 gap-1.5 text-xs font-semibold">
-          <UserPlus className="size-4" />
-          Add Customer
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="h-9 gap-1.5 text-xs font-semibold"
+          >
+            <Link href={exportHref}>
+              <FileDown className="size-4" />
+              Export List
+            </Link>
+          </Button>
+          <Button onClick={handleOpenCreate} className="h-9 gap-1.5 text-xs font-semibold">
+            <UserPlus className="size-4" />
+            Add Customer
+          </Button>
+        </div>
       </div>
 
       {/* Filter & Search Bar */}
@@ -293,7 +320,7 @@ export default function CustomerTable() {
       </div>
 
       {/* Customers Table */}
-      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -301,6 +328,7 @@ export default function CustomerTable() {
               <TableHead>Phone Number</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Address</TableHead>
+              <TableHead>Total Due</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -326,6 +354,9 @@ export default function CustomerTable() {
                   <TableCell>
                     <Skeleton className="h-4 w-36" />
                   </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-16" />
+                  </TableCell>
                   <TableCell className="text-right">
                     <Skeleton className="h-8 w-24 ml-auto rounded-md" />
                   </TableCell>
@@ -333,7 +364,7 @@ export default function CustomerTable() {
               ))
             ) : customers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <Contact className="size-8 text-muted-foreground/40" />
                     <p className="text-base font-medium text-foreground">No customers found</p>
@@ -355,6 +386,8 @@ export default function CustomerTable() {
                       .join("")
                       .toUpperCase()
                   : "CU";
+                const due = Number(customer.totalDue) || 0;
+                const dueLabel = formatSignedDue(due);
 
                 return (
                   <TableRow
@@ -436,6 +469,23 @@ export default function CustomerTable() {
                       ) : (
                         <span className="text-muted-foreground/50">—</span>
                       )}
+                    </TableCell>
+
+                    {/* Total Due */}
+                    <TableCell>
+                      <span
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border",
+                          due > 0 &&
+                            "bg-rose-500/10 text-destructive border-destructive/20",
+                          due < 0 &&
+                            "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                          due === 0 &&
+                            "bg-muted text-muted-foreground border-border font-medium",
+                        )}
+                      >
+                        {dueLabel}
+                      </span>
                     </TableCell>
 
                     {/* Actions */}

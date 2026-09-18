@@ -10,3 +10,9 @@ export function roundInvoiceMoney(amount: number): number {
 export function formatInvoiceMoney(amount: number): string {
   return `৳${moneyFormatter.format(roundInvoiceMoney(amount))}`;
 }
+
+export function formatSignedDue(amount: number): string {
+  const due = roundInvoiceMoney(Number(amount) || 0);
+  if (due < 0) return `-${formatInvoiceMoney(Math.abs(due))}`;
+  return formatInvoiceMoney(due);
+}

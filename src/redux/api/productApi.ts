@@ -1,4 +1,4 @@
-import { TProduct, TResponse } from "@/types";
+import { TProduct, TProductProfitReport, TProductStats, TResponse } from "@/types";
 import { baseApi } from "./baseApi";
 
 export const productApi = baseApi.injectEndpoints({
@@ -13,6 +13,26 @@ export const productApi = baseApi.injectEndpoints({
         params,
       }),
       providesTags: ["Product"],
+    }),
+
+    getProductStats: builder.query<TResponse<TProductStats>, void>({
+      query: () => ({
+        url: "/products/stats",
+        method: "GET",
+      }),
+      providesTags: ["Product", "Receipt", "ReturnInvoice"],
+    }),
+
+    getProductProfit: builder.query<
+      TResponse<TProductProfitReport>,
+      Record<string, unknown> | undefined
+    >({
+      query: (params) => ({
+        url: "/products/profit",
+        method: "GET",
+        params,
+      }),
+      providesTags: ["Product", "Receipt", "ReturnInvoice"],
     }),
 
     getProductById: builder.query<TResponse<TProduct>, string>({
@@ -99,6 +119,8 @@ export const productApi = baseApi.injectEndpoints({
 
 export const {
   useGetAllProductsQuery,
+  useGetProductStatsQuery,
+  useGetProductProfitQuery,
   useGetProductByIdQuery,
   useCreateProductMutation,
   useBulkCreateProductsMutation,

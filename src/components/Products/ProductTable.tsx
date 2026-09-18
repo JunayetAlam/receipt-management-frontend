@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Package,
   Plus,
@@ -18,6 +19,7 @@ import {
   Activity,
   Archive,
   FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -216,6 +218,23 @@ export default function ProductTable() {
     setPage(1);
   };
 
+  const exportHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("sortBy", selectedSort.sortBy);
+    params.set("sortOrder", selectedSort.sortOrder);
+    if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
+    if (selectedUnit !== "ALL") params.set("unit", selectedUnit);
+    if (activeTab === "ARCHIVED") params.set("isDeleted", "true");
+    else params.set("isDeleted", "false");
+    if (activeTab === "PENDING_DELETION") {
+      params.set("isDeleteRequested", "true");
+    }
+    if (activeTab === "LOW_STOCK") {
+      params.set("lowStock", "true");
+    }
+    return `/products/export?${params.toString()}`;
+  }, [selectedSort, searchTerm, selectedUnit, activeTab]);
+
   return (
     <div className="space-y-4">
       {/* Top Header Controls: Tabs & Add Button */}
@@ -294,6 +313,17 @@ export default function ProductTable() {
 
         {/* Header Action Buttons */}
         <div className="flex items-center gap-2">
+          <Button
+            asChild
+            variant="outline"
+            className="h-9 gap-1.5 text-xs font-semibold"
+          >
+            <Link href={exportHref}>
+              <FileDown className="size-4" />
+              Export List
+            </Link>
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => setBulkModalOpen(true)}
