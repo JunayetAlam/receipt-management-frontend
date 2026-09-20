@@ -1,5 +1,14 @@
 import { TCustomerStats, TResponse } from "@/types";
+import type {
+  TDashboardPreset,
+  TDashboardSummary,
+  TLowStockData,
+  TProfitBreakdown,
+  TSalesPerformancePoint,
+} from "@/types/dashboard";
 import { baseApi } from "./baseApi";
+
+const dashboardTags = ["Stats", "Receipt", "ReturnInvoice", "Product"] as const;
 
 export const statsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -10,7 +19,38 @@ export const statsApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Stats", "Customer", "Receipt", "ReturnInvoice"],
     }),
+    getDashboardSummary: builder.query<
+      TResponse<TDashboardSummary>,
+      { preset: TDashboardPreset; startDate?: string; endDate?: string }
+    >({
+      query: (params) => ({ url: "/stats/dashboard", method: "GET", params }),
+      providesTags: [...dashboardTags],
+    }),
+    getSalesPerformance: builder.query<
+      TResponse<TSalesPerformancePoint[]>,
+      void
+    >({
+      query: () => ({ url: "/stats/sales-performance", method: "GET" }),
+      providesTags: [...dashboardTags],
+    }),
+    getProfitBreakdown: builder.query<TResponse<TProfitBreakdown>, void>({
+      query: () => ({ url: "/stats/profit-breakdown", method: "GET" }),
+      providesTags: [...dashboardTags],
+    }),
+    getLowStock: builder.query<
+      TResponse<TLowStockData>,
+      { page: number; limit: number }
+    >({
+      query: (params) => ({ url: "/stats/low-stock", method: "GET", params }),
+      providesTags: [...dashboardTags],
+    }),
   }),
 });
 
-export const { useGetCustomerStatsQuery } = statsApi;
+export const {
+  useGetCustomerStatsQuery,
+  useGetDashboardSummaryQuery,
+  useGetSalesPerformanceQuery,
+  useGetProfitBreakdownQuery,
+  useGetLowStockQuery,
+} = statsApi;
