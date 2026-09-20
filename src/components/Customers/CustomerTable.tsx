@@ -22,6 +22,9 @@ import {
   MapPin,
   Contact,
   FileDown,
+  LayoutGrid,
+  List,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -35,7 +38,7 @@ import { TCustomer } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -44,6 +47,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CustomerFormModal from "./CustomerFormModal";
 import CustomerActivitySheet from "./CustomerActivitySheet";
 import CustomerDeleteModal from "./CustomerDeleteModal";
@@ -60,7 +71,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+    </svg>
+  );
+}
+
+const getWhatsAppUrl = (
+  number?: string | null,
+  defaultCountryCode = "+880",
+) => {
+  if (!number) return null;
+  let clean = number.replace(/[^\d+]/g, "");
+  if (clean.startsWith("+")) {
+    clean = clean.slice(1);
+  } else if (clean.startsWith("01") && clean.length === 11) {
+    clean = `88${clean}`;
+  } else if (!clean.startsWith("880") && defaultCountryCode) {
+    const cc = defaultCountryCode.replace(/\+/g, "");
+    clean = `${cc}${clean}`;
+  }
+  return `https://wa.me/${clean}`;
+};
+
 type TabType = "ACTIVE" | "PENDING_DELETION" | "ARCHIVED";
+type ViewMode = "list" | "grid";
 
 const SORT_OPTIONS = [
   { label: "Newest First", sortBy: "createdAt", sortOrder: "desc" },
@@ -72,6 +114,7 @@ const SORT_OPTIONS = [
 export default function CustomerTable() {
   const [isAdmin] = useIsAdmin();
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortIndex, setSortIndex] = useState("0");
@@ -81,15 +124,21 @@ export default function CustomerTable() {
   const [customerToEdit, setCustomerToEdit] = useState<TCustomer | null>(null);
 
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
-  const [selectedCustomerForActivity, setSelectedCustomerForActivity] = useState<TCustomer | null>(null);
+  const [selectedCustomerForActivity, setSelectedCustomerForActivity] =
+    useState<TCustomer | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState<TCustomer | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<TCustomer | null>(
+    null,
+  );
 
   // Admin Mutations
-  const [confirmDelete, { isLoading: isConfirming }] = useConfirmDeleteCustomerMutation();
-  const [rejectDelete, { isLoading: isRejecting }] = useRejectDeleteCustomerMutation();
-  const [restoreCustomer, { isLoading: isRestoring }] = useRestoreCustomerMutation();
+  const [confirmDelete, { isLoading: isConfirming }] =
+    useConfirmDeleteCustomerMutation();
+  const [rejectDelete, { isLoading: isRejecting }] =
+    useRejectDeleteCustomerMutation();
+  const [restoreCustomer, { isLoading: isRestoring }] =
+    useRestoreCustomerMutation();
 
   // Query Params Construction
   const selectedSort = SORT_OPTIONS[Number(sortIndex)] || SORT_OPTIONS[0];
@@ -114,7 +163,11 @@ export default function CustomerTable() {
     queryParams.isDeleted = true;
   }
 
-  const { data: response, isLoading, isFetching } = useGetAllCustomersQuery(queryParams);
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+  } = useGetAllCustomersQuery(queryParams);
   const customers = response?.data || [];
   const meta = response?.meta;
 
@@ -197,7 +250,7 @@ export default function CustomerTable() {
               setPage(1);
             }}
             className={cn(
-              "rounded-md px-3 py-1.5 font-medium transition-colors",
+              "rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
               activeTab === "ACTIVE"
                 ? "bg-background text-foreground shadow-xs font-semibold"
                 : "text-muted-foreground hover:text-foreground",
@@ -213,7 +266,7 @@ export default function CustomerTable() {
               setPage(1);
             }}
             className={cn(
-              "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
+              "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
               activeTab === "PENDING_DELETION"
                 ? "bg-background text-foreground shadow-xs font-semibold"
                 : "text-muted-foreground hover:text-foreground",
@@ -231,7 +284,7 @@ export default function CustomerTable() {
                 setPage(1);
               }}
               className={cn(
-                "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
+                "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
                 activeTab === "ARCHIVED"
                   ? "bg-background text-foreground shadow-xs font-semibold"
                   : "text-muted-foreground hover:text-foreground",
@@ -244,6 +297,42 @@ export default function CustomerTable() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* List / Grid View Toggle */}
+          <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "h-8 px-2.5 text-xs font-medium gap-1.5 cursor-pointer",
+                viewMode === "list"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="List View"
+            >
+              <List className="size-3.5" />
+              <span className="hidden sm:inline">List</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "h-8 px-2.5 text-xs font-medium gap-1.5 cursor-pointer",
+                viewMode === "grid"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="Grid View"
+            >
+              <LayoutGrid className="size-3.5" />
+              <span className="hidden sm:inline">Grid</span>
+            </Button>
+          </div>
+
           <Button
             asChild
             variant="outline"
@@ -254,7 +343,10 @@ export default function CustomerTable() {
               Export List
             </Link>
           </Button>
-          <Button onClick={handleOpenCreate} className="h-9 gap-1.5 text-xs font-semibold">
+          <Button
+            onClick={handleOpenCreate}
+            className="h-9 gap-1.5 text-xs font-semibold cursor-pointer"
+          >
             <UserPlus className="size-4" />
             Add Customer
           </Button>
@@ -319,65 +411,385 @@ export default function CustomerTable() {
         )}
       </div>
 
-      {/* Customers Table */}
-      <div className="rounded-xl border border-border bg-card shadow-xs overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Customer Name</TableHead>
-              <TableHead>Phone Number</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Total Due</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <div className="flex items-center gap-2.5">
-                      <Skeleton className="size-8 rounded-full" />
-                      <div className="space-y-1">
-                        <Skeleton className="h-4 w-28" />
-                        <Skeleton className="h-3 w-20" />
+      {/* Customers Content: List View or Grid View */}
+      {viewMode === "list" ? (
+        <div className="rounded-xl border border-border bg-card shadow-xs overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer Name</TableHead>
+                <TableHead>Contact & WhatsApp</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Total Due</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <Skeleton className="size-8 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-28" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-36" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-24 ml-auto rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : customers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="py-12 text-center text-muted-foreground"
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Contact className="size-8 text-muted-foreground/40" />
+                      <p className="text-base font-medium text-foreground">
+                        No customers found
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {activeTab === "PENDING_DELETION"
+                          ? "No customer deletion requests pending confirmation."
+                          : "Try adjusting your filters or click 'Add Customer' to create one."}
+                      </p>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-36" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-16" />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Skeleton className="h-8 w-24 ml-auto rounded-md" />
-                  </TableCell>
                 </TableRow>
-              ))
-            ) : customers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center space-y-2">
-                    <Contact className="size-8 text-muted-foreground/40" />
-                    <p className="text-base font-medium text-foreground">No customers found</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === "PENDING_DELETION"
-                        ? "No customer deletion requests pending confirmation."
-                        : "Try adjusting your filters or click 'Add Customer' to create one."}
-                    </p>
+              ) : (
+                customers.map((customer) => {
+                  const initials = customer.name
+                    ? customer.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")
+                        .toUpperCase()
+                    : "CU";
+                  const due = Number(customer.totalDue) || 0;
+                  const dueLabel = formatSignedDue(due);
+                  const waUrl = getWhatsAppUrl(
+                    customer.whatsappNumber || customer.phoneNumber,
+                    customer.countryCode,
+                  );
+
+                  return (
+                    <TableRow
+                      key={customer.id}
+                      className={cn(
+                        isFetching && "opacity-60",
+                        customer.isDeleteRequested &&
+                          "bg-amber-500/5 hover:bg-amber-500/10",
+                        customer.isDeleted && "bg-muted/30 opacity-70",
+                      )}
+                    >
+                      {/* Customer Info */}
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="size-8 border border-border">
+                            {customer.image && (
+                              <AvatarImage
+                                src={customer.image}
+                                alt={customer.name}
+                                className="object-cover"
+                              />
+                            )}
+                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs">
+                                {customer.name}
+                              </span>
+                              {customer.isDeleteRequested && (
+                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0 px-1.5 font-normal">
+                                  Pending Deletion
+                                </Badge>
+                              )}
+                              {customer.isDeleted && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-[10px] py-0 px-1.5 font-normal"
+                                >
+                                  Deleted
+                                </Badge>
+                              )}
+                            </div>
+                            {customer.isDeleteRequested &&
+                              customer.deleteReason && (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 italic truncate max-w-xs">
+                                  Reason: "{customer.deleteReason}"
+                                </span>
+                              )}
+                            {customer.createdBy && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Added by {customer.createdBy.firstName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Phone & WhatsApp */}
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
+                            <Phone className="size-3.5 text-muted-foreground" />
+                            <span className="font-mono text-muted-foreground text-[11px]">
+                              {customer.countryCode || "+880"}
+                            </span>
+                            <span>{customer.phoneNumber}</span>
+                          </span>
+                          {customer.whatsappNumber && waUrl && (
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Chat with ${customer.name} on WhatsApp`}
+                              className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-mono font-medium"
+                            >
+                              <WhatsAppIcon className="size-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              <span>{customer.whatsappNumber}</span>
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* Email */}
+                      <TableCell className="text-xs text-muted-foreground">
+                        {customer.email ? (
+                          <span className="inline-flex items-center gap-1.5 truncate max-w-[160px]">
+                            <Mail className="size-3.5 text-muted-foreground/70 shrink-0" />
+                            <span className="truncate">{customer.email}</span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Address */}
+                      <TableCell className="text-xs text-muted-foreground">
+                        {customer.address ? (
+                          <span className="inline-flex items-center gap-1.5 truncate max-w-[180px]">
+                            <MapPin className="size-3.5 text-muted-foreground/70 shrink-0" />
+                            <span className="truncate">{customer.address}</span>
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Total Due */}
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border",
+                            due > 0 &&
+                              "bg-rose-500/10 text-destructive border-destructive/20",
+                            due < 0 &&
+                              "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                            due === 0 &&
+                              "bg-muted text-muted-foreground border-border font-medium",
+                          )}
+                        >
+                          {dueLabel}
+                        </span>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Right Sheet Activity Log Trigger */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Customer Activity Log"
+                            onClick={() => handleOpenActivity(customer)}
+                            className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            <Activity className="size-3.5" />
+                          </Button>
+
+                          {/* If Deleted (Admin Restore) */}
+                          {customer.isDeleted ? (
+                            isAdmin && (
+                              <ConfirmPopup
+                                title="Restore Customer?"
+                                description={`Are you sure you want to restore customer record for "${customer.name}"?`}
+                                confirmLabel="Restore"
+                                destructive={false}
+                                loading={isRestoring}
+                                onConfirm={() => handleAdminRestore(customer)}
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isRestoring}
+                                  className="h-7 px-2 text-xs text-primary cursor-pointer"
+                                >
+                                  <RotateCcw className="mr-1 size-3" />
+                                  Restore
+                                </Button>
+                              </ConfirmPopup>
+                            )
+                          ) : (
+                            <>
+                              {/* If Pending Deletion & Current User is Admin: Quick Confirm/Reject */}
+                              {customer.isDeleteRequested && isAdmin ? (
+                                <div className="flex items-center gap-1">
+                                  <ConfirmPopup
+                                    title="Confirm Deletion Request?"
+                                    description={`A cashier requested deletion: "${customer.deleteReason || "No reason specified"}". Confirming will soft-delete this customer.`}
+                                    confirmLabel="Confirm Delete"
+                                    destructive={true}
+                                    loading={isConfirming}
+                                    onConfirm={() =>
+                                      handleAdminConfirmDelete(customer)
+                                    }
+                                  >
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      disabled={isConfirming}
+                                      className="h-7 px-2 text-xs cursor-pointer"
+                                      title="Confirm deletion request"
+                                    >
+                                      <Check className="mr-1 size-3" />
+                                      Approve
+                                    </Button>
+                                  </ConfirmPopup>
+
+                                  <ConfirmPopup
+                                    title="Reject Deletion Request?"
+                                    description={`Reject cashier's request to delete "${customer.name}"?`}
+                                    confirmLabel="Reject Request"
+                                    destructive={false}
+                                    loading={isRejecting}
+                                    onConfirm={() =>
+                                      handleAdminRejectDelete(customer)
+                                    }
+                                  >
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={isRejecting}
+                                      className="h-7 px-2 text-xs cursor-pointer"
+                                      title="Reject deletion request"
+                                    >
+                                      <X className="mr-1 size-3" />
+                                    </Button>
+                                  </ConfirmPopup>
+                                </div>
+                              ) : null}
+
+                              {/* Normal Edit & Delete */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Edit Customer"
+                                onClick={() => handleOpenEdit(customer)}
+                                className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+
+                              {customer.isDeleteRequested && !isAdmin ? (
+                                <Badge
+                                  variant="secondary"
+                                  className="h-7 px-2 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
+                                  title="A deletion request is currently under review by admin"
+                                >
+                                  Pending Approval
+                                </Badge>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title={
+                                    isAdmin
+                                      ? "Delete Customer"
+                                      : "Request Delete"
+                                  }
+                                  onClick={() => handleOpenDelete(customer)}
+                                  className="size-7 text-muted-foreground hover:text-destructive cursor-pointer"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        /* Grid View */
+        <div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="p-4 space-y-3.5 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="size-10 rounded-full shrink-0" />
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
                   </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              customers.map((customer) => {
+                  <Skeleton className="h-6 w-full rounded-md" />
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-40" />
+                  </div>
+                  <div className="pt-2 border-t border-border/50 flex justify-between items-center">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground shadow-xs">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <Contact className="size-10 text-muted-foreground/40" />
+                <p className="text-base font-semibold text-foreground">
+                  No customers found
+                </p>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  {activeTab === "PENDING_DELETION"
+                    ? "No customer deletion requests pending confirmation."
+                    : "Try adjusting your filters or click 'Add Customer' to create one."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {customers.map((customer) => {
                 const initials = customer.name
                   ? customer.name
                       .split(" ")
@@ -388,267 +800,276 @@ export default function CustomerTable() {
                   : "CU";
                 const due = Number(customer.totalDue) || 0;
                 const dueLabel = formatSignedDue(due);
+                const waUrl = getWhatsAppUrl(
+                  customer.whatsappNumber || customer.phoneNumber,
+                  customer.countryCode,
+                );
 
                 return (
-                  <TableRow
+                  <Card
                     key={customer.id}
                     className={cn(
+                      "overflow-hidden shadow-xs ring-border/60 hover:shadow-md transition-all flex flex-col justify-between border p-0",
                       isFetching && "opacity-60",
-                      customer.isDeleteRequested && "bg-amber-500/5 hover:bg-amber-500/10",
+                      customer.isDeleteRequested &&
+                        "bg-amber-500/5 border-amber-500/30",
                       customer.isDeleted && "bg-muted/30 opacity-70",
                     )}
                   >
-                    {/* Customer Info */}
-                    <TableCell>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="size-8 border border-border">
-                          <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs">
-                              {customer.name}
-                            </span>
-                            {customer.isDeleteRequested && (
-                              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0 px-1.5 font-normal">
-                                Pending Deletion
-                              </Badge>
-                            )}
-                            {customer.isDeleted && (
-                              <Badge variant="destructive" className="text-[10px] py-0 px-1.5 font-normal">
-                                Deleted
-                              </Badge>
-                            )}
-                          </div>
-                          {customer.isDeleteRequested && customer.deleteReason && (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 italic truncate max-w-xs">
-                              Reason: "{customer.deleteReason}"
-                            </span>
-                          )}
-                          {customer.createdBy && (
-                            <span className="text-[10px] text-muted-foreground">
-                              Added by {customer.createdBy.firstName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Phone Number */}
-                    <TableCell>
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground">
-                        <Phone className="size-3.5 text-muted-foreground" />
-                        <span className="font-mono text-muted-foreground text-[11px]">
-                          {customer.countryCode || "+880"}
-                        </span>
-                        <span>{customer.phoneNumber}</span>
-                      </span>
-                    </TableCell>
-
-                    {/* Email */}
-                    <TableCell className="text-xs text-muted-foreground">
-                      {customer.email ? (
-                        <span className="inline-flex items-center gap-1.5 truncate max-w-[160px]">
-                          <Mail className="size-3.5 text-muted-foreground/70 shrink-0" />
-                          <span className="truncate">{customer.email}</span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Address */}
-                    <TableCell className="text-xs text-muted-foreground">
-                      {customer.address ? (
-                        <span className="inline-flex items-center gap-1.5 truncate max-w-[180px]">
-                          <MapPin className="size-3.5 text-muted-foreground/70 shrink-0" />
-                          <span className="truncate">{customer.address}</span>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Total Due */}
-                    <TableCell>
-                      <span
-                        className={cn(
-                          "inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-bold border",
-                          due > 0 &&
-                            "bg-rose-500/10 text-destructive border-destructive/20",
-                          due < 0 &&
-                            "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                          due === 0 &&
-                            "bg-muted text-muted-foreground border-border font-medium",
-                        )}
-                      >
-                        {dueLabel}
-                      </span>
-                    </TableCell>
-
-                    {/* Actions */}
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Right Sheet Activity Log Trigger */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Customer Activity Log"
-                          onClick={() => handleOpenActivity(customer)}
-                          className="size-7 text-muted-foreground hover:text-foreground"
-                        >
-                          <Activity className="size-3.5" />
-                        </Button>
-
-                        {/* If Deleted (Admin Restore) */}
-                        {customer.isDeleted ? (
-                          isAdmin && (
-                            <ConfirmPopup
-                              title="Restore Customer?"
-                              description={`Are you sure you want to restore customer record for "${customer.name}"?`}
-                              confirmLabel="Restore"
-                              destructive={false}
-                              loading={isRestoring}
-                              onConfirm={() => handleAdminRestore(customer)}
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={isRestoring}
-                                className="h-7 px-2 text-xs text-primary"
+                    <CardContent className="p-4 space-y-3.5 flex flex-col justify-between h-full">
+                      {/* Card Top: Avatar, Name, Badges & 3-dot Menu */}
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar className="size-9 border border-border shrink-0">
+                              {customer.image && (
+                                <AvatarImage
+                                  src={customer.image}
+                                  alt={customer.name}
+                                  className="object-cover"
+                                />
+                              )}
+                              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p
+                                className="font-semibold text-foreground text-sm truncate"
+                                title={customer.name}
                               >
-                                <RotateCcw className="mr-1 size-3" />
-                                Restore
-                              </Button>
-                            </ConfirmPopup>
-                          )
-                        ) : (
-                          <>
-                            {/* If Pending Deletion & Current User is Admin: Quick Confirm/Reject */}
-                            {customer.isDeleteRequested && isAdmin ? (
-                              <div className="flex items-center gap-1">
-                                <ConfirmPopup
-                                  title="Confirm Deletion Request?"
-                                  description={`A cashier requested deletion: "${customer.deleteReason || "No reason specified"}". Confirming will soft-delete this customer.`}
-                                  confirmLabel="Confirm Delete"
-                                  destructive={true}
-                                  loading={isConfirming}
-                                  onConfirm={() => handleAdminConfirmDelete(customer)}
-                                >
-                                  <Button
+                                {customer.name}
+                              </p>
+                              <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                {customer.isDeleteRequested && (
+                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[9px] py-0 px-1 font-normal">
+                                    Pending Delete
+                                  </Badge>
+                                )}
+                                {customer.isDeleted && (
+                                  <Badge
                                     variant="destructive"
-                                    size="sm"
-                                    disabled={isConfirming}
-                                    className="h-7 px-2 text-xs"
-                                    title="Confirm deletion request"
+                                    className="text-[9px] py-0 px-1 font-normal"
                                   >
-                                    <Check className="mr-1 size-3" />
-                                    Approve
-                                  </Button>
-                                </ConfirmPopup>
-
-                                <ConfirmPopup
-                                  title="Reject Deletion Request?"
-                                  description={`Reject cashier's request to delete "${customer.name}"?`}
-                                  confirmLabel="Reject Request"
-                                  destructive={false}
-                                  loading={isRejecting}
-                                  onConfirm={() => handleAdminRejectDelete(customer)}
-                                >
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={isRejecting}
-                                    className="h-7 px-2 text-xs"
-                                    title="Reject deletion request"
-                                  >
-                                    <X className="mr-1 size-3" />
-                                  </Button>
-                                </ConfirmPopup>
+                                    Deleted
+                                  </Badge>
+                                )}
                               </div>
-                            ) : null}
+                            </div>
+                          </div>
 
-                            {/* Normal Edit & Delete */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Edit Customer"
-                              onClick={() => handleOpenEdit(customer)}
-                              className="size-7 text-muted-foreground hover:text-foreground"
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
+                          <div className="flex gap-2 items-center">
+                            <div className="pt-0.5">
+                              {waUrl && (
+                                <Button asChild size="icon" variant="default">
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`Chat with ${customer.name} on WhatsApp`}
+                                  >
+                                    <WhatsAppIcon className="size-3.5 shrink-0" />
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                            {/* Three-Dot Menu Button with all customer actions */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                                  title="Actions"
+                                >
+                                  <MoreVertical className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="w-48 text-xs"
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenActivity(customer)}
+                                  className="cursor-pointer"
+                                >
+                                  <Activity className="mr-2 size-3.5" />
+                                  <span>Activity Log</span>
+                                </DropdownMenuItem>
 
-                            {customer.isDeleteRequested && !isAdmin ? (
-                              <Badge
-                                variant="secondary"
-                                className="h-7 px-2 text-[10px] text-amber-600 bg-amber-500/10 cursor-not-allowed"
-                                title="A deletion request is currently under review by admin"
-                              >
-                                Pending Approval
-                              </Badge>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title={isAdmin ? "Delete Customer" : "Request Delete"}
-                                onClick={() => handleOpenDelete(customer)}
-                                className="size-7 text-muted-foreground hover:text-destructive"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </Button>
-                            )}
-                          </>
+                                {!customer.isDeleted && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenEdit(customer)}
+                                    className="cursor-pointer"
+                                  >
+                                    <Pencil className="mr-2 size-3.5" />
+                                    <span>Edit Customer</span>
+                                  </DropdownMenuItem>
+                                )}
+
+                                <DropdownMenuSeparator />
+
+                                {customer.isDeleted ? (
+                                  isAdmin && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleAdminRestore(customer)
+                                      }
+                                      className="text-primary cursor-pointer"
+                                    >
+                                      <RotateCcw className="mr-2 size-3.5" />
+                                      <span>Restore Customer</span>
+                                    </DropdownMenuItem>
+                                  )
+                                ) : customer.isDeleteRequested && isAdmin ? (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleAdminConfirmDelete(customer)
+                                      }
+                                      className="text-destructive cursor-pointer"
+                                    >
+                                      <Check className="mr-2 size-3.5" />
+                                      <span>Confirm Delete</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleAdminRejectDelete(customer)
+                                      }
+                                      className="cursor-pointer"
+                                    >
+                                      <X className="mr-2 size-3.5" />
+                                      <span>Reject Request</span>
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenDelete(customer)}
+                                    className="text-destructive cursor-pointer"
+                                  >
+                                    <Trash2 className="mr-2 size-3.5" />
+                                    <span>
+                                      {isAdmin
+                                        ? "Delete Customer"
+                                        : "Request Delete"}
+                                    </span>
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+
+                        {/* Delete reason notice if pending */}
+                        {customer.isDeleteRequested &&
+                          customer.deleteReason && (
+                            <p className="text-[11px] text-amber-600 dark:text-amber-400 italic bg-amber-500/10 p-1.5 rounded-md truncate">
+                              "{customer.deleteReason}"
+                            </p>
+                          )}
+                      </div>
+
+                      {/* Card Middle: Contact & WhatsApp Message Button */}
+                      <div className="space-y-2 text-xs pt-1 border-t border-border/50">
+                        {/* Primary Phone */}
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Phone className="size-3.5 shrink-0 text-muted-foreground/70" />
+                          <span className="font-mono text-[11px] text-foreground">
+                            {customer.countryCode || "+880"}{" "}
+                            {customer.phoneNumber}
+                          </span>
+                        </div>
+
+                        {/* WhatsApp Message Action Button */}
+
+                        {/* Email */}
+                        {customer.email && (
+                          <div className="flex items-center gap-2 text-muted-foreground truncate">
+                            <Mail className="size-3.5 shrink-0 text-muted-foreground/70" />
+                            <span className="truncate">{customer.email}</span>
+                          </div>
+                        )}
+
+                        {/* Address */}
+                        {customer.address && (
+                          <div className="flex items-center gap-2 text-muted-foreground truncate">
+                            <MapPin className="size-3.5 shrink-0 text-muted-foreground/70" />
+                            <span className="truncate">{customer.address}</span>
+                          </div>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+
+                      {/* Card Bottom: Financials & Audit */}
+                      <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                            Total Due
+                          </span>
+                          <span
+                            className={cn(
+                              "font-mono font-bold text-xs mt-0.5",
+                              due > 0 && "text-rose-600 dark:text-rose-400",
+                              due < 0 &&
+                                "text-emerald-600 dark:text-emerald-400",
+                              due === 0 && "text-muted-foreground",
+                            )}
+                          >
+                            {dueLabel}
+                          </span>
+                        </div>
+                        {customer.createdBy && (
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[120px] text-right">
+                            by {customer.createdBy.firstName}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 );
-              })
-            )}
-          </TableBody>
-        </Table>
-
-        {/* Pagination Footer */}
-        {meta && meta.totalPage > 1 && (
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 bg-muted/20">
-            <p className="text-xs text-muted-foreground">
-              Showing {(meta.page - 1) * meta.limit + 1} to{" "}
-              {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} customers
-            </p>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
+              })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Shared Pagination Footer */}
+      {meta && meta.totalPage > 1 && (
+        <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-xs">
+          <p className="text-xs text-muted-foreground">
+            Showing {(meta.page - 1) * meta.limit + 1} to{" "}
+            {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}{" "}
+            customers
+          </p>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || isFetching}
+              className="h-8 px-2.5 text-xs cursor-pointer"
+            >
+              <ChevronLeft className="mr-1 size-3.5" />
+              Previous
+            </Button>
+
+            <div className="px-2 text-xs font-medium text-muted-foreground">
+              Page {meta.page} of {meta.totalPage}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= meta.totalPage || isFetching}
+              className="h-8 px-2.5 text-xs cursor-pointer"
+            >
+              Next
+              <ChevronRight className="ml-1 size-3.5" />
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Modals and Sheets */}
       <CustomerFormModal

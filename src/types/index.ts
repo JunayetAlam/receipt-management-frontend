@@ -147,9 +147,18 @@ export interface TProduct {
   updatedAt: string;
 }
 
+export interface TCustomerStatsPeriod {
+  due: number;
+  deposit: number;
+}
+
 export interface TCustomerStats {
   totalCustomers: number;
   totalDue: number;
+  today?: TCustomerStatsPeriod;
+  thisMonth?: TCustomerStatsPeriod;
+  thisYear?: TCustomerStatsPeriod;
+  total?: TCustomerStatsPeriod;
 }
 
 export interface TProductStats {
@@ -221,6 +230,8 @@ export interface TCustomer {
   name: string;
   countryCode?: string;
   phoneNumber: string;
+  whatsappNumber?: string | null;
+  image?: string | null;
   email?: string | null;
   address?: string | null;
   totalDue?: number;

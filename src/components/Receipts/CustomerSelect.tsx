@@ -83,7 +83,8 @@ export default function CustomerSelect({
     const phoneMatch =
       cust.phoneNumber?.includes(term) ||
       (cust.countryCode && (cust.countryCode + cust.phoneNumber).includes(term)) ||
-      (cust.phoneNumber && `0${cust.phoneNumber}`.includes(term));
+      (cust.phoneNumber && `0${cust.phoneNumber}`.includes(term)) ||
+      (cust.whatsappNumber && cust.whatsappNumber.includes(term));
 
     return Boolean(nameMatch || phoneMatch);
   };

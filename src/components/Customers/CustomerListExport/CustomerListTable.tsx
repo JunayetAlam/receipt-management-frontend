@@ -1,4 +1,5 @@
 import { TCustomer } from "@/types";
+import { formatSignedDue } from "@/utils/formatInvoiceMoney";
 
 const thClass =
   "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap border-b border-slate-200 bg-slate-50";
@@ -23,38 +24,53 @@ export default function CustomerListTable({
           <th className={thClass}>Phone</th>
           <th className={thClass}>Email</th>
           <th className={thClass}>Address</th>
+          <th className={`${thClass} text-right`}>Due</th>
         </tr>
       </thead>
       <tbody>
         {empty ? (
           <tr data-row="empty">
             <td
-              colSpan={5}
+              colSpan={6}
               className={`${tdClass} text-center text-slate-500 italic py-6`}
             >
               No customers found for this filter.
             </td>
           </tr>
         ) : (
-          customers.map((customer, idx) => (
-            <tr key={customer.id} data-row="item">
-              <td className={`${tdClass} text-center text-slate-500 font-mono`}>
-                {startIndex + idx + 1}
-              </td>
-              <td className={`${tdClass} font-semibold truncate max-w-[180px]`}>
-                {customer.name}
-              </td>
-              <td className={`${tdClass} font-mono whitespace-nowrap`}>
-                {customer.countryCode || "+880"} {customer.phoneNumber}
-              </td>
-              <td className={`${tdClass} truncate max-w-[180px] text-slate-700`}>
-                {customer.email || "—"}
-              </td>
-              <td className={`${tdClass} truncate max-w-[220px] text-slate-700`}>
-                {customer.address || "—"}
-              </td>
-            </tr>
-          ))
+          customers.map((customer, idx) => {
+            const due = Number(customer.totalDue) || 0;
+            return (
+              <tr key={customer.id} data-row="item">
+                <td className={`${tdClass} text-center text-slate-500 font-mono`}>
+                  {startIndex + idx + 1}
+                </td>
+                <td className={`${tdClass} font-semibold truncate max-w-[180px]`}>
+                  {customer.name}
+                </td>
+                <td className={`${tdClass} font-mono whitespace-nowrap`}>
+                  {customer.countryCode || "+880"} {customer.phoneNumber}
+                </td>
+                <td className={`${tdClass} truncate max-w-[180px] text-slate-700`}>
+                  {customer.email || "—"}
+                </td>
+                <td className={`${tdClass} truncate max-w-[200px] text-slate-700`}>
+                  {customer.address || "—"}
+                </td>
+                <td
+                  className={`${tdClass} text-right font-mono font-medium whitespace-nowrap ${
+                    due > 0
+                      ? "text-rose-600"
+                      : due < 0
+                      ? "text-emerald-600"
+                      : "text-slate-700"
+                  }`}
+                >
+                  {formatSignedDue(due)}
+                </td>
+              </tr>
+            );
+          })
         )}
       </tbody>
     </table>

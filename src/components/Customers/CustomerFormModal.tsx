@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
 } from "@/redux/api/customerApi";
+import { useUploadAssetMutation } from "@/redux/api/assestApi";
 import { TCustomer } from "@/types";
-import { UserPlus, UserCheck } from "lucide-react";
+import { UserPlus, UserCheck, Camera, Trash2, Loader2 } from "lucide-react";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 
@@ -35,10 +37,13 @@ export default function CustomerFormModal({
   const isEditing = Boolean(customerToEdit);
   const [createCustomer, { isLoading: isCreating }] = useCreateCustomerMutation();
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
+  const [uploadAsset, { isLoading: isUploadingImage }] = useUploadAssetMutation();
 
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+880");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [image, setImage] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,6 +53,8 @@ export default function CustomerFormModal({
       setName(customerToEdit.name || "");
       setCountryCode(customerToEdit.countryCode || "+880");
       setPhoneNumber(customerToEdit.phoneNumber || "");
+      setWhatsappNumber(customerToEdit.whatsappNumber || "");
+      setImage(customerToEdit.image || "");
       setEmail(customerToEdit.email || "");
       setAddress(customerToEdit.address || "");
       setErrors({});
@@ -55,6 +62,8 @@ export default function CustomerFormModal({
       setName("");
       setCountryCode("+880");
       setPhoneNumber("");
+      setWhatsappNumber("");
+      setImage("");
       setEmail("");
       setAddress("");
       setErrors({});
@@ -72,11 +81,50 @@ export default function CustomerFormModal({
     } else if (cleanPhone.length < 4 || cleanPhone.length > 16) {
       errs.phoneNumber = "Phone number must be between 4 and 16 digits";
     }
+    if (whatsappNumber.trim()) {
+      const cleanWa = whatsappNumber.trim().replace(/[\s\-\(\)]/g, "");
+      if (cleanWa.length < 4 || cleanWa.length > 20) {
+        errs.whatsappNumber = "WhatsApp number must be between 4 and 20 digits";
+      }
+    }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = "Please enter a valid email address";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WEBP)");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image file size must be less than 5MB");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("model", "customer");
+      const res = await uploadAsset(formData).unwrap();
+      const uploadedUrl = res?.data?.url?.url || res?.data?.url;
+      if (uploadedUrl) {
+        setImage(uploadedUrl);
+        toast.success("Image uploaded successfully");
+      }
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImage("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,6 +135,10 @@ export default function CustomerFormModal({
       name: name.trim(),
       countryCode,
       phoneNumber: phoneNumber.trim().replace(/[\s\-\(\)]/g, ""),
+      whatsappNumber: whatsappNumber.trim()
+        ? whatsappNumber.trim().replace(/[\s\-\(\)]/g, "")
+        : null,
+      image: image.trim() || null,
       email: email.trim() || null,
       address: address.trim() || null,
     };
@@ -124,6 +176,62 @@ export default function CustomerFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Customer Photo Upload */}
+          <div className="flex items-center gap-4 py-1">
+            <div className="relative group size-16 shrink-0">
+              <Avatar className="size-16 border-2 border-border shadow-xs">
+                {image ? (
+                  <AvatarImage src={image} alt="Customer avatar" className="object-cover" />
+                ) : null}
+                <AvatarFallback className="text-base font-semibold bg-primary/10 text-primary">
+                  {name ? name.slice(0, 2).toUpperCase() : "CU"}
+                </AvatarFallback>
+              </Avatar>
+
+              {isUploadingImage && (
+                <div className="absolute inset-0 bg-background/70 backdrop-blur-xs flex items-center justify-center rounded-full">
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-foreground">Customer Photo (Optional)</p>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="customer-image-upload"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-border bg-background hover:bg-muted cursor-pointer transition-colors"
+                >
+                  <Camera className="size-3.5 text-muted-foreground" />
+                  <span>{image ? "Change Photo" : "Upload Photo"}</span>
+                  <input
+                    id="customer-image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                    disabled={isUploadingImage || isCreating || isUpdating}
+                  />
+                </label>
+
+                {image && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveImage}
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                    disabled={isUploadingImage || isCreating || isUpdating}
+                  >
+                    <Trash2 className="size-3.5 mr-1" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">JPG, PNG or WEBP (Max 5MB)</p>
+            </div>
+          </div>
+
           {/* Customer Name */}
           <div className="space-y-1.5">
             <Label htmlFor="customer-name">Full Name *</Label>
@@ -165,6 +273,45 @@ export default function CustomerFormModal({
             }}
             error={errors.phoneNumber}
           />
+
+          {/* WhatsApp Number */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="customer-whatsapp">WhatsApp Number (Optional)</Label>
+              {phoneNumber && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const full = phoneNumber.startsWith("+")
+                      ? phoneNumber
+                      : `${countryCode}${phoneNumber}`.replace(/[\s\-\(\)]/g, "");
+                    setWhatsappNumber(full);
+                    if (errors.whatsappNumber) {
+                      setErrors((prev) => ({ ...prev, whatsappNumber: "" }));
+                    }
+                  }}
+                  className="text-xs text-primary font-medium hover:underline transition-colors cursor-pointer"
+                >
+                  Same as Phone
+                </button>
+              )}
+            </div>
+            <Input
+              id="customer-whatsapp"
+              type="tel"
+              placeholder="e.g. +88017XXXXXXXX or 017XXXXXXXX"
+              value={whatsappNumber}
+              onChange={(e) => {
+                setWhatsappNumber(e.target.value);
+                if (errors.whatsappNumber) {
+                  setErrors((prev) => ({ ...prev, whatsappNumber: "" }));
+                }
+              }}
+            />
+            {errors.whatsappNumber && (
+              <p className="text-xs text-destructive">{errors.whatsappNumber}</p>
+            )}
+          </div>
 
           {/* Email */}
           <div className="space-y-1.5">
