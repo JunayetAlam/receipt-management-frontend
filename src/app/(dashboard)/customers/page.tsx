@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import CustomerTable from "@/components/Customers/CustomerTable";
 import CustomerStatsCards from "@/components/Customers/CustomerStatsCards";
+import CustomerHeader from "@/components/Customers/CustomerHeader";
 
 export const metadata: Metadata = {
   title: "Manage Customers | Receipt Management",
@@ -10,11 +11,10 @@ export const metadata: Metadata = {
 export default function CustomersPage() {
   return (
     <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        Manage Customers
-      </h1>
+      <CustomerHeader />
       <CustomerStatsCards />
       <CustomerTable />
     </div>
   );
 }
+
