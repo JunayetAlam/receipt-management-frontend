@@ -545,4 +545,76 @@ export interface TShop {
   updatedAt: string;
 }
 
+export type TCustomerTransactionType = "RECEIPT" | "PAYMENT" | "RETURN_INVOICE";
 
+export interface TCustomerTransaction {
+  id: string;
+  customerId: string;
+  type: TCustomerTransactionType;
+  receiptId?: string | null;
+  paymentId?: string | null;
+  returnInvoiceId?: string | null;
+  note?: string | null;
+  createdById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  due: number;
+  cash: number;
+  balance: number;
+  transactionAmount?: number;
+  cashAmount?: number;
+  dueAmount?: number;
+  referenceNumber: string;
+  customer: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    countryCode?: string;
+    email?: string | null;
+    image?: string | null;
+  };
+  receipt?: {
+    id: string;
+    receiptNumber: string;
+    totalAmount: number;
+    paidAmount: number;
+    dueAmount: number;
+    status: ReceiptStatus;
+    note?: string | null;
+    createdAt: string;
+  } | null;
+  payment?: {
+    id: string;
+    amount: number;
+    note?: string | null;
+    status: ReceiptStatus;
+    createdAt: string;
+    createdBy?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  } | null;
+  returnInvoice?: {
+    id: string;
+    returnNumber: string;
+    refundedAmount: number;
+    discount: number;
+    status: ReceiptStatus;
+    note?: string | null;
+    createdAt: string;
+  } | null;
+  createdBy?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+  } | null;
+}
+
+export interface TCustomerTransactionStats {
+  totalTransactions: number;
+  totalDue: number;
+  totalPayment: number;
+  totalBalance: number;
+}

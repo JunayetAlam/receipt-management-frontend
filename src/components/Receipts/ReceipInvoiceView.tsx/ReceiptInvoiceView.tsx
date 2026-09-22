@@ -132,7 +132,8 @@ export default function ReceiptInvoiceView({
       ) as HTMLElement | null;
 
       return {
-        pageHeight: rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
+        pageHeight:
+          rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
         compactFooterHeight:
           compactFooterProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.compactFooterHeight,
@@ -140,7 +141,8 @@ export default function ReceiptInvoiceView({
           lastFooterProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.lastFooterHeight,
         detailsHeight:
-          detailsProbeRef.current?.offsetHeight || FALLBACK_METRICS.detailsHeight,
+          detailsProbeRef.current?.offsetHeight ||
+          FALLBACK_METRICS.detailsHeight,
         continuationBarHeight:
           barProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.continuationBarHeight,
@@ -261,10 +263,7 @@ export default function ReceiptInvoiceView({
           visibility: "hidden",
         }}
       >
-        <div
-          ref={rulerRef}
-          style={{ height: "297mm", width: "210mm" }}
-        />
+        <div ref={rulerRef} style={{ height: "297mm", width: "210mm" }} />
         <div className="px-10">
           <div ref={detailsProbeRef}>
             <RIV_Details shop={shop} receipt={receipt} />
@@ -306,12 +305,7 @@ export default function ReceiptInvoiceView({
           />
         </div>
         <div ref={lastFooterProbeRef}>
-          <RIV_Footer
-            isLastPage
-            pageNo={1}
-            pageCount={1}
-            {...footerContacts}
-          />
+          <RIV_Footer isLastPage pageNo={1} pageCount={1} {...footerContacts} />
         </div>
       </div>
 
@@ -334,18 +328,6 @@ export default function ReceiptInvoiceView({
                 boxSizing: "border-box",
               }}
             >
-              {page.pageNo === 1 && shop?.logo && (
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
-                  <Image
-                    src={shop.logo}
-                    alt={shop.name || "Shop Logo"}
-                    width={200}
-                    height={200}
-                    className="max-h-20 w-auto max-w-[220px] object-contain"
-                  />
-                </div>
-              )}
-
               <div
                 className="px-10 pt-10"
                 style={{
@@ -376,9 +358,7 @@ export default function ReceiptInvoiceView({
                   />
                 </div>
 
-                {page.showCalculation && (
-                  <RIV_Calculation receipt={receipt} />
-                )}
+                {page.showCalculation && <RIV_Calculation receipt={receipt} />}
               </div>
 
               <div className="absolute left-0 right-0 bottom-0">

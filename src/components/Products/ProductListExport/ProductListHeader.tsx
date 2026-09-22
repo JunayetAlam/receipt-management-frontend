@@ -1,3 +1,4 @@
+import ShopLogo from "@/components/ShopLogo";
 import { TShop } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
 import Image from "next/image";
@@ -21,18 +22,7 @@ export default function ProductListHeader({
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          {shop?.logo ? (
-            <Image
-              src={shop.logo}
-              alt={shopName}
-              width={36}
-              height={36}
-              className="size-9 object-contain shrink-0"
-            />
-          ) : null}
-          <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-tight truncate">
-            {shopName}
-          </h1>
+          <ShopLogo url={shop?.logo} alt={shop?.name} />
         </div>
         <h2 className="text-xl font-extrabold tracking-wider text-slate-900 uppercase shrink-0">
           Product List

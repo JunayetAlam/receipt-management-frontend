@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   Contact,
   FileSpreadsheet,
   History,
@@ -133,6 +134,11 @@ export default function DashboardSidebar() {
     {
       title: "Transactions",
       items: [
+        {
+          name: "Customer Transactions",
+          href: "/customer-transactions",
+          icon: ArrowLeftRight,
+        },
         { name: "Receipts", href: "/receipts", icon: ReceiptText },
         { name: "Return Invoices", href: "/return-invoices", icon: Undo2 },
       ],

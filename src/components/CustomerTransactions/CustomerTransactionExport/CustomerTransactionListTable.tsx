@@ -1,0 +1,109 @@
+import React from "react";
+import { TCustomerTransaction } from "@/types";
+import { formatInvoiceMoney, formatSignedDue } from "@/utils/formatInvoiceMoney";
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+const thClass =
+  "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap border-b border-slate-200 bg-slate-50";
+const tdClass =
+  "px-2 border-b border-slate-200/80 py-[6px] align-middle text-[10.5px] text-slate-900";
+
+export default function CustomerTransactionListTable({
+  transactions,
+  startIndex = 0,
+  empty = false,
+}: {
+  transactions: TCustomerTransaction[];
+  startIndex?: number;
+  empty?: boolean;
+}) {
+  return (
+    <table className="w-full caption-bottom text-sm border-collapse">
+      <thead data-probe="header">
+        <tr>
+          <th className={`${thClass} w-7 text-center`}>#</th>
+          <th className={`${thClass} whitespace-nowrap`}>Date & Time</th>
+          <th className={thClass}>Type</th>
+          <th className={`${thClass} text-right`}>Due (BDT)</th>
+          <th className={`${thClass} text-right`}>Cash (BDT)</th>
+          <th className={`${thClass} text-right`}>Balance (BDT)</th>
+          <th className={thClass}>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {empty ? (
+          <tr data-row="empty">
+            <td
+              colSpan={7}
+              className={`${tdClass} text-center text-slate-500 italic py-6`}
+            >
+              No transactions found for this filter.
+            </td>
+          </tr>
+        ) : (
+          transactions.map((tx, idx) => {
+            const isReceipt = tx.type === "RECEIPT";
+            const isPayment = tx.type === "PAYMENT";
+            const isReturn = tx.type === "RETURN_INVOICE";
+
+            return (
+              <tr key={tx.id} data-row="item">
+                <td className={`${tdClass} text-center text-slate-500 font-mono`}>
+                  {startIndex + idx + 1}
+                </td>
+                <td className={`${tdClass} whitespace-nowrap`}>
+                  <p className="font-mono text-slate-600 text-[10px]">
+                    {formatDateTime(tx.createdAt)}
+                  </p>
+                  <p className="font-semibold text-slate-900 text-[10.5px] mt-0.5 truncate max-w-[150px]">
+                    {tx.customer?.name || "Walk-in"}
+                  </p>
+                </td>
+                <td className={`${tdClass} whitespace-nowrap font-medium`}>
+                  <span
+                    className={`inline-block px-1.5 py-0.5 rounded text-[9.5px] font-semibold ${
+                      isReceipt
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : isPayment
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
+                    }`}
+                  >
+                    {isReceipt ? "Receipt" : isPayment ? "Payment" : "Return"}
+                  </span>
+                </td>
+                <td className={`${tdClass} text-right font-mono font-medium whitespace-nowrap ${
+                  tx.due > 0 ? "text-amber-700 font-semibold" : "text-slate-400"
+                }`}>
+                  {tx.due > 0 ? formatInvoiceMoney(tx.due) : "—"}
+                </td>
+                <td className={`${tdClass} text-right font-mono font-medium whitespace-nowrap text-emerald-700`}>
+                  {tx.cash > 0 ? formatInvoiceMoney(tx.cash) : "—"}
+                </td>
+                <td className={`${tdClass} text-right font-mono font-medium whitespace-nowrap ${
+                  tx.balance > 0 ? "text-rose-700 font-bold" : tx.balance < 0 ? "text-emerald-700 font-bold" : "text-slate-600"
+                }`}>
+                  {formatSignedDue(tx.balance)}
+                </td>
+                <td className={`${tdClass} text-[9.5px] text-slate-700 whitespace-pre-wrap break-words leading-relaxed`}>
+                  {tx.note || tx.payment?.note || tx.receipt?.note || "—"}
+                </td>
+              </tr>
+            );
+          })
+        )}
+      </tbody>
+    </table>
+  );
+}

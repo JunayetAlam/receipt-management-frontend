@@ -1,5 +1,6 @@
 import { TReceipt, TShop } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
+import Image from "next/image";
 import React from "react";
 
 export default function RIV_Details({
@@ -13,20 +14,36 @@ export default function RIV_Details({
     <>
       {/* Header Row: Shop Logo & Name (Left) | INVOICE Title (Right) */}
       <div className="flex justify-between items-start gap-4">
-        {/* Left: Brand Logo & Name */}
-        <div className="flex flex-col items-start max-w-[65%]">
+        <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 text-center">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
             {shop?.name || "Rupayon Biddut"}
           </h1>
           {shop?.tagline ? (
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
+            <p className="text-xs font-medium text-slate-500 -mt-1">
               {shop.tagline}
             </p>
           ) : !shop ? (
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
+            <p className="text-xs font-medium text-slate-500 -mt-1">
               Meet All Your Needs • Electrical Goods
             </p>
           ) : null}
+          {shop?.phoneNumbers && shop.phoneNumbers.length > 0 && (
+            <p className="text-xs text-slate-600 ">
+              Phone: {shop.phoneNumbers.join(", ")}
+            </p>
+          )}
+        </div>
+        {/* Left: Brand Logo & Name */}
+        <div className="flex flex-col items-start max-w-[65%]">
+          {shop?.logo && (
+            <Image
+              src={shop.logo}
+              alt={shop.name || "Shop Logo"}
+              width={200}
+              height={200}
+              className="max-h-14 w-auto max-w-[220px] object-contain"
+            />
+          )}
         </div>
 
         {/* Right: Big Minimalist INVOICE Header */}
