@@ -28,13 +28,24 @@ export const statsApi = baseApi.injectEndpoints({
     }),
     getSalesPerformance: builder.query<
       TResponse<TSalesPerformancePoint[]>,
-      void
+      { startMonth?: string; endMonth?: string } | void
     >({
-      query: () => ({ url: "/stats/sales-performance", method: "GET" }),
+      query: (params) => ({
+        url: "/stats/sales-performance",
+        method: "GET",
+        params: params || undefined,
+      }),
       providesTags: [...dashboardTags],
     }),
-    getProfitBreakdown: builder.query<TResponse<TProfitBreakdown>, void>({
-      query: () => ({ url: "/stats/profit-breakdown", method: "GET" }),
+    getProfitBreakdown: builder.query<
+      TResponse<TProfitBreakdown>,
+      { startMonth?: string; endMonth?: string } | void
+    >({
+      query: (params) => ({
+        url: "/stats/profit-breakdown",
+        method: "GET",
+        params: params || undefined,
+      }),
       providesTags: [...dashboardTags],
     }),
     getLowStock: builder.query<

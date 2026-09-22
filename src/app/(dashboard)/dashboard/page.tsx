@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import useHandleSearchParams from "@/hooks/useHandleSearchParams";
@@ -24,6 +24,15 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { handleSetSearchParams } = useHandleSearchParams();
 
+  const [salesRange, setSalesRange] = useState<{
+    startMonth?: string;
+    endMonth?: string;
+  }>({});
+  const [profitRange, setProfitRange] = useState<{
+    startMonth?: string;
+    endMonth?: string;
+  }>({});
+
   const rawPreset = searchParams.get("preset") as TDashboardPreset | null;
   const startDate = searchParams.get("startDate") ?? "";
   const endDate = searchParams.get("endDate") ?? "";
@@ -36,8 +45,14 @@ function DashboardContent() {
     { preset, ...(preset === "custom" ? { startDate, endDate } : {}) },
     { skip },
   );
-  const salesQ = useGetSalesPerformanceQuery(undefined, { skip: !isAdmin });
-  const profitQ = useGetProfitBreakdownQuery(undefined, { skip: !isAdmin });
+  const salesQ = useGetSalesPerformanceQuery(
+    salesRange.startMonth && salesRange.endMonth ? salesRange : undefined,
+    { skip: !isAdmin },
+  );
+  const profitQ = useGetProfitBreakdownQuery(
+    profitRange.startMonth && profitRange.endMonth ? profitRange : undefined,
+    { skip: !isAdmin },
+  );
 
   if (isAdminLoading) return null;
   if (!isAdmin) {
@@ -77,10 +92,20 @@ function DashboardContent() {
         isLoading={summaryQ.isLoading || summaryQ.isFetching}
       />
 
-      <SalesPerformanceChart data={salesQ.data?.data} isLoading={salesQ.isLoading} />
+      <SalesPerformanceChart
+        data={salesQ.data?.data}
+        isLoading={salesQ.isLoading || salesQ.isFetching}
+        range={salesRange}
+        onRangeChange={setSalesRange}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <ProfitBreakdownChart data={profitQ.data?.data} isLoading={profitQ.isLoading} />
+        <ProfitBreakdownChart
+          data={profitQ.data?.data}
+          isLoading={profitQ.isLoading || profitQ.isFetching}
+          range={profitRange}
+          onRangeChange={setProfitRange}
+        />
         <TopSellingProducts
           products={summary?.topProducts}
           isLoading={summaryQ.isLoading || summaryQ.isFetching}

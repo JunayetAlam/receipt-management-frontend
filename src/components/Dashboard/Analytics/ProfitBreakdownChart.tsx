@@ -12,6 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
 import type { TProfitBreakdown } from "@/types/dashboard";
+import ChartMonthRangeFilter, {
+  formatRangeSubtext,
+} from "./ChartMonthRangeFilter";
 
 const colorVar = (i: number) => `var(--chart-${(i % 12) + 1})`;
 /** Chart config keys must be CSS-safe, so "2026-09" becomes "m2026_09". */
@@ -20,9 +23,13 @@ const keyOf = (month: string) => `m${month.replace("-", "_")}`;
 export default function ProfitBreakdownChart({
   data,
   isLoading,
+  range,
+  onRangeChange,
 }: {
   data?: TProfitBreakdown;
   isLoading?: boolean;
+  range?: { startMonth?: string; endMonth?: string };
+  onRangeChange?: (range: { startMonth?: string; endMonth?: string }) => void;
 }) {
   const months = data?.months ?? [];
   const chartConfig = Object.fromEntries(
@@ -36,15 +43,25 @@ export default function ProfitBreakdownChart({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Profit Breakdown (Last 12 Months)</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-base">
+          Profit Breakdown ({formatRangeSubtext(range?.startMonth, range?.endMonth)})
+        </CardTitle>
+        <ChartMonthRangeFilter
+          startMonth={range?.startMonth}
+          endMonth={range?.endMonth}
+          onApply={(start, end) =>
+            onRangeChange?.({ startMonth: start, endMonth: end })
+          }
+          onReset={() => onRangeChange?.({})}
+        />
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <Skeleton className="h-72 w-full" />
         ) : slices.length === 0 ? (
           <p className="py-24 text-center text-sm text-muted-foreground">
-            No profit recorded in the last 12 months.
+            No profit recorded in the selected period.
           </p>
         ) : (
           <div className="flex flex-col items-center gap-4 lg:flex-row">
@@ -88,7 +105,7 @@ export default function ProfitBreakdownChart({
               </div>
             </div>
 
-            <ul className="grid w-full grid-cols-1 gap-x-4 gap-y-1.5 text-sm sm:grid-cols-2">
+            <ul className="grid max-h-72 w-full grid-cols-1 gap-x-4 gap-y-1.5 overflow-y-auto pr-1 text-sm sm:grid-cols-2">
               {months.map((m, i) => (
                 <li key={m.month} className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">

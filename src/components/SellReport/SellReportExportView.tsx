@@ -11,15 +11,15 @@ import {
 } from "@/types";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
-import ProductProfitListHeader from "./ProductProfitExport/ProductProfitListHeader";
-import ProductProfitListContinuationBar from "./ProductProfitExport/ProductProfitListContinuationBar";
-import ProductProfitListFooter from "./ProductProfitExport/ProductProfitListFooter";
-import ProductProfitListTable from "./ProductProfitExport/ProductProfitListTable";
+import SellReportListHeader from "./SellReportExport/SellReportListHeader";
+import SellReportListContinuationBar from "./SellReportExport/SellReportListContinuationBar";
+import SellReportListFooter from "./SellReportExport/SellReportListFooter";
+import SellReportListTable from "./SellReportExport/SellReportListTable";
 import {
   LIST_CONTENT_FOOTER_GAP,
   paginateProductProfitListPages,
   type ProductProfitListPage,
-} from "./ProductProfitExport/paginateProductProfitListPages";
+} from "../ProductProfit/ProductProfitExport/paginateProductProfitListPages";
 
 type ListMetrics = {
   pageHeight: number;
@@ -71,12 +71,12 @@ function metricsEqual(a: ListMetrics, b: ListMetrics) {
   );
 }
 
-export default function ProductProfitExportView({
+export default function SellReportExportView({
   products,
   summary,
   filterLabel,
   searchTerm,
-  backHref = "/product-profit-loss",
+  backHref = "/sell-report",
 }: {
   products: TProductProfitRow[];
   summary: TProductProfitSummary;
@@ -100,7 +100,7 @@ export default function ProductProfitExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Product Profit/Loss`;
+    document.title = `${shopName} — Sell Report`;
     return () => {
       document.title = previous;
     };
@@ -206,7 +206,7 @@ export default function ProductProfitExportView({
             size="sm"
             className="gap-2 shadow-xs bg-card"
           >
-            <ArrowLeft className="size-4" /> Back to Product Profit/Loss
+            <ArrowLeft className="size-4" /> Back to Sell Report
           </Button>
         </Link>
 
@@ -232,7 +232,7 @@ export default function ProductProfitExportView({
         <div ref={rulerRef} style={{ height: "297mm", width: "210mm" }} />
         <div className="px-10">
           <div ref={headerProbeRef}>
-            <ProductProfitListHeader
+            <SellReportListHeader
               shop={shop}
               generatedAt={generatedAt}
               filterLabel={filterLabel}
@@ -244,7 +244,7 @@ export default function ProductProfitExportView({
         </div>
         <div className="px-10">
           <div ref={barProbeRef}>
-            <ProductProfitListContinuationBar
+            <SellReportListContinuationBar
               shopName={shopName}
               pageNo={2}
               pageCount={2}
@@ -252,11 +252,11 @@ export default function ProductProfitExportView({
           </div>
         </div>
         <div ref={tableProbeRef} className="px-10">
-          <ProductProfitListTable products={[PROBE_PRODUCT]} startIndex={0} />
-          <ProductProfitListTable products={[]} empty />
+          <SellReportListTable products={[PROBE_PRODUCT]} startIndex={0} />
+          <SellReportListTable products={[]} empty />
         </div>
         <div ref={footerProbeRef}>
-          <ProductProfitListFooter pageNo={1} pageCount={1} />
+          <SellReportListFooter pageNo={1} pageCount={1} />
         </div>
       </div>
 
@@ -281,7 +281,7 @@ export default function ProductProfitExportView({
               }}
             >
               {page.pageNo === 1 ? (
-                <ProductProfitListHeader
+                <SellReportListHeader
                   shop={shop}
                   generatedAt={generatedAt}
                   filterLabel={filterLabel}
@@ -290,7 +290,7 @@ export default function ProductProfitExportView({
                   summary={summary}
                 />
               ) : (
-                <ProductProfitListContinuationBar
+                <SellReportListContinuationBar
                   shopName={shopName}
                   pageNo={page.pageNo}
                   pageCount={pageCount}
@@ -298,7 +298,7 @@ export default function ProductProfitExportView({
               )}
 
               <div className="pt-4">
-                <ProductProfitListTable
+                <SellReportListTable
                   products={page.products}
                   startIndex={page.startIndex}
                   empty={products.length === 0}
@@ -307,7 +307,7 @@ export default function ProductProfitExportView({
             </div>
 
             <div className="absolute left-0 right-0 bottom-0">
-              <ProductProfitListFooter
+              <SellReportListFooter
                 pageNo={page.pageNo}
                 pageCount={pageCount}
               />

@@ -20,8 +20,7 @@ export type TDashboardSummary = {
   summary: {
     totalSales: number;
     totalExpenses: number;
-    totalProfit: number;
-    profitPercent: number | null;
+    totalCustomers: number;
     lowStockCount: number;
   };
   topProducts: TDashboardTopProduct[];

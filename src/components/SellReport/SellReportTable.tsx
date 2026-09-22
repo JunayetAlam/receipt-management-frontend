@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   FileDown,
@@ -35,7 +34,7 @@ import {
 } from "@/components/ui/table";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
-import ProductProfitSummaryCards from "./ProductProfitSummaryCards";
+import SellReportSummaryCards from "./SellReportSummaryCards";
 import TableSkeleton from "../Global/TableSkeleton";
 
 const SORT_OPTIONS: {
@@ -43,17 +42,12 @@ const SORT_OPTIONS: {
   sortBy: ProductProfitSortField;
   sortOrder: "asc" | "desc";
 }[] = [
-  { label: "Profit/Loss: High to Low", sortBy: "profit", sortOrder: "desc" },
-  { label: "Profit/Loss: Low to High", sortBy: "profit", sortOrder: "asc" },
   { label: "Sales: High to Low", sortBy: "salesTotal", sortOrder: "desc" },
+  { label: "Sales: Low to High", sortBy: "salesTotal", sortOrder: "asc" },
   { label: "Sold Qty: High to Low", sortBy: "soldQty", sortOrder: "desc" },
+  { label: "Sold Qty: Low to High", sortBy: "soldQty", sortOrder: "asc" },
   { label: "Name: A to Z", sortBy: "name", sortOrder: "asc" },
   { label: "Name: Z to A", sortBy: "name", sortOrder: "desc" },
-  {
-    label: "Profit/Loss %: High to Low",
-    sortBy: "profitPercent",
-    sortOrder: "desc",
-  },
 ];
 
 function formatQty(value: number) {
@@ -62,30 +56,9 @@ function formatQty(value: number) {
   }).format(value);
 }
 
-function formatOptionalMoney(value: number | null) {
-  if (value == null) return "—";
-  return formatInvoiceMoney(value);
-}
+const TABLE_HEADERS = ["#", "Product", "Sold", "Sell", "Receipts"];
 
-function formatPercent(value: number | null) {
-  if (value == null) return "—";
-  return `${value.toFixed(2)}%`;
-}
-
-const TABLE_HEADERS = [
-  "#",
-  "Product",
-  "Sold",
-  "Avg Buy",
-  "Avg Sale",
-  "Sales",
-  "Cost",
-  "Profit/Loss",
-  "Profit/Loss %",
-  "Receipts",
-];
-
-export default function ProductProfitTable() {
+export default function SellReportTable() {
   const router = useRouter();
   const [isAdmin, isAdminLoading] = useIsAdmin();
 
@@ -128,8 +101,6 @@ export default function ProductProfitTable() {
   const summary = report?.summary;
   const meta = response?.meta;
 
-  const hasAssumedBuy = products.some((row) => row.assumedBuyFromSellQty > 0);
-
   const applyDateFilter = () => {
     if (startDate && endDate && startDate > endDate) {
       setDateError("Start date cannot be after end date");
@@ -166,16 +137,16 @@ export default function ProductProfitTable() {
     if (appliedStart) params.set("startDate", appliedStart);
     if (appliedEnd) params.set("endDate", appliedEnd);
     if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
-    return `/product-profit-loss/export?${params.toString()}`;
+    return `/sell-report/export?${params.toString()}`;
   }, [selectedSort, appliedStart, appliedEnd, searchTerm]);
 
   if (isAdminLoading || !isAdmin) {
-    return <TableSkeleton headers={TABLE_HEADERS} title="Product Profit/Loss" />;
+    return <TableSkeleton headers={TABLE_HEADERS} title="Sell Report" />;
   }
 
   return (
     <div className="space-y-4">
-      <ProductProfitSummaryCards
+      <SellReportSummaryCards
         summary={summary}
         isLoading={isLoading || isFetching}
       />
@@ -275,20 +246,10 @@ export default function ProductProfitTable() {
           Showing sales
           {appliedStart ? ` from ${appliedStart}` : ""}
           {appliedEnd ? ` to ${appliedEnd}` : ""}
-          {" · "}Returns counted only if also in this range (Asia/Dhaka)
         </p>
       )}
 
-      {hasAssumedBuy ? (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
-          <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-          <p>
-            Some lines had no buying price. For those quantities, unit selling
-            price was used as cost (zero margin on that qty).
-          </p>
-        </div>
-      ) : null}
-
+      {/* Main Table Card */}
       <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         {/* Table Top Toolbar: Count & Top Pagination */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border bg-muted/30 px-4 py-2.5">
@@ -355,12 +316,7 @@ export default function ProductProfitTable() {
                 <TableHead className="w-12 text-center">#</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Sold</TableHead>
-                <TableHead className="text-right">Avg Buy</TableHead>
-                <TableHead className="text-right">Avg Sale</TableHead>
-                <TableHead className="text-right">Sales</TableHead>
-                <TableHead className="text-right">Cost</TableHead>
-                <TableHead className="text-right">Profit/Loss</TableHead>
-                <TableHead className="text-right">Profit/Loss %</TableHead>
+                <TableHead className="text-right">Sell</TableHead>
                 <TableHead>Receipts</TableHead>
               </TableRow>
             </TableHeader>
@@ -383,39 +339,24 @@ export default function ProductProfitTable() {
                     <TableCell className="text-right">
                       <Skeleton className="h-4 w-16 ml-auto" />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-16 ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Skeleton className="h-4 w-12 ml-auto" />
-                    </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-28" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : isError ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={5}
                     className="py-12 text-center text-sm text-destructive"
                   >
-                    Failed to load product profit/loss report
+                    Failed to load sell report
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={10}
+                    colSpan={5}
                     className="py-12 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center space-y-2">
@@ -448,44 +389,14 @@ export default function ProductProfitTable() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {row.unit}
-                            {row.assumedBuyFromSellQty > 0
-                              ? ` · buy=sell on ${formatQty(row.assumedBuyFromSellQty)}`
-                              : ""}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {formatQty(row.soldQty)}
                       </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatOptionalMoney(row.avgPurchase)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatOptionalMoney(row.avgSale)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
+                      <TableCell className="text-right font-mono font-semibold">
                         {formatInvoiceMoney(row.salesTotal)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatInvoiceMoney(row.purchaseCost)}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-mono font-semibold",
-                          row.profit > 0 && "text-emerald-600",
-                          row.profit < 0 && "text-rose-600",
-                        )}
-                      >
-                        {formatInvoiceMoney(row.profit)}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-mono",
-                          (row.profitPercent ?? 0) > 0 && "text-emerald-600",
-                          (row.profitPercent ?? 0) < 0 && "text-rose-600",
-                        )}
-                      >
-                        {formatPercent(row.profitPercent)}
                       </TableCell>
                       <TableCell className="max-w-60">
                         <div className="flex flex-wrap gap-1">

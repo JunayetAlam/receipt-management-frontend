@@ -9,7 +9,7 @@ function formatQty(value: number) {
   }).format(value);
 }
 
-export default function ProductProfitListHeader({
+export default function SellReportListHeader({
   shop,
   generatedAt,
   filterLabel,
@@ -44,7 +44,7 @@ export default function ProductProfitListHeader({
           </h1>
         </div>
         <h2 className="text-xl font-extrabold tracking-wider text-slate-900 uppercase shrink-0">
-          Product Profit/Loss
+          Sell Report
         </h2>
       </div>
 
@@ -82,24 +82,9 @@ export default function ProductProfitListHeader({
           </p>
           <p>
             <span className="font-semibold font-sans text-slate-800 mr-2">
-              Sales
+              Sale
             </span>
             {formatInvoiceMoney(summary.salesTotal)}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Cost
-            </span>
-            {formatInvoiceMoney(summary.purchaseCost)}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Profit/Loss
-            </span>
-            {formatInvoiceMoney(summary.profit)}
-            {summary.profitPercent != null
-              ? ` (${summary.profitPercent}%)`
-              : ""}
           </p>
         </div>
       </div>

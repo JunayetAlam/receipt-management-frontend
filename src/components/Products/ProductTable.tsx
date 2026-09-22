@@ -57,7 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type TabType = "ACTIVE" | "LOW_STOCK" | "PENDING_DELETION" | "ARCHIVED";
+type TabType = "ACTIVE" | "PENDING_DELETION" | "ARCHIVED";
 
 const PRODUCT_UNITS: { label: string; value: string }[] = [
   { label: "All Units", value: "ALL" },
@@ -139,8 +139,6 @@ export default function ProductTable() {
   // Tab Filtering logic
   if (activeTab === "ACTIVE") {
     queryParams.isDeleted = false;
-  } else if (activeTab === "LOW_STOCK") {
-    queryParams.isDeleted = false;
   } else if (activeTab === "PENDING_DELETION") {
     queryParams.isDeleted = false;
     queryParams.isDeleteRequested = true;
@@ -156,13 +154,7 @@ export default function ProductTable() {
   let products = response?.data || [];
   const meta = response?.meta;
 
-  // If LOW_STOCK tab is active, filter <= 5 in client
-  if (activeTab === "LOW_STOCK") {
-    products = products.filter((p) => p.stock <= 5);
-  }
-
-  const totalCount =
-    activeTab === "LOW_STOCK" ? products.length : (meta?.total ?? 0);
+  const totalCount = meta?.total ?? 0;
 
   const handleOpenCreate = () => {
     setProductToEdit(null);
@@ -229,9 +221,6 @@ export default function ProductTable() {
     if (activeTab === "PENDING_DELETION") {
       params.set("isDeleteRequested", "true");
     }
-    if (activeTab === "LOW_STOCK") {
-      params.set("lowStock", "true");
-    }
     return `/products/export?${params.toString()}`;
   }, [selectedSort, searchTerm, selectedUnit, activeTab]);
 
@@ -255,23 +244,6 @@ export default function ProductTable() {
             )}
           >
             All Active
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("LOW_STOCK");
-              setPage(1);
-            }}
-            className={cn(
-              "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
-              activeTab === "LOW_STOCK"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <AlertTriangle className="size-3 text-amber-500" />
-            Low Stock
           </button>
 
           <button
@@ -567,7 +539,7 @@ export default function ProductTable() {
                       <TableCell className="min-w-[200px] max-w-[360px]">
                         <div className="flex flex-col min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-foreground text-xs sm:text-sm break-words">
+                            <span className="font-semibold text-foreground text-xs sm:text-sm wrap-break-word">
                               {product.name}
                             </span>
                             <span className="font-medium bg-muted px-1.5 py-0.5 rounded text-[10px] text-muted-foreground shrink-0">
@@ -590,7 +562,7 @@ export default function ProductTable() {
                             <div className="mt-1 text-[11px] text-muted-foreground leading-relaxed">
                               {product.description.length > 55 ? (
                                 <span>
-                                  <span className="break-words">
+                                  <span className="wrap-break-word">
                                     {expandedDescriptions[product.id]
                                       ? product.description
                                       : `${product.description.slice(0, 55)}...`}
@@ -609,7 +581,7 @@ export default function ProductTable() {
                                   </button>
                                 </span>
                               ) : (
-                                <span className="break-words">
+                                <span className="wrap-break-word">
                                   {product.description}
                                 </span>
                               )}
@@ -621,14 +593,14 @@ export default function ProductTable() {
                       {/* Stock */}
                       <TableCell>
                         {product.stock < 0 ? (
-                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-semibold">
-                            Oversold ({product.stock} {product.unit})
+                          <Badge className="bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-xs font-semibold">
+                            Negative ({product.stock} {product.unit})
                           </Badge>
                         ) : product.stock === 0 ? (
                           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-semibold">
                             Out of stock (0)
                           </Badge>
-                        ) : product.stock <= 5 ? (
+                        ) : product.stock <= 20 ? (
                           <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-xs font-semibold">
                             Low stock ({product.stock} {product.unit})
                           </Badge>

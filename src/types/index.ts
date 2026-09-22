@@ -165,6 +165,7 @@ export interface TProductStats {
   totalProducts: number;
   totalStock: number;
   totalSoldQty: number;
+  lowStockCount?: number;
 }
 
 export type ProductProfitSortField =

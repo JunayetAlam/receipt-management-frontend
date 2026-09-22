@@ -1,4 +1,4 @@
-export default function ProductProfitListFooter({
+export default function SellReportListFooter({
   pageNo,
   pageCount,
 }: {
@@ -8,7 +8,7 @@ export default function ProductProfitListFooter({
   return (
     <div className="w-full bg-primary text-primary-foreground py-2.5 px-9 flex items-center justify-between text-[11px] font-medium">
       <span className="tracking-wide uppercase text-primary-foreground/80">
-        Product Profit/Loss
+        Sell Report
       </span>
       <span className="font-semibold">
         Page {pageNo} of {pageCount}

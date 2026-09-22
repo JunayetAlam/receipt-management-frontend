@@ -43,7 +43,7 @@ export default function ProductProfitListTable({
           <th className={`${thClass} text-right`}>Avg Sale</th>
           <th className={`${thClass} text-right`}>Sales</th>
           <th className={`${thClass} text-right`}>Cost</th>
-          <th className={`${thClass} text-right`}>Profit</th>
+          <th className={`${thClass} text-right`}>Profit/Loss</th>
           <th className={`${thClass} text-right`}>%</th>
         </tr>
       </thead>
@@ -63,7 +63,7 @@ export default function ProductProfitListTable({
               <td className={`${tdClass} text-center text-slate-500 font-mono`}>
                 {startIndex + idx + 1}
               </td>
-              <td className={`${tdClass} font-semibold truncate max-w-[160px]`}>
+              <td className={`${tdClass} font-semibold truncate max-w-40`}>
                 <span title={row.productName}>{row.productName}</span>
                 <span className="block text-[10px] font-normal text-slate-500">
                   {row.unit}

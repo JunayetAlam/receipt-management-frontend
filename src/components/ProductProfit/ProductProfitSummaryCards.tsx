@@ -59,7 +59,7 @@ export default function ProductProfitSummaryCards({
       tone: "neutral" as const,
     },
     {
-      label: "Net Profit",
+      label: "Net Profit/Loss",
       value:
         profitPercent != null
           ? `${formatInvoiceMoney(profit)} (${profitPercent}%)`

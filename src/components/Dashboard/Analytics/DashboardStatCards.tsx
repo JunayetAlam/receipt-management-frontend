@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Receipt, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, Receipt, TrendingDown, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
@@ -14,10 +14,6 @@ export default function DashboardStatCards({
   summary?: TDashboardSummary["summary"];
   isLoading?: boolean;
 }) {
-  const profit = summary?.totalProfit ?? 0;
-  const pct = summary?.profitPercent;
-  const profitTone = profit < 0 ? "text-rose-600" : "text-emerald-600";
-
   const cards = [
     {
       label: "Total Sale Amount",
@@ -26,10 +22,10 @@ export default function DashboardStatCards({
       tone: "",
     },
     {
-      label: "Total Profit",
-      value: `${formatInvoiceMoney(profit)}${pct != null ? ` (${pct}%)` : ""}`,
-      icon: TrendingUp,
-      tone: profitTone,
+      label: "Total Customers",
+      value: String(summary?.totalCustomers ?? 0),
+      icon: Users,
+      tone: "",
     },
     {
       label: "Total Expenses",

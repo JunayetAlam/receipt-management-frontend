@@ -12,7 +12,12 @@ import { Button } from "@/components/ui/button";
 function filterLabelFromParams(params: URLSearchParams) {
   if (params.get("isDeleted") === "true") return "Archived";
   if (params.get("isDeleteRequested") === "true") return "Pending Deletion";
-  if (params.get("lowStock") === "true") return "Low Stock";
+  const stockStatus = params.get("stockStatus");
+  if (stockStatus === "NEGATIVE") return "Negative Stock (< 0)";
+  if (stockStatus === "OUT_OF_STOCK") return "Out of Stock (0)";
+  if (stockStatus === "CRITICAL") return "Critical Low (1–5)";
+  if (stockStatus === "LOW") return "Low Stock (6–20)";
+  if (params.get("lowStock") === "true") return "Low Stock (≤ 20)";
   const unit = params.get("unit");
   if (unit) return `Active · ${unit}`;
   return "All Active";
@@ -55,6 +60,15 @@ function ProductExportPageInner() {
       params.isDeleteRequested = true;
     }
 
+    if (searchParams.get("lowStock") === "true") {
+      params.lowStock = "true";
+    }
+
+    const stockStatus = searchParams.get("stockStatus");
+    if (stockStatus) {
+      params.stockStatus = stockStatus;
+    }
+
     return params;
   }, [searchParams]);
 
@@ -66,7 +80,18 @@ function ProductExportPageInner() {
   let products = data?.data || [];
 
   if (lowStockOnly) {
-    products = products.filter((p) => p.stock <= 5);
+    const stockStatus = searchParams.get("stockStatus");
+    if (stockStatus === "NEGATIVE") {
+      products = products.filter((p) => p.stock < 0);
+    } else if (stockStatus === "OUT_OF_STOCK") {
+      products = products.filter((p) => p.stock === 0);
+    } else if (stockStatus === "CRITICAL") {
+      products = products.filter((p) => p.stock > 0 && p.stock <= 5);
+    } else if (stockStatus === "LOW") {
+      products = products.filter((p) => p.stock > 5 && p.stock <= 20);
+    } else {
+      products = products.filter((p) => p.stock <= 20);
+    }
   }
 
   if (isLoading) return <ExportLoading />;
@@ -88,11 +113,14 @@ function ProductExportPageInner() {
     );
   }
 
+  const backHref = lowStockOnly ? "/low-stock" : "/products";
+
   return (
     <ProductListExportView
       products={products}
       filterLabel={filterLabel}
       searchTerm={searchTerm}
+      backHref={backHref}
     />
   );
 }
