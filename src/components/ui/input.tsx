@@ -8,6 +8,7 @@ function Input({
   onChange,
   onInput,
   onFocus,
+  onMouseUp,
   ...props
 }: React.ComponentProps<"input">) {
   const sanitizeNumberValue = (val: string): string => {
@@ -42,12 +43,25 @@ function Input({
     onChange?.(e);
   };
 
+  const isNumber = type === "number" || props.inputMode === "decimal";
+
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // If the input contains "0", auto-select it so typing immediately replaces it
-    if (type === "number" && e.target.value === "0") {
-      e.target.select();
+    if (isNumber) {
+      const input = e.currentTarget;
+      input.select();
+      requestAnimationFrame(() => {
+        input?.select();
+      });
     }
     onFocus?.(e);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (isNumber) {
+      e.preventDefault();
+      e.currentTarget.select();
+    }
+    onMouseUp?.(e);
   };
 
   return (
@@ -61,6 +75,7 @@ function Input({
       onInput={handleInput}
       onChange={handleChange}
       onFocus={handleFocus}
+      onMouseUp={handleMouseUp}
       {...props}
     />
   );

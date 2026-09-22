@@ -1302,22 +1302,15 @@ export default function ReceiptForm({
                           Qty *
                         </label>
                         <Input
-                          type="text"
-                          inputMode="decimal"
+                          type="number"
+                          step="any"
+                          min="0"
                           value={it.quantity}
                           onChange={(e) => {
                             const v = e.target.value;
                             if (v === "" || /^\d*\.?\d*$/.test(v)) {
                               handleItemChange(it.tempId, "quantity", v);
                             }
-                          }}
-                          onFocus={(e) => {
-                            const input = e.currentTarget;
-                            requestAnimationFrame(() => input.select());
-                          }}
-                          onMouseUp={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.select();
                           }}
                           disabled={isLocked}
                           className="text-xs font-mono text-right"
