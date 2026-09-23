@@ -120,8 +120,12 @@ export default function ProductProfitTable() {
     return params;
   }, [page, selectedSort, appliedStart, appliedEnd, searchTerm]);
 
-  const { data: response, isLoading, isFetching, isError } =
-    useGetProductProfitQuery(queryParams, { skip: !isAdmin });
+  const {
+    data: response,
+    isLoading,
+    isFetching,
+    isError,
+  } = useGetProductProfitQuery(queryParams, { skip: !isAdmin });
 
   const report = response?.data;
   const products = report?.products || [];
@@ -170,7 +174,9 @@ export default function ProductProfitTable() {
   }, [selectedSort, appliedStart, appliedEnd, searchTerm]);
 
   if (isAdminLoading || !isAdmin) {
-    return <TableSkeleton headers={TABLE_HEADERS} title="Product Profit/Loss" />;
+    return (
+      <TableSkeleton headers={TABLE_HEADERS} title="Product Profit/Loss" />
+    );
   }
 
   return (
@@ -257,12 +263,16 @@ export default function ProductProfitTable() {
             <RotateCcw className="size-3.5" />
             Reset
           </Button>
-          <Link href={exportHref}>
-            <Button type="button" size="sm" className="gap-1.5">
-              <FileDown className="size-3.5" />
-              Print / Save as PDF
-            </Button>
-          </Link>
+          <Button
+            asChild
+            variant="outline"
+            className="h-9 gap-1.5 text-xs font-semibold"
+          >
+            <Link href={exportHref}>
+              <FileDown className="size-4" />
+              Export List
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -52,7 +52,8 @@ export default function SalesPerformanceChart({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-base">
-          Sales Performance ({formatRangeSubtext(range?.startMonth, range?.endMonth)})
+          Sales Performance (
+          {formatRangeSubtext(range?.startMonth, range?.endMonth)})
         </CardTitle>
         <ChartMonthRangeFilter
           startMonth={range?.startMonth}
@@ -71,7 +72,10 @@ export default function SalesPerformanceChart({
             No sales recorded in the selected period.
           </p>
         ) : (
-          <ChartContainer config={chartConfig} className="min-h-72 w-full">
+          <ChartContainer
+            config={chartConfig}
+            className="min-h-72 max-h-[500px] w-full"
+          >
             <ComposedChart accessibilityLayer data={data}>
               <CartesianGrid vertical={false} />
               <XAxis
@@ -98,7 +102,8 @@ export default function SalesPerformanceChart({
                     formatter={(value, name) => (
                       <div className="flex w-full items-center justify-between gap-4">
                         <span className="text-muted-foreground">
-                          {chartConfig[name as keyof typeof chartConfig]?.label ?? name}
+                          {chartConfig[name as keyof typeof chartConfig]
+                            ?.label ?? name}
                         </span>
                         <span className="font-mono font-medium tabular-nums">
                           {formatInvoiceMoney(Number(value))}

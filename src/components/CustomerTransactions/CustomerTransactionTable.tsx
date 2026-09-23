@@ -49,7 +49,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatInvoiceMoney, formatSignedDue } from "@/utils/formatInvoiceMoney";
+import {
+  formatInvoiceMoney,
+  formatSignedDue,
+} from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
 import CustomerTransactionStatsCards from "./CustomerTransactionStatsCards";
 import CustomerTransactionDetailModal from "./CustomerTransactionDetailModal";
@@ -73,14 +76,17 @@ export default function CustomerTransactionTable() {
   const [limit, setLimit] = useState<number>(25);
 
   // Selected transaction for detail modal
-  const [selectedTx, setSelectedTx] = useState<TCustomerTransaction | null>(null);
+  const [selectedTx, setSelectedTx] = useState<TCustomerTransaction | null>(
+    null,
+  );
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
   // Load customer list for filter dropdown
-  const { data: customerData, isLoading: isCustomersLoading } = useGetAllCustomersQuery({
-    limit: "all",
-    isDeleted: false,
-  });
+  const { data: customerData, isLoading: isCustomersLoading } =
+    useGetAllCustomersQuery({
+      limit: "all",
+      isDeleted: false,
+    });
   const customers = customerData?.data || [];
 
   // Query Params
@@ -139,12 +145,20 @@ export default function CustomerTransactionTable() {
     params.set("sortBy", selectedSort.sortBy);
     params.set("sortOrder", selectedSort.sortOrder);
     if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
-    if (selectedCustomerId !== "ALL") params.set("customerId", selectedCustomerId);
+    if (selectedCustomerId !== "ALL")
+      params.set("customerId", selectedCustomerId);
     if (activeTypeTab !== "ALL") params.set("type", activeTypeTab);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     return `/customer-transactions/export?${params.toString()}`;
-  }, [selectedSort, searchTerm, selectedCustomerId, activeTypeTab, startDate, endDate]);
+  }, [
+    selectedSort,
+    searchTerm,
+    selectedCustomerId,
+    activeTypeTab,
+    startDate,
+    endDate,
+  ]);
 
   const isFiltersActive =
     activeTypeTab !== "ALL" ||
@@ -159,7 +173,9 @@ export default function CustomerTransactionTable() {
       {/* 1. Top Stats Cards (Requested by User) */}
       <CustomerTransactionStatsCards
         queryParams={{
-          ...(selectedCustomerId !== "ALL" ? { customerId: selectedCustomerId } : {}),
+          ...(selectedCustomerId !== "ALL"
+            ? { customerId: selectedCustomerId }
+            : {}),
           ...(startDate ? { startDate } : {}),
           ...(endDate ? { endDate } : {}),
           ...(activeTypeTab !== "ALL" ? { type: activeTypeTab } : {}),
@@ -207,8 +223,8 @@ export default function CustomerTransactionTable() {
             className="h-9 gap-1.5 text-xs font-semibold"
           >
             <Link href={exportHref}>
-              <FileDown className="size-4 text-emerald-600 dark:text-emerald-400" />
-              Export
+              <FileDown className="size-4" />
+              Export List
             </Link>
           </Button>
         </div>
@@ -388,7 +404,9 @@ export default function CustomerTransactionTable() {
                 <TableHead className="text-right text-xs">Cash</TableHead>
                 <TableHead className="text-right text-xs">Balance</TableHead>
                 <TableHead className="text-xs">Note</TableHead>
-                <TableHead className="text-right text-xs w-[80px]">Actions</TableHead>
+                <TableHead className="text-right text-xs w-[80px]">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -458,8 +476,8 @@ export default function CustomerTransactionTable() {
                           {isReceipt
                             ? "Receipt"
                             : isPayment
-                            ? "Payment"
-                            : "Return"}
+                              ? "Payment"
+                              : "Return"}
                         </Badge>
                       </TableCell>
 
@@ -492,8 +510,8 @@ export default function CustomerTransactionTable() {
                             tx.balance > 0
                               ? "text-rose-600 dark:text-rose-400 font-bold"
                               : tx.balance < 0
-                              ? "text-emerald-600 dark:text-emerald-400 font-bold"
-                              : "text-muted-foreground",
+                                ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                                : "text-muted-foreground",
                           )}
                         >
                           {formatSignedDue(tx.balance)}
@@ -542,7 +560,11 @@ export default function CustomerTransactionTable() {
                 </SelectTrigger>
                 <SelectContent>
                   {[10, 25, 50, 100].map((pageSize) => (
-                    <SelectItem key={pageSize} value={String(pageSize)} className="text-xs">
+                    <SelectItem
+                      key={pageSize}
+                      value={String(pageSize)}
+                      className="text-xs"
+                    >
                       {pageSize}
                     </SelectItem>
                   ))}

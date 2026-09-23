@@ -1,8 +1,7 @@
-import ShopLogo from "@/components/ShopLogo";
+import PDFViewHeader from "@/PDFViewHeader";
 import { TProductProfitSummary, TShop } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
-import Image from "next/image";
 
 function formatQty(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -25,27 +24,16 @@ export default function ProductProfitListHeader({
   totalCount: number;
   summary: TProductProfitSummary;
 }) {
-  const shopName = shop?.name || "Shop";
-
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <ShopLogo url={shop?.logo} alt={shop?.name} />
-        </div>
-        <h2 className="text-xl font-extrabold tracking-wider text-slate-900 uppercase shrink-0">
-          Product Profit/Loss
-        </h2>
-      </div>
+      <PDFViewHeader
+        title="Product Profit/Loss"
+        name={shop?.name || ""}
+        logo={shop?.logo}
+      />
 
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1 border-t border-b border-slate-200 py-2 text-xs text-slate-600">
         <div className="space-y-0.5">
-          <p>
-            <span className="font-semibold text-slate-800">Date</span>
-            <span className="font-mono ml-2 text-slate-900">
-              {formatInvoiceDate(generatedAt)}
-            </span>
-          </p>
           <p>
             <span className="font-semibold text-slate-800">Period</span>
             <span className="ml-2 text-slate-900">{filterLabel}</span>
@@ -57,40 +45,63 @@ export default function ProductProfitListHeader({
             </p>
           ) : null}
         </div>
-        <div className="text-right space-y-0.5 font-mono text-slate-900">
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Products
-            </span>
-            {totalCount}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Sold
-            </span>
-            {formatQty(summary.soldQty)}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Sales
-            </span>
-            {formatInvoiceMoney(summary.salesTotal)}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Cost
-            </span>
-            {formatInvoiceMoney(summary.purchaseCost)}
-          </p>
-          <p>
-            <span className="font-semibold font-sans text-slate-800 mr-2">
-              Profit/Loss
-            </span>
-            {formatInvoiceMoney(summary.profit)}
-            {summary.profitPercent != null
-              ? ` (${summary.profitPercent}%)`
-              : ""}
-          </p>
+        <div className="space-y-1.5 text-xs">
+          {/* Row 1 */}
+          <div className="flex items-center justify-end divide-x divide-slate-300">
+            <div className="px-3 first:pl-0">
+              <span className="mr-1.5 font-semibold text-slate-500">
+                Products
+              </span>
+              <span className="font-mono font-bold text-slate-900">
+                {totalCount}
+              </span>
+            </div>
+
+            <div className="px-3">
+              <span className="mr-1.5 font-semibold text-slate-500">Sold</span>
+              <span className="font-mono font-bold text-slate-900">
+                {formatQty(summary.soldQty)}
+              </span>
+            </div>
+
+            <div className="px-3 pr-0">
+              <span className="mr-1.5 font-semibold text-slate-500">Sales</span>
+              <span className="font-mono font-bold text-slate-900">
+                {formatInvoiceMoney(summary.salesTotal)}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2 */}
+          <div className="flex items-center justify-end divide-x divide-slate-300">
+            <div className="px-3">
+              <span className="mr-1.5 font-semibold text-slate-500">Cost</span>
+              <span className="font-mono font-bold text-slate-900">
+                {formatInvoiceMoney(summary.purchaseCost)}
+              </span>
+            </div>
+
+            <div className="pl-3">
+              <span className="mr-1.5 font-semibold text-slate-500">
+                Profit/Loss
+              </span>
+
+              <span
+                className={`font-mono font-bold ${
+                  summary.profit > 0
+                    ? "text-emerald-700"
+                    : summary.profit < 0
+                      ? "text-red-700"
+                      : "text-slate-900"
+                }`}
+              >
+                {formatInvoiceMoney(summary.profit)}
+                {summary.profitPercent != null && (
+                  <span className="ml-1">({summary.profitPercent}%)</span>
+                )}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

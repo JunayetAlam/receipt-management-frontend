@@ -87,10 +87,7 @@ export default function ReturnInvoiceView({
     useGetShopDetailsQuery();
   const shop = shopResponse?.data;
 
-  const items = useMemo(
-    () => toReceiptItems(returnInvoice),
-    [returnInvoice],
-  );
+  const items = useMemo(() => toReceiptItems(returnInvoice), [returnInvoice]);
 
   const continuationReceipt = useMemo(
     () =>
@@ -105,10 +102,12 @@ export default function ReturnInvoiceView({
   const handlePrint = () => window.print();
 
   const shopName = shop?.name || "Rupayon Biddut";
-  const contactPhones =
-    shop?.phoneNumbers?.length ? shop.phoneNumbers.join(", ") : "";
-  const contactLocations =
-    shop?.locations?.length ? shop.locations.join(" | ") : "";
+  const contactPhones = shop?.phoneNumbers?.length
+    ? shop.phoneNumbers.join(", ")
+    : "";
+  const contactLocations = shop?.locations?.length
+    ? shop.locations.join(" | ")
+    : "";
   const contactEmails = shop?.emails?.length ? shop.emails.join(", ") : "";
 
   const probeItem: TReceiptItem = useMemo(() => {
@@ -142,7 +141,8 @@ export default function ReturnInvoiceView({
       ) as HTMLElement | null;
 
       return {
-        pageHeight: rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
+        pageHeight:
+          rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
         compactFooterHeight:
           compactFooterProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.compactFooterHeight,
@@ -150,7 +150,8 @@ export default function ReturnInvoiceView({
           lastFooterProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.lastFooterHeight,
         detailsHeight:
-          detailsProbeRef.current?.offsetHeight || FALLBACK_METRICS.detailsHeight,
+          detailsProbeRef.current?.offsetHeight ||
+          FALLBACK_METRICS.detailsHeight,
         continuationBarHeight:
           barProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.continuationBarHeight,
@@ -225,7 +226,11 @@ export default function ReturnInvoiceView({
     <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
       <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link href={`/return-invoices/${returnInvoice.id}`}>
-          <Button variant="outline" size="sm" className="gap-2 shadow-xs bg-card">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 shadow-xs bg-card"
+          >
             <ArrowLeft className="size-4" /> Back to Return
           </Button>
         </Link>
@@ -273,14 +278,22 @@ export default function ReturnInvoiceView({
           <RetIV_Calculation returnInvoice={returnInvoice} />
         </div>
         <div ref={compactFooterProbeRef}>
-          <RIV_Footer isLastPage={false} pageNo={1} pageCount={2} {...footerContacts} />
+          <RIV_Footer
+            isLastPage={false}
+            pageNo={1}
+            pageCount={2}
+            {...footerContacts}
+          />
         </div>
         <div ref={lastFooterProbeRef}>
           <RIV_Footer isLastPage pageNo={1} pageCount={1} {...footerContacts} />
         </div>
       </div>
 
-      <div id="a4-invoice-sheet" className="flex flex-col items-center gap-6 print:gap-0">
+      <div
+        id="a4-invoice-sheet"
+        className="flex flex-col items-center gap-6 print:gap-0"
+      >
         {pages.map((page) => {
           const footerHeight = page.isLast
             ? metrics.lastFooterHeight
@@ -289,19 +302,12 @@ export default function ReturnInvoiceView({
             <div
               key={page.pageNo}
               className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none overflow-hidden"
-              style={{ width: "210mm", height: "297mm", boxSizing: "border-box" }}
+              style={{
+                width: "210mm",
+                height: "297mm",
+                boxSizing: "border-box",
+              }}
             >
-              {page.pageNo === 1 && shop?.logo && (
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
-                  <Image
-                    src={shop.logo}
-                    alt={shop.name || "Shop Logo"}
-                    width={200}
-                    height={200}
-                    className="max-h-20 w-auto max-w-[220px] object-contain"
-                  />
-                </div>
-              )}
               <div
                 className="px-10 pt-10"
                 style={{

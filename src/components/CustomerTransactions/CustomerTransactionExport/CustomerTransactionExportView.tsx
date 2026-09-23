@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { TCustomerTransaction, TShop } from "@/types";
-import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
-import CustomerTransactionHeader from "./CustomerTransactionHeader";
+import { Button } from "@/components/ui/button";
+import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
+import { TCustomerTransaction, TShop } from "@/types";
+import { ArrowLeft, Printer } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CustomerTransactionContinuationBar from "./CustomerTransactionContinuationBar";
 import CustomerTransactionFooter from "./CustomerTransactionFooter";
+import CustomerTransactionHeader from "./CustomerTransactionHeader";
 import CustomerTransactionListTable from "./CustomerTransactionListTable";
 import {
   LIST_CONTENT_FOOTER_GAP,
@@ -86,10 +86,10 @@ export default function CustomerTransactionExportView({
   const [metrics, setMetrics] = useState<ListMetrics>(FALLBACK_METRICS);
   const didAutoPrint = useRef(false);
 
-  const { data: shopResponse, isLoading: isShopLoading } = useGetShopDetailsQuery();
+  const { data: shopResponse, isLoading: isShopLoading } =
+    useGetShopDetailsQuery();
   const shop = shopResponse?.data as TShop | null | undefined;
   const shopName = shop?.name || "Shop";
-  const generatedAt = useMemo(() => new Date().toISOString(), []);
 
   useEffect(() => {
     const previous = document.title;
@@ -102,18 +102,31 @@ export default function CustomerTransactionExportView({
   useEffect(() => {
     const readMetrics = (): ListMetrics => {
       const tableRoot = tableProbeRef.current;
-      const headerEl = tableRoot?.querySelector('[data-probe="header"]') as HTMLElement | null;
-      const itemEl = tableRoot?.querySelector('[data-row="item"]') as HTMLElement | null;
-      const emptyEl = tableRoot?.querySelector('[data-row="empty"]') as HTMLElement | null;
+      const headerEl = tableRoot?.querySelector(
+        '[data-probe="header"]',
+      ) as HTMLElement | null;
+      const itemEl = tableRoot?.querySelector(
+        '[data-row="item"]',
+      ) as HTMLElement | null;
+      const emptyEl = tableRoot?.querySelector(
+        '[data-row="empty"]',
+      ) as HTMLElement | null;
 
       return {
-        pageHeight: rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
-        footerHeight: footerProbeRef.current?.offsetHeight || FALLBACK_METRICS.footerHeight,
-        headerHeight: headerProbeRef.current?.offsetHeight || FALLBACK_METRICS.headerHeight,
-        continuationBarHeight: barProbeRef.current?.offsetHeight || FALLBACK_METRICS.continuationBarHeight,
-        tableHeaderHeight: headerEl?.offsetHeight || FALLBACK_METRICS.tableHeaderHeight,
+        pageHeight:
+          rulerRef.current?.offsetHeight || FALLBACK_METRICS.pageHeight,
+        footerHeight:
+          footerProbeRef.current?.offsetHeight || FALLBACK_METRICS.footerHeight,
+        headerHeight:
+          headerProbeRef.current?.offsetHeight || FALLBACK_METRICS.headerHeight,
+        continuationBarHeight:
+          barProbeRef.current?.offsetHeight ||
+          FALLBACK_METRICS.continuationBarHeight,
+        tableHeaderHeight:
+          headerEl?.offsetHeight || FALLBACK_METRICS.tableHeaderHeight,
         rowHeight: itemEl?.offsetHeight || FALLBACK_METRICS.rowHeight,
-        emptyStateHeight: emptyEl?.offsetHeight || FALLBACK_METRICS.emptyStateHeight,
+        emptyStateHeight:
+          emptyEl?.offsetHeight || FALLBACK_METRICS.emptyStateHeight,
       };
     };
 
@@ -138,7 +151,14 @@ export default function CustomerTransactionExportView({
     });
 
     return () => observer.disconnect();
-  }, [shop, transactions.length, filterLabel, customerName, dateRangeLabel, searchTerm]);
+  }, [
+    shop,
+    transactions.length,
+    filterLabel,
+    customerName,
+    dateRangeLabel,
+    searchTerm,
+  ]);
 
   const pages: CustomerTransactionPage[] = useMemo(
     () =>
@@ -180,7 +200,11 @@ export default function CustomerTransactionExportView({
       const url = new URL(window.location.href);
       if (url.searchParams.has("print")) {
         url.searchParams.delete("print");
-        window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+        window.history.replaceState(
+          null,
+          "",
+          `${url.pathname}${url.search}${url.hash}`,
+        );
       }
     }, 600);
 
@@ -192,7 +216,11 @@ export default function CustomerTransactionExportView({
       {/* Top Toolbar (Hidden on print) */}
       <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link href={backHref}>
-          <Button variant="outline" size="sm" className="gap-2 shadow-xs bg-card">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 shadow-xs bg-card"
+          >
             <ArrowLeft className="size-4" /> Back to Transactions
           </Button>
         </Link>
@@ -222,16 +250,18 @@ export default function CustomerTransactionExportView({
           <div ref={headerProbeRef}>
             <CustomerTransactionHeader
               shop={shop}
-              generatedAt={generatedAt}
               filterLabel={filterLabel}
               customerName={customerName}
               dateRangeLabel={dateRangeLabel}
               searchTerm={searchTerm}
-              totalCount={transactions.length}
-              totalCash={totalCash}
+              totalCount={transactions.length || 1}
               totalDue={totalDue}
+              totalCash={totalCash}
+              totalBalance={totalBalance}
             />
           </div>
+        </div>
+        <div className="px-10">
           <div ref={barProbeRef}>
             <CustomerTransactionContinuationBar
               shopName={shopName}
@@ -239,41 +269,46 @@ export default function CustomerTransactionExportView({
               pageCount={2}
             />
           </div>
-          <div ref={tableProbeRef}>
-            <CustomerTransactionListTable
-              transactions={[PROBE_TRANSACTION]}
-              startIndex={0}
-            />
-          </div>
-          <div ref={footerProbeRef}>
-            <CustomerTransactionFooter pageNo={1} pageCount={1} />
-          </div>
+        </div>
+        <div ref={tableProbeRef} className="px-10">
+          <CustomerTransactionListTable
+            transactions={[PROBE_TRANSACTION]}
+            startIndex={0}
+          />
+          <CustomerTransactionListTable transactions={[]} empty />
+        </div>
+        <div ref={footerProbeRef}>
+          <CustomerTransactionFooter pageNo={1} pageCount={1} />
         </div>
       </div>
 
       {/* Rendered A4 Printable Pages */}
-      <div className="space-y-6 print:space-y-0">
+      <div
+        id="a4-invoice-sheet"
+        className="flex flex-col items-center gap-6 print:gap-0"
+      >
         {pages.map((p) => {
           const isFirst = p.pageNo === 1;
 
           return (
             <div
               key={p.pageNo}
-              className="bg-white text-slate-900 shadow-md print:shadow-none mx-auto relative flex flex-col justify-between overflow-hidden"
+              className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none print:max-w-none overflow-hidden"
               style={{
                 width: "210mm",
                 height: "297mm",
-                pageBreakAfter: "always",
+                boxSizing: "border-box",
               }}
             >
               <div
-                className="px-9 pt-7 flex flex-col flex-1"
-                style={{ paddingBottom: `${LIST_CONTENT_FOOTER_GAP}px` }}
+                className="px-10 pt-8"
+                style={{
+                  paddingBottom: metrics.footerHeight + LIST_CONTENT_FOOTER_GAP,
+                }}
               >
                 {isFirst ? (
                   <CustomerTransactionHeader
                     shop={shop}
-                    generatedAt={generatedAt}
                     filterLabel={filterLabel}
                     customerName={customerName}
                     dateRangeLabel={dateRangeLabel}
@@ -291,7 +326,7 @@ export default function CustomerTransactionExportView({
                   />
                 )}
 
-                <div className="mt-4 flex-1">
+                <div className="pt-4">
                   <CustomerTransactionListTable
                     transactions={p.transactions}
                     startIndex={p.startIndex}
@@ -300,10 +335,12 @@ export default function CustomerTransactionExportView({
                 </div>
               </div>
 
-              <CustomerTransactionFooter
-                pageNo={p.pageNo}
-                pageCount={pageCount}
-              />
+              <div className="absolute left-0 right-0 bottom-0">
+                <CustomerTransactionFooter
+                  pageNo={p.pageNo}
+                  pageCount={pageCount}
+                />
+              </div>
             </div>
           );
         })}

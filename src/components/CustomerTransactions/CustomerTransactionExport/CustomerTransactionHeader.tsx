@@ -1,11 +1,12 @@
+import PDFViewHeader from "@/PDFViewHeader";
 import { TShop } from "@/types";
-import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
-import { formatInvoiceMoney, formatSignedDue } from "@/utils/formatInvoiceMoney";
-import ShopLogo from "@/components/ShopLogo";
+import {
+  formatInvoiceMoney,
+  formatSignedDue,
+} from "@/utils/formatInvoiceMoney";
 
 export default function CustomerTransactionHeader({
   shop,
-  generatedAt,
   filterLabel,
   customerName,
   dateRangeLabel,
@@ -16,7 +17,6 @@ export default function CustomerTransactionHeader({
   totalBalance = 0,
 }: {
   shop: TShop | null | undefined;
-  generatedAt: string;
   filterLabel: string;
   customerName?: string;
   dateRangeLabel?: string;
@@ -29,21 +29,11 @@ export default function CustomerTransactionHeader({
   return (
     <div className="space-y-3">
       {/* Top Header Row */}
-      <div className="flex items-start justify-between gap-4 relative">
-        {/* Left: Logo */}
-        <div className="flex items-center gap-2.5 min-w-0 max-w-[30%]">
-          <ShopLogo url={shop?.logo} alt={shop?.name} />
-        </div>
-        {/* Right: Title */}
-        <div className="text-right shrink-0">
-          <h2 className="text-xl font-extrabold tracking-wider text-slate-900 uppercase">
-            Customer Transactions
-          </h2>
-          <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-            Date: {formatInvoiceDate(generatedAt)}
-          </p>
-        </div>
-      </div>
+      <PDFViewHeader
+        title="Customer Transactions"
+        logo={shop?.logo}
+        name={shop?.name}
+      />
 
       {/* Meta Filter & Stats Bar */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-b border-slate-200 py-2.5 text-xs text-slate-600">
@@ -115,8 +105,8 @@ export default function CustomerTransactionHeader({
                 totalBalance > 0
                   ? "text-rose-700"
                   : totalBalance < 0
-                  ? "text-emerald-700"
-                  : "text-slate-800"
+                    ? "text-emerald-700"
+                    : "text-slate-800"
               }`}
             >
               {formatSignedDue(totalBalance)}

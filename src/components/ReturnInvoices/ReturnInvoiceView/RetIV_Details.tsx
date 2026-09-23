@@ -1,6 +1,6 @@
 import { TReturnInvoice, TShop } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
-import React from "react";
+import Image from "next/image";
 
 export default function RetIV_Details({
   shop,
@@ -11,80 +11,152 @@ export default function RetIV_Details({
 }) {
   const customer = returnInvoice.receipt?.customer;
 
+  const shopName = shop?.name || "Rupayon Biddut";
+
+  const customerPhone = [customer?.countryCode, customer?.phoneNumber]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <>
-      <div className="flex justify-between items-start gap-4">
-        <div className="flex flex-col items-start max-w-[65%]">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
-            {shop?.name || "Rupayon Biddut"}
-          </h1>
-          {shop?.tagline ? (
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
-              {shop.tagline}
-            </p>
-          ) : !shop ? (
-            <p className="text-xs font-medium text-slate-500 mt-0.5">
-              Meet All Your Needs • Electrical Goods
-            </p>
-          ) : null}
+    <section className="w-full">
+      {/* Header */}
+      <div className="relative flex items-center justify-between border-b-2 border-slate-900 pb-2">
+        {/* Left: Logo */}
+        <div className="flex min-w-[140px] items-center justify-start">
+          {shop?.logo ? (
+            <Image
+              src={shop.logo}
+              alt={shopName}
+              width={160}
+              height={60}
+              className="max-h-10 w-auto max-w-[130px] object-contain object-left"
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-900 text-base font-bold text-white">
+              {shopName.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
-        <div className="text-right shrink-0">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-wider text-slate-900 uppercase leading-tight">
+
+        {/* Center: Shop Info */}
+        <div className="absolute left-1/2 top-1/2 w-[46%] -translate-x-1/2 -translate-y-1/2 text-center">
+          <h1 className="truncate text-xl font-extrabold leading-none text-slate-950">
+            {shopName}
+          </h1>
+
+          <div className="mt-1 flex items-center justify-center gap-x-2 overflow-hidden whitespace-nowrap text-xs font-medium leading-none text-slate-600">
+            {shop?.tagline ? (
+              <span className="truncate">{shop.tagline}</span>
+            ) : !shop ? (
+              <span className="truncate">
+                Meet All Your Needs • Electrical Goods
+              </span>
+            ) : null}
+
+            {(shop?.tagline || !shop) &&
+            shop?.phoneNumbers &&
+            shop.phoneNumbers.length > 0 ? (
+              <span className="shrink-0 text-slate-400">•</span>
+            ) : null}
+
+            {shop?.phoneNumbers && shop.phoneNumbers.length > 0 ? (
+              <span className="shrink-0">{shop.phoneNumbers.join(", ")}</span>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Right: Return Invoice */}
+        <div className="min-w-[140px] text-right">
+          <h2 className="text-[23px] font-black leading-[0.9] tracking-[0.06em] text-slate-950">
             RETURN
-            <br />
+          </h2>
+
+          <h2 className="mt-1 text-[23px] font-black leading-[0.9] tracking-[0.08em] text-slate-950">
             INVOICE
           </h2>
+
+          <p className="mt-1.5 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-slate-500">
+            Sales Return
+          </p>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-3">
-        <div className="space-y-1 text-sm">
-          <p className="font-semibold text-slate-800 text-sm">
-            Return from: {customer?.name || "Valued Customer"}
+      {/* Customer + Return Metadata */}
+      <div className="grid grid-cols-[1fr_auto] gap-5 py-3">
+        {/* Customer */}
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase leading-none tracking-[0.12em] text-slate-500">
+            Return From
           </p>
-          <p className="text-slate-600 text-xs">
-            {customer?.address || "Kushtia, Bangladesh"}
+
+          <p className="mt-1 text-sm font-bold leading-none text-slate-900">
+            {customer?.name || "Valued Customer"}
           </p>
-          <div className="flex">
-            <p className="text-slate-600 text-xs font-mono">
-              {customer?.countryCode ? `${customer.countryCode} ` : ""}
-              {customer?.phoneNumber}
-            </p>
+
+          <div className="mt-1 flex flex-wrap gap-x-2 text-xs font-medium leading-none text-slate-600">
+            {customer?.address && <span>{customer.address}</span>}
+
+            {customerPhone && (
+              <>
+                {customer?.address && <span className="text-slate-300">•</span>}
+
+                <span>{customerPhone}</span>
+              </>
+            )}
+
             {customer?.email && (
-              <p className="text-slate-500 text-xs">, {customer.email}</p>
+              <>
+                {(customer?.address || customerPhone) && (
+                  <span className="text-slate-300">•</span>
+                )}
+
+                <span>{customer.email}</span>
+              </>
             )}
           </div>
         </div>
 
-        <div className="space-y-2 text-sm w-full sm:w-auto">
-          <div className="flex justify-between sm:justify-end items-center gap-8">
-            <span className="font-bold text-slate-800 text-sm">Return#</span>
-            <span className="font-mono font-semibold text-slate-900 text-sm">
-              {returnInvoice.returnNumber}
-            </span>
+        {/* Return Invoice Info */}
+        <div className="grid min-w-[250px] grid-cols-[95px_1fr] text-xs leading-none">
+          {/* Return No */}
+          <div className="border-b border-slate-200 py-1.5 font-bold uppercase text-slate-500">
+            Return No.
           </div>
-          <div className="flex justify-between sm:justify-end items-center gap-8">
-            <span className="font-bold text-slate-800 text-sm">Against</span>
-            <span className="font-mono font-semibold text-slate-900 text-sm">
-              {returnInvoice.receipt?.receiptNumber || "—"}
-            </span>
+
+          <div className="border-b border-slate-200 py-1.5 text-right font-mono font-bold text-slate-900">
+            {returnInvoice.returnNumber}
           </div>
+
+          {/* Against */}
+          <div className="border-b border-slate-200 py-1.5 font-bold uppercase text-slate-500">
+            Against
+          </div>
+
+          <div className="border-b border-slate-200 py-1.5 text-right font-mono font-semibold text-slate-900">
+            {returnInvoice.receipt?.receiptNumber || "—"}
+          </div>
+
+          {/* Previous Return */}
           {returnInvoice.previousReturnInvoice?.returnNumber && (
-            <div className="flex justify-between sm:justify-end items-center gap-8">
-              <span className="font-bold text-slate-800 text-sm">Prev Return</span>
-              <span className="font-mono font-semibold text-slate-900 text-sm">
+            <>
+              <div className="border-b border-slate-200 py-1.5 font-bold uppercase text-slate-500">
+                Prev. Return
+              </div>
+
+              <div className="border-b border-slate-200 py-1.5 text-right font-mono font-semibold text-slate-900">
                 {returnInvoice.previousReturnInvoice.returnNumber}
-              </span>
-            </div>
+              </div>
+            </>
           )}
-          <div className="flex justify-between sm:justify-end items-center gap-8">
-            <span className="font-bold text-slate-800 text-sm">Date</span>
-            <span className="font-mono text-slate-900 text-sm">
-              {formatInvoiceDate(returnInvoice.createdAt)}
-            </span>
+
+          {/* Date */}
+          <div className="py-1.5 font-bold uppercase text-slate-500">Date</div>
+
+          <div className="py-1.5 text-right font-mono font-medium text-slate-900">
+            {formatInvoiceDate(returnInvoice.createdAt)}
           </div>
         </div>
       </div>
-    </>
+    </section>
   );
 }
