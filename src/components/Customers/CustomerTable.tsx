@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   UserPlus,
+  User,
   Search,
   Filter,
   RotateCcw,
@@ -112,6 +114,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function CustomerTable() {
+  const router = useRouter();
   const [isAdmin] = useIsAdmin();
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -494,7 +497,9 @@ export default function CustomerTable() {
                   return (
                     <TableRow
                       key={customer.id}
+                      onClick={() => router.push(`/customers/${customer.id}`)}
                       className={cn(
+                        "cursor-pointer hover:bg-muted/50 transition-colors",
                         isFetching && "opacity-60",
                         customer.isDeleteRequested &&
                           "bg-amber-500/5 hover:bg-amber-500/10",
@@ -518,7 +523,7 @@ export default function CustomerTable() {
                           </Avatar>
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs">
+                              <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs hover:text-primary transition-colors">
                                 {customer.name}
                               </span>
                               {customer.isDeleteRequested && (
@@ -565,6 +570,7 @@ export default function CustomerTable() {
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
                               title={`Chat with ${customer.name} on WhatsApp`}
                               className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-mono font-medium"
                             >
@@ -617,7 +623,7 @@ export default function CustomerTable() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Right Sheet Activity Log Trigger */}
                           <Button
@@ -808,8 +814,9 @@ export default function CustomerTable() {
                 return (
                   <Card
                     key={customer.id}
+                    onClick={() => router.push(`/customers/${customer.id}`)}
                     className={cn(
-                      "overflow-hidden shadow-xs ring-border/60 hover:shadow-md transition-all flex flex-col justify-between border p-0",
+                      "overflow-hidden shadow-xs ring-border/60 hover:shadow-md hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between border p-0",
                       isFetching && "opacity-60",
                       customer.isDeleteRequested &&
                         "bg-amber-500/5 border-amber-500/30",
@@ -835,7 +842,7 @@ export default function CustomerTable() {
                             </Avatar>
                             <div className="min-w-0">
                               <p
-                                className="font-semibold text-foreground text-sm truncate"
+                                className="font-semibold text-foreground text-sm truncate hover:text-primary transition-colors"
                                 title={customer.name}
                               >
                                 {customer.name}
@@ -858,7 +865,10 @@ export default function CustomerTable() {
                             </div>
                           </div>
 
-                          <div className="flex gap-2 items-center">
+                          <div
+                            className="flex gap-2 items-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div className="pt-0.5">
                               {waUrl && (
                                 <Button asChild size="icon" variant="default">
@@ -889,6 +899,14 @@ export default function CustomerTable() {
                                 align="end"
                                 className="w-48 text-xs"
                               >
+                                <DropdownMenuItem
+                                  onClick={() => router.push(`/customers/${customer.id}`)}
+                                  className="cursor-pointer"
+                                >
+                                  <User className="mr-2 size-3.5" />
+                                  <span>View Profile</span>
+                                </DropdownMenuItem>
+
                                 <DropdownMenuItem
                                   onClick={() => handleOpenActivity(customer)}
                                   className="cursor-pointer"

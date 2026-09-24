@@ -21,12 +21,14 @@ interface CustomerDeleteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customer: TCustomer | null;
+  onSuccess?: () => void;
 }
 
 export default function CustomerDeleteModal({
   open,
   onOpenChange,
   customer,
+  onSuccess,
 }: CustomerDeleteModalProps) {
   const [isAdmin] = useIsAdmin();
   const [reason, setReason] = useState("");
@@ -43,6 +45,7 @@ export default function CustomerDeleteModal({
       toast.success(res.message || "Action processed successfully");
       setReason("");
       onOpenChange(false);
+      onSuccess?.();
     } catch (err) {
       toast.error(errorMessageGenerator(err));
     }
