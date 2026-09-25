@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGetAllCustomerTransactionsQuery } from "@/redux/api/customerTransactionApi";
 import { useGetAllCustomersQuery } from "@/redux/api/customerApi";
@@ -29,6 +28,7 @@ function ExportLoading() {
 }
 
 function CustomerTransactionExportPageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const queryParams = useMemo(() => {
@@ -96,11 +96,15 @@ function CustomerTransactionExportPageInner() {
           <p className="text-destructive font-semibold">
             Failed to load the customer transactions
           </p>
-          <Link href="/customer-transactions">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Transactions
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       </div>
     );
@@ -111,6 +115,7 @@ function CustomerTransactionExportPageInner() {
       transactions={transactions}
       filterLabel={filterLabel}
       customerName={customerName}
+      selectedCustomer={matchedCustomer}
       dateRangeLabel={dateRangeLabel}
       searchTerm={searchTerm}
       backHref="/customer-transactions"

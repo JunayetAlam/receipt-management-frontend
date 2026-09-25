@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGetAllProductsQuery } from "@/redux/api/productApi";
 import ProductListExportView from "@/components/Products/ProductListExport/ProductListExportView";
@@ -35,6 +34,7 @@ function ExportLoading() {
 }
 
 function ProductExportPageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const queryParams = useMemo(() => {
@@ -103,11 +103,15 @@ function ProductExportPageInner() {
           <p className="text-destructive font-semibold">
             Failed to load the product list
           </p>
-          <Link href="/products">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Products
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       </div>
     );

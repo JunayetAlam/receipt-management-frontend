@@ -63,11 +63,15 @@ export default function ReturnInvoiceDetailsPage() {
         <p className="text-destructive font-semibold">
           Return invoice not found
         </p>
-        <Link href="/return-invoices">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-4 mr-1" /> Back
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
       </div>
     );
   }
@@ -76,11 +80,15 @@ export default function ReturnInvoiceDetailsPage() {
     <div className="space-y-6 p-6 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/return-invoices">
-            <Button variant="outline" size="icon" className="size-8">
-              <ArrowLeft className="size-4" />
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8 cursor-pointer"
+            title="Go Back"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
               Return Invoice

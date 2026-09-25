@@ -1,7 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGetReturnInvoiceByIdQuery } from "@/redux/api/returnInvoiceApi";
 import ReturnInvoiceView from "@/components/ReturnInvoices/ReturnInvoiceView/ReturnInvoiceView";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export default function ReturnInvoicePrintPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const { data, isLoading, isError } = useGetReturnInvoiceByIdQuery(id, {
     skip: !id,
@@ -33,11 +33,15 @@ export default function ReturnInvoicePrintPage() {
         <p className="text-destructive font-semibold">
           Return invoice not found
         </p>
-        <Link href="/return-invoices">
-          <Button variant="outline" size="sm" className="gap-2">
-            <ArrowLeft className="size-4" /> Back
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
       </div>
     );
   }

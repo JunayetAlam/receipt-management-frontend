@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Printer, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -57,6 +57,7 @@ function metricsEqual(a: InvoiceMetrics, b: InvoiceMetrics) {
 export default function ReceiptInvoiceView({
   receipt,
 }: ReceiptInvoiceViewProps) {
+  const router = useRouter();
   const rulerRef = useRef<HTMLDivElement>(null);
   const detailsProbeRef = useRef<HTMLDivElement>(null);
   const barProbeRef = useRef<HTMLDivElement>(null);
@@ -230,15 +231,15 @@ export default function ReceiptInvoiceView({
   return (
     <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
       <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href={`/receipts/${receipt.id}`}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shadow-xs bg-card"
-          >
-            <ArrowLeft className="size-4" /> Back to Receipt
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 shadow-xs bg-card cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">

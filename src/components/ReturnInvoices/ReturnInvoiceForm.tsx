@@ -387,12 +387,16 @@ export default function ReturnInvoiceForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {!readOnly && (
         <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
-          <Link
-            href="/return-invoices"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 px-2 cursor-pointer"
           >
-            <ArrowLeft className="size-3.5" /> Back to Return Invoices
-          </Link>
+            <ArrowLeft className="size-3.5" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
           <div className="flex items-center gap-2">
             <Button
               type="button"

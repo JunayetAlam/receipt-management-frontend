@@ -94,16 +94,15 @@ export default function ReceiptDetailsPage() {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/receipts">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              title="Back to Receipts"
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8 cursor-pointer"
+            title="Go Back"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Manage Receipts
@@ -260,11 +259,15 @@ export default function ReceiptDetailsPage() {
           <p className="text-destructive font-semibold">
             Receipt not found or failed to load
           </p>
-          <Link href="/receipts">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Receipts
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       ) : (
         <>

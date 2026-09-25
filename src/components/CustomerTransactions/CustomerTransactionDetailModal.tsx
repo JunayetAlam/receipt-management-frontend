@@ -193,22 +193,37 @@ export default function CustomerTransactionDetailModal({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          {transaction.receiptId && (
+          {/* Link to exact Invoice */}
+          {isReturn && (transaction.returnInvoiceId || transaction.returnInvoice?.id) && (
             <Button asChild variant="outline" size="sm" className="text-xs gap-1.5">
-              <Link href={`/receipts/${transaction.receiptId}`}>
+              <Link
+                href={`/return-invoices/${
+                  transaction.returnInvoiceId || transaction.returnInvoice?.id
+                }/invoice`}
+              >
                 <ExternalLink className="size-3.5" />
-                View Receipt
+                View Invoice
               </Link>
             </Button>
           )}
-          {transaction.returnInvoiceId && (
-            <Button asChild variant="outline" size="sm" className="text-xs gap-1.5">
-              <Link href={`/return-invoices`}>
-                <ExternalLink className="size-3.5" />
-                View Returns
-              </Link>
-            </Button>
-          )}
+
+          {!isReturn &&
+            (transaction.receiptId ||
+              transaction.payment?.receiptId ||
+              transaction.receipt?.id) && (
+              <Button asChild variant="outline" size="sm" className="text-xs gap-1.5">
+                <Link
+                  href={`/receipts/${
+                    transaction.receiptId ||
+                    transaction.payment?.receiptId ||
+                    transaction.receipt?.id
+                  }/invoice`}
+                >
+                  <ExternalLink className="size-3.5" />
+                  View Invoice
+                </Link>
+              </Button>
+            )}
           <Button
             variant="default"
             size="sm"

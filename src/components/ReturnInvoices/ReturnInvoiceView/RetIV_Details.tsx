@@ -1,5 +1,5 @@
 import { TReturnInvoice, TShop } from "@/types";
-import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
+import { formatInvoiceDate, formatInvoiceTime } from "@/utils/formatInvoiceDate";
 import Image from "next/image";
 
 export default function RetIV_Details({
@@ -152,8 +152,11 @@ export default function RetIV_Details({
           {/* Date */}
           <div className="py-1.5 font-bold uppercase text-slate-500">Date</div>
 
-          <div className="py-1.5 text-right font-mono font-medium text-slate-900">
-            {formatInvoiceDate(returnInvoice.createdAt)}
+          <div className="py-1.5 text-right font-mono text-slate-900 leading-tight">
+            <div className="font-medium">{formatInvoiceDate(returnInvoice.createdAt)}</div>
+            <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+              {formatInvoiceTime(returnInvoice.createdAt)}
+            </div>
           </div>
         </div>
       </div>

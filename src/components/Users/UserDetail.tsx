@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Monitor, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -78,8 +77,14 @@ export default function UserDetail() {
     return (
       <div className="p-6">
         <p className="text-sm text-muted-foreground">User not found.</p>
-        <Button asChild variant="link" className="px-0">
-          <Link href="/users">Back to users</Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 mt-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
         </Button>
       </div>
     );
@@ -89,11 +94,13 @@ export default function UserDetail() {
 
   return (
     <div className="space-y-6 p-6">
-      <Button asChild variant="ghost" className="px-0">
-        <Link href="/users">
-          <ArrowLeft className="mr-2 size-4" />
-          Back to users
-        </Link>
+      <Button
+        variant="ghost"
+        className="px-0 gap-2 cursor-pointer"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="size-4" />
+        <span className="hidden sm:inline">Go Back</span>
       </Button>
 
       <div className="rounded-lg border border-border bg-background p-6">

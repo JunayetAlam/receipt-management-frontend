@@ -3,9 +3,9 @@
 import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
 import { Button } from "@/components/ui/button";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
-import { TCustomerTransaction, TShop } from "@/types";
+import { TCustomer, TCustomerTransaction, TShop } from "@/types";
 import { ArrowLeft, Printer } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CustomerTransactionContinuationBar from "./CustomerTransactionContinuationBar";
 import CustomerTransactionFooter from "./CustomerTransactionFooter";
@@ -53,6 +53,15 @@ const PROBE_TRANSACTION: TCustomerTransaction = {
     name: "Sample Customer",
     phoneNumber: "01700000000",
   },
+  receipt: {
+    id: "probe-rec",
+    receiptNumber: "REC-00000001",
+    totalAmount: 1000,
+    paidAmount: 800,
+    dueAmount: 200,
+    status: "APPROVED",
+    createdAt: new Date().toISOString(),
+  },
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -67,6 +76,7 @@ export default function CustomerTransactionExportView({
   transactions,
   filterLabel,
   customerName,
+  selectedCustomer,
   dateRangeLabel,
   searchTerm,
   backHref = "/customer-transactions",
@@ -74,10 +84,12 @@ export default function CustomerTransactionExportView({
   transactions: TCustomerTransaction[];
   filterLabel: string;
   customerName?: string;
+  selectedCustomer?: TCustomer | null;
   dateRangeLabel?: string;
   searchTerm?: string;
   backHref?: string;
 }) {
+  const router = useRouter();
   const rulerRef = useRef<HTMLDivElement>(null);
   const headerProbeRef = useRef<HTMLDivElement>(null);
   const barProbeRef = useRef<HTMLDivElement>(null);
@@ -156,6 +168,7 @@ export default function CustomerTransactionExportView({
     transactions.length,
     filterLabel,
     customerName,
+    selectedCustomer,
     dateRangeLabel,
     searchTerm,
   ]);
@@ -215,15 +228,15 @@ export default function CustomerTransactionExportView({
     <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
       {/* Top Toolbar (Hidden on print) */}
       <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href={backHref}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 shadow-xs bg-card"
-          >
-            <ArrowLeft className="size-4" /> Back to Transactions
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 shadow-xs bg-card cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
@@ -252,6 +265,7 @@ export default function CustomerTransactionExportView({
               shop={shop}
               filterLabel={filterLabel}
               customerName={customerName}
+              selectedCustomer={selectedCustomer}
               dateRangeLabel={dateRangeLabel}
               searchTerm={searchTerm}
               totalCount={transactions.length || 1}
@@ -274,8 +288,13 @@ export default function CustomerTransactionExportView({
           <CustomerTransactionListTable
             transactions={[PROBE_TRANSACTION]}
             startIndex={0}
+            isCustomerSelected={Boolean(selectedCustomer)}
           />
-          <CustomerTransactionListTable transactions={[]} empty />
+          <CustomerTransactionListTable
+            transactions={[]}
+            empty
+            isCustomerSelected={Boolean(selectedCustomer)}
+          />
         </div>
         <div ref={footerProbeRef}>
           <CustomerTransactionFooter pageNo={1} pageCount={1} />
@@ -311,6 +330,7 @@ export default function CustomerTransactionExportView({
                     shop={shop}
                     filterLabel={filterLabel}
                     customerName={customerName}
+                    selectedCustomer={selectedCustomer}
                     dateRangeLabel={dateRangeLabel}
                     searchTerm={searchTerm}
                     totalCount={transactions.length}
@@ -331,6 +351,7 @@ export default function CustomerTransactionExportView({
                     transactions={p.transactions}
                     startIndex={p.startIndex}
                     empty={transactions.length === 0}
+                    isCustomerSelected={Boolean(selectedCustomer)}
                   />
                 </div>
               </div>

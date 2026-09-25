@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Users,
   UserPlus,
@@ -27,6 +26,8 @@ import {
   LayoutGrid,
   List,
   MoreVertical,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -114,7 +115,6 @@ const SORT_OPTIONS = [
 ];
 
 export default function CustomerTable() {
-  const router = useRouter();
   const [isAdmin] = useIsAdmin();
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -497,9 +497,8 @@ export default function CustomerTable() {
                   return (
                     <TableRow
                       key={customer.id}
-                      onClick={() => router.push(`/customers/${customer.id}`)}
                       className={cn(
-                        "cursor-pointer hover:bg-muted/50 transition-colors",
+                        "hover:bg-muted/50 transition-colors",
                         isFetching && "opacity-60",
                         customer.isDeleteRequested &&
                           "bg-amber-500/5 hover:bg-amber-500/10",
@@ -509,49 +508,55 @@ export default function CustomerTable() {
                       {/* Customer Info */}
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          <Avatar className="size-8 border border-border">
-                            {customer.image && (
-                              <AvatarImage
-                                src={customer.image}
-                                alt={customer.name}
-                                className="object-cover"
-                              />
-                            )}
-                            <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs hover:text-primary transition-colors">
-                                {customer.name}
-                              </span>
-                              {customer.isDeleteRequested && (
-                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0 px-1.5 font-normal">
-                                  Pending Deletion
-                                </Badge>
+                          <Link
+                            href={`/customers/${customer.id}`}
+                            className="group flex items-center gap-2.5 min-w-0"
+                          >
+                            <Avatar className="size-8 border border-border group-hover:border-primary/50 transition-colors shrink-0">
+                              {customer.image && (
+                                <AvatarImage
+                                  src={customer.image}
+                                  alt={customer.name}
+                                  className="object-cover"
+                                />
                               )}
-                              {customer.isDeleted && (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-[10px] py-0 px-1.5 font-normal"
-                                >
-                                  Deleted
-                                </Badge>
-                              )}
-                            </div>
-                            {customer.isDeleteRequested &&
-                              customer.deleteReason && (
-                                <span className="text-[10px] text-amber-600 dark:text-amber-400 italic truncate max-w-xs">
-                                  Reason: "{customer.deleteReason}"
+                              <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-xs group-hover:text-primary transition-colors">
+                                  {customer.name}
+                                </span>
+                                <ExternalLink className="size-3 text-muted-foreground/60 group-hover:text-primary transition-colors shrink-0" />
+                                {customer.isDeleteRequested && (
+                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0 px-1.5 font-normal">
+                                    Pending Deletion
+                                  </Badge>
+                                )}
+                                {customer.isDeleted && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-[10px] py-0 px-1.5 font-normal"
+                                  >
+                                    Deleted
+                                  </Badge>
+                                )}
+                              </div>
+                              {customer.isDeleteRequested &&
+                                customer.deleteReason && (
+                                  <span className="text-[10px] text-amber-600 dark:text-amber-400 italic truncate max-w-xs">
+                                    Reason: "{customer.deleteReason}"
+                                  </span>
+                                )}
+                              {customer.createdBy && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  Added by {customer.createdBy.firstName}
                                 </span>
                               )}
-                            {customer.createdBy && (
-                              <span className="text-[10px] text-muted-foreground">
-                                Added by {customer.createdBy.firstName}
-                              </span>
-                            )}
-                          </div>
+                            </div>
+                          </Link>
                         </div>
                       </TableCell>
 
@@ -623,8 +628,22 @@ export default function CustomerTable() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Details Link Button */}
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs font-medium text-foreground hover:bg-muted gap-1 cursor-pointer"
+                            title="View Details"
+                          >
+                            <Link href={`/customers/${customer.id}`}>
+                              <Eye className="size-3.5 text-muted-foreground" />
+                              <span>Details</span>
+                            </Link>
+                          </Button>
+
                           {/* Right Sheet Activity Log Trigger */}
                           <Button
                             variant="ghost"
@@ -814,9 +833,8 @@ export default function CustomerTable() {
                 return (
                   <Card
                     key={customer.id}
-                    onClick={() => router.push(`/customers/${customer.id}`)}
                     className={cn(
-                      "overflow-hidden shadow-xs ring-border/60 hover:shadow-md hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between border p-0",
+                      "overflow-hidden shadow-xs ring-border/60 hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between border p-0",
                       isFetching && "opacity-60",
                       customer.isDeleteRequested &&
                         "bg-amber-500/5 border-amber-500/30",
@@ -824,11 +842,14 @@ export default function CustomerTable() {
                     )}
                   >
                     <CardContent className="p-4 space-y-3.5 flex flex-col justify-between h-full">
-                      {/* Card Top: Avatar, Name, Badges & 3-dot Menu */}
+                      {/* Card Top: Avatar, Name, Badges & Actions */}
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <Avatar className="size-9 border border-border shrink-0">
+                          <Link
+                            href={`/customers/${customer.id}`}
+                            className="group flex items-center gap-2.5 min-w-0 flex-1"
+                          >
+                            <Avatar className="size-9 border border-border shrink-0 group-hover:border-primary/50 transition-colors">
                               {customer.image && (
                                 <AvatarImage
                                   src={customer.image}
@@ -841,12 +862,15 @@ export default function CustomerTable() {
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <p
-                                className="font-semibold text-foreground text-sm truncate hover:text-primary transition-colors"
-                                title={customer.name}
-                              >
-                                {customer.name}
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p
+                                  className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors"
+                                  title={customer.name}
+                                >
+                                  {customer.name}
+                                </p>
+                                <ExternalLink className="size-3 text-muted-foreground/60 group-hover:text-primary transition-colors shrink-0" />
+                              </div>
                               <div className="flex items-center gap-1 flex-wrap mt-0.5">
                                 {customer.isDeleteRequested && (
                                   <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[9px] py-0 px-1 font-normal">
@@ -863,26 +887,35 @@ export default function CustomerTable() {
                                 )}
                               </div>
                             </div>
-                          </div>
+                          </Link>
 
-                          <div
-                            className="flex gap-2 items-center"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="pt-0.5">
-                              {waUrl && (
-                                <Button asChild size="icon" variant="default">
-                                  <a
-                                    href={waUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title={`Chat with ${customer.name} on WhatsApp`}
-                                  >
-                                    <WhatsAppIcon className="size-3.5 shrink-0" />
-                                  </a>
-                                </Button>
-                              )}
-                            </div>
+                          <div className="flex gap-1.5 items-center shrink-0">
+                            {waUrl && (
+                              <Button asChild size="icon" variant="default" className="size-7">
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Chat with ${customer.name} on WhatsApp`}
+                                >
+                                  <WhatsAppIcon className="size-3.5 shrink-0" />
+                                </a>
+                              </Button>
+                            )}
+
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="h-7 px-2 text-xs font-medium text-foreground hover:bg-muted gap-1 cursor-pointer"
+                              title="View Details"
+                            >
+                              <Link href={`/customers/${customer.id}`}>
+                                <Eye className="size-3.5 text-muted-foreground" />
+                                <span>Details</span>
+                              </Link>
+                            </Button>
+
                             {/* Three-Dot Menu Button with all customer actions */}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -900,11 +933,16 @@ export default function CustomerTable() {
                                 className="w-48 text-xs"
                               >
                                 <DropdownMenuItem
-                                  onClick={() => router.push(`/customers/${customer.id}`)}
+                                  asChild
                                   className="cursor-pointer"
                                 >
-                                  <User className="mr-2 size-3.5" />
-                                  <span>View Profile</span>
+                                  <Link
+                                    href={`/customers/${customer.id}`}
+                                    className="flex items-center w-full"
+                                  >
+                                    <Eye className="mr-2 size-3.5" />
+                                    <span>View Details</span>
+                                  </Link>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem

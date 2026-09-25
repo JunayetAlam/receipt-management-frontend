@@ -17,6 +17,8 @@ import {
   GitCommitVertical,
   ArrowUpRight,
   ArrowDownLeft,
+  ExternalLink,
+  FileDown,
 } from "lucide-react";
 import { useGetAllCustomerTransactionsQuery } from "@/redux/api/customerTransactionApi";
 import { TCustomerTransaction } from "@/types";
@@ -143,6 +145,25 @@ export default function CustomerProfileTransactions({
     setIsDetailOpen(true);
   };
 
+  const exportHref = React.useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("customerId", customerId);
+    params.set("sortBy", selectedSort.sortBy);
+    params.set("sortOrder", selectedSort.sortOrder);
+    if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
+    if (activeTypeTab !== "ALL") params.set("type", activeTypeTab);
+    if (startDate) params.set("startDate", startDate);
+    if (endDate) params.set("endDate", endDate);
+    return `/customer-transactions/export?${params.toString()}`;
+  }, [
+    customerId,
+    selectedSort,
+    searchTerm,
+    activeTypeTab,
+    startDate,
+    endDate,
+  ]);
+
   return (
     <div className="space-y-4">
       {/* Controls & Filter Bar */}
@@ -184,36 +205,52 @@ export default function CustomerProfileTransactions({
             </div>
           </div>
 
-          {/* Right: View Mode Toggler (Timeline vs Table) */}
-          <div className="flex items-center rounded-lg border border-border p-0.5 bg-muted/40 shrink-0 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setViewFormat("timeline")}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
-                viewFormat === "timeline"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Timeline View"
+          {/* Right: Export & View Mode Toggler (Timeline vs Table) */}
+          <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              disabled={!transactions.length}
+              className="h-7.5 gap-1.5 text-xs font-semibold cursor-pointer"
+              title="Export Customer Transactions"
             >
-              <GitCommitVertical className="size-3.5" />
-              <span>Timeline</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewFormat("table")}
-              className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
-                viewFormat === "table"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Table View"
-            >
-              <TableIcon className="size-3.5" />
-              <span>Table</span>
-            </button>
+              <Link href={exportHref}>
+                <FileDown className="size-3.5" />
+                <span>Export</span>
+              </Link>
+            </Button>
+
+            <div className="flex items-center rounded-lg border border-border p-0.5 bg-muted/40">
+              <button
+                type="button"
+                onClick={() => setViewFormat("timeline")}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                  viewFormat === "timeline"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Timeline View"
+              >
+                <GitCommitVertical className="size-3.5" />
+                <span>Timeline</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewFormat("table")}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                  viewFormat === "table"
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Table View"
+              >
+                <TableIcon className="size-3.5" />
+                <span>Table</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -392,15 +429,25 @@ export default function CustomerProfileTransactions({
                   ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
                   : "bg-amber-500/10 text-amber-600 border-amber-500/30";
 
-                const refLabel = isReceipt
-                  ? tx.receipt?.receiptNumber
-                    ? `Receipt #${tx.receipt.receiptNumber}`
-                    : "Receipt"
-                  : isPayment
-                  ? `Payment #${tx.payment?.id?.slice(0, 8) || ""}`
-                  : tx.returnInvoice?.returnNumber
-                  ? `Return #${tx.returnInvoice.returnNumber}`
-                  : "Return";
+                const receiptId =
+                  tx.receiptId ||
+                  tx.receipt?.id ||
+                  tx.payment?.receiptId ||
+                  tx.payment?.receipt?.id ||
+                  tx.returnInvoice?.receiptId ||
+                  tx.returnInvoice?.receipt?.id;
+
+                const receiptNumber =
+                  tx.receipt?.receiptNumber ||
+                  tx.payment?.receipt?.receiptNumber ||
+                  tx.returnInvoice?.receipt?.receiptNumber ||
+                  (isReceipt ? tx.referenceNumber : null);
+
+                const returnInvoiceId =
+                  tx.returnInvoiceId || tx.returnInvoice?.id;
+                const returnNumber =
+                  tx.returnInvoice?.returnNumber ||
+                  (isReturn ? tx.referenceNumber : null);
 
                 return (
                   <div key={tx.id} className="relative group">
@@ -440,9 +487,43 @@ export default function CustomerProfileTransactions({
                               : "Product Return"}
                           </Badge>
 
-                          <span className="font-mono text-xs font-semibold text-foreground">
-                            {refLabel}
-                          </span>
+                          {isReturn ? (
+                            returnInvoiceId && returnNumber ? (
+                              <Link
+                                href={`/return-invoices/${returnInvoiceId}/invoice`}
+                                className="group inline-flex items-center gap-1 font-mono text-xs font-semibold text-primary hover:underline"
+                                title={`View Return Invoice #${returnNumber}`}
+                              >
+                                <span>{returnNumber}</span>
+                                <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                              </Link>
+                            ) : returnNumber ? (
+                              <span className="font-mono text-xs font-semibold text-foreground">
+                                {returnNumber}
+                              </span>
+                            ) : (
+                              <span className="font-mono text-xs font-semibold text-foreground">
+                                Return
+                              </span>
+                            )
+                          ) : receiptId && receiptNumber ? (
+                            <Link
+                              href={`/receipts/${receiptId}/invoice`}
+                              className="group inline-flex items-center gap-1 font-mono text-xs font-semibold text-primary hover:underline"
+                              title={`View Invoice #${receiptNumber}`}
+                            >
+                              <span>{receiptNumber}</span>
+                              <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                            </Link>
+                          ) : receiptNumber ? (
+                            <span className="font-mono text-xs font-semibold text-foreground">
+                              {receiptNumber}
+                            </span>
+                          ) : (
+                            <span className="font-mono text-xs font-semibold text-foreground">
+                              {isReceipt ? "Receipt" : isPayment ? "Payment" : "Return"}
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
@@ -557,6 +638,7 @@ export default function CustomerProfileTransactions({
                   <TableHead className="text-right text-xs">Cash</TableHead>
                   <TableHead className="text-right text-xs">Balance</TableHead>
                   <TableHead className="text-xs">Note</TableHead>
+                  <TableHead className="text-xs">Invoice</TableHead>
                   <TableHead className="text-right text-xs w-[80px]">
                     Actions
                   </TableHead>
@@ -566,7 +648,7 @@ export default function CustomerProfileTransactions({
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-full" />
                         </TableCell>
@@ -576,7 +658,7 @@ export default function CustomerProfileTransactions({
                 ) : transactions.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="h-36 text-center text-xs text-muted-foreground"
                     >
                       No transactions found matching your criteria.
@@ -587,6 +669,26 @@ export default function CustomerProfileTransactions({
                     const isReceipt = tx.type === "RECEIPT";
                     const isPayment = tx.type === "PAYMENT";
                     const isReturn = tx.type === "RETURN_INVOICE";
+
+                    const receiptId =
+                      tx.receiptId ||
+                      tx.receipt?.id ||
+                      tx.payment?.receiptId ||
+                      tx.payment?.receipt?.id ||
+                      tx.returnInvoice?.receiptId ||
+                      tx.returnInvoice?.receipt?.id;
+
+                    const receiptNumber =
+                      tx.receipt?.receiptNumber ||
+                      tx.payment?.receipt?.receiptNumber ||
+                      tx.returnInvoice?.receipt?.receiptNumber ||
+                      (isReceipt ? tx.referenceNumber : null);
+
+                    const returnInvoiceId =
+                      tx.returnInvoiceId || tx.returnInvoice?.id;
+                    const returnNumber =
+                      tx.returnInvoice?.returnNumber ||
+                      (isReturn ? tx.referenceNumber : null);
 
                     return (
                       <TableRow
@@ -669,6 +771,43 @@ export default function CustomerProfileTransactions({
                             tx.payment?.note ||
                             tx.receipt?.note ||
                             "—"}
+                        </TableCell>
+
+                        {/* Invoice */}
+                        <TableCell className="font-mono text-xs whitespace-nowrap">
+                          {isReturn ? (
+                            returnInvoiceId && returnNumber ? (
+                              <Link
+                                href={`/return-invoices/${returnInvoiceId}/invoice`}
+                                className="group inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                                title={`View Return Invoice #${returnNumber}`}
+                              >
+                                <span>{returnNumber}</span>
+                                <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                              </Link>
+                            ) : returnNumber ? (
+                              <span className="font-semibold text-foreground">
+                                {returnNumber}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )
+                          ) : receiptId && receiptNumber ? (
+                            <Link
+                              href={`/receipts/${receiptId}/invoice`}
+                              className="group inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                              title={`View Invoice #${receiptNumber}`}
+                            >
+                              <span>{receiptNumber}</span>
+                              <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                            </Link>
+                          ) : receiptNumber ? (
+                            <span className="font-semibold text-foreground">
+                              {receiptNumber}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
 
                         {/* Actions */}

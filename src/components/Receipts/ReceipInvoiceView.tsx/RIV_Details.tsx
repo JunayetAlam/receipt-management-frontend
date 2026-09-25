@@ -1,5 +1,5 @@
 import { TReceipt, TShop } from "@/types";
-import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
+import { formatInvoiceDate, formatInvoiceTime } from "@/utils/formatInvoiceDate";
 import Image from "next/image";
 export default function RIV_Details({
   shop,
@@ -122,9 +122,11 @@ export default function RIV_Details({
             {" "}
             Date{" "}
           </div>{" "}
-          <div className="py-1.5 text-right font-mono font-medium text-slate-900">
-            {" "}
-            {formatInvoiceDate(receipt.createdAt)}{" "}
+          <div className="py-1.5 text-right font-mono text-slate-900 leading-tight">
+            <div className="font-medium">{formatInvoiceDate(receipt.createdAt)}</div>
+            <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+              {formatInvoiceTime(receipt.createdAt)}
+            </div>
           </div>{" "}
         </div>{" "}
       </div>{" "}

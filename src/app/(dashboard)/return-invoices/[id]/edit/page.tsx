@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useGetReturnInvoiceByIdQuery } from "@/redux/api/returnInvoiceApi";
 import ReturnInvoiceForm from "@/components/ReturnInvoices/ReturnInvoiceForm";
@@ -11,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 function EditReturnInvoiceInner() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
   const { data, isLoading, isError } = useGetReturnInvoiceByIdQuery(id, {
     skip: !id,
@@ -27,11 +27,15 @@ function EditReturnInvoiceInner() {
         <p className="text-destructive font-semibold">
           Return invoice not found
         </p>
-        <Link href="/return-invoices">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-4 mr-1" /> Back
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
       </div>
     );
   }
@@ -42,11 +46,15 @@ function EditReturnInvoiceInner() {
         <p className="text-destructive font-semibold">
           Deleted return invoices cannot be edited
         </p>
-        <Link href={`/return-invoices/${returnInvoice.id}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-4 mr-1" /> Back to details
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
       </div>
     );
   }
@@ -60,11 +68,15 @@ function EditReturnInvoiceInner() {
         <p className="text-xs text-muted-foreground font-mono">
           {returnInvoice.returnNumber}
         </p>
-        <Link href={`/return-invoices/${returnInvoice.id}`}>
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="size-4 mr-1" /> Back to details
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.back()}
+          className="gap-2 cursor-pointer"
+        >
+          <ArrowLeft className="size-4" />
+          <span className="hidden sm:inline">Go Back</span>
+        </Button>
       </div>
     );
   }

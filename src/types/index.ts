@@ -585,6 +585,11 @@ export interface TCustomerTransaction {
   } | null;
   payment?: {
     id: string;
+    receiptId?: string | null;
+    receipt?: {
+      id: string;
+      receiptNumber: string;
+    } | null;
     amount: number;
     note?: string | null;
     status: ReceiptStatus;
@@ -598,6 +603,11 @@ export interface TCustomerTransaction {
   returnInvoice?: {
     id: string;
     returnNumber: string;
+    receiptId?: string | null;
+    receipt?: {
+      id: string;
+      receiptNumber: string;
+    } | null;
     refundedAmount: number;
     discount: number;
     status: ReceiptStatus;

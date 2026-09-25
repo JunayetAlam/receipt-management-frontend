@@ -1,15 +1,15 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
 import ReceiptForm from "@/components/Receipts/ReceiptForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export default function UpdateReceiptPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params?.id as string;
 
   const { data, isLoading, isError } = useGetReceiptByIdQuery(id, {
@@ -31,11 +31,15 @@ export default function UpdateReceiptPage() {
       ) : isError || !receipt ? (
         <div className="p-8 text-center space-y-4 rounded-xl border border-destructive/30 bg-destructive/5">
           <p className="text-destructive font-semibold">Receipt not found or failed to load</p>
-          <Link href="/receipts">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Receipts
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       ) : (
         <ReceiptForm initialData={receipt} isEditing={true} />

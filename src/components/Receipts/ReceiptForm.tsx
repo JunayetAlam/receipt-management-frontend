@@ -844,13 +844,16 @@ export default function ReceiptForm({
         {/* Top Header Actions (Sticky bar for quick access in Edit/Create mode) */}
         {!isDetails && (
           <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
-            <Link
-              href="/receipts"
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors h-8 px-2 cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
-              <span>Back to Receipt List</span>
-            </Link>
+              <span className="hidden sm:inline">Go Back</span>
+            </Button>
 
             {/* Top Right Action Buttons (Cancel + Update / Create) */}
             {!isLocked && (
@@ -1645,11 +1648,16 @@ export default function ReceiptForm({
                       : "Viewing receipt in read-only details mode."}
                   </span>
                 </div>
-                <Link href="/receipts">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <ArrowLeft className="size-3.5" /> Back to Receipts
-                  </Button>
-                </Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.back()}
+                  className="gap-2 cursor-pointer"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  <span className="hidden sm:inline">Go Back</span>
+                </Button>
               </div>
             </div>
           )}

@@ -9,6 +9,7 @@ import {
   Trash2,
   RotateCcw,
   Activity,
+  FileDown,
   Check,
   X,
 } from "lucide-react";
@@ -94,16 +95,15 @@ export default function CustomerProfilePage() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/customers">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8 cursor-pointer"
-              title="Back to Customers"
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-8 cursor-pointer"
+            title="Go Back"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Manage Customers
@@ -129,6 +129,20 @@ export default function CustomerProfilePage() {
             >
               <Activity className="size-3.5" />
               Activity Log
+            </Button>
+
+            {/* Export Transactions */}
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs font-medium cursor-pointer"
+              title="Export Customer Transactions"
+            >
+              <Link href={`/customer-transactions/export?customerId=${customer.id}`}>
+                <FileDown className="size-3.5" />
+                Export Transactions
+              </Link>
             </Button>
 
             {/* Edit Customer */}
@@ -239,11 +253,15 @@ export default function CustomerProfilePage() {
           <p className="text-destructive font-semibold text-base">
             Customer not found or failed to load
           </p>
-          <Link href="/customers">
-            <Button variant="outline" size="sm" className="gap-2 cursor-pointer">
-              <ArrowLeft className="size-4" /> Back to Customers
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       ) : (
         <div className="space-y-6">

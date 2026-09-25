@@ -14,7 +14,13 @@ import {
   FileText,
   Wallet,
   Undo2,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+  X,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "—";
@@ -88,6 +94,14 @@ export default function CustomerTransactionTable() {
       isDeleted: false,
     });
   const customers = customerData?.data || [];
+
+  const selectedCustomer = useMemo(
+    () =>
+      selectedCustomerId !== "ALL"
+        ? customers.find((c) => c.id === selectedCustomerId) || null
+        : null,
+    [customers, selectedCustomerId],
+  );
 
   // Query Params
   const selectedSort = SORT_OPTIONS[Number(sortIndex)] || SORT_OPTIONS[0];
@@ -393,6 +407,109 @@ export default function CustomerTransactionTable() {
           )}
         </div>
 
+        {/* Professional Customer Details Card (When a specific customer is selected) */}
+        {selectedCustomer && (
+          <div className="border-b border-border bg-muted/20 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Avatar className="size-12 rounded-full border border-border/80 shrink-0">
+                  {selectedCustomer.image ? (
+                    <AvatarImage
+                      src={selectedCustomer.image}
+                      alt={selectedCustomer.name}
+                    />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
+                    {selectedCustomer.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-base font-bold text-foreground truncate">
+                      {selectedCustomer.name}
+                    </h2>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-semibold uppercase tracking-wider py-0"
+                    >
+                      Customer Details
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Phone className="size-3 text-muted-foreground/70 shrink-0" />
+                      <span>
+                        {selectedCustomer.countryCode || "+880"}{" "}
+                        {selectedCustomer.phoneNumber}
+                      </span>
+                    </span>
+                    {selectedCustomer.email && (
+                      <span className="flex items-center gap-1">
+                        <Mail className="size-3 text-muted-foreground/70 shrink-0" />
+                        <span>{selectedCustomer.email}</span>
+                      </span>
+                    )}
+                    {selectedCustomer.address && (
+                      <span className="flex items-center gap-1 truncate max-w-xs">
+                        <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
+                        <span className="truncate">{selectedCustomer.address}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider block">
+                    Total Due
+                  </span>
+                  <span
+                    className={cn(
+                      "font-mono font-bold text-sm sm:text-base",
+                      (selectedCustomer.totalDue || 0) > 0
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-emerald-600 dark:text-emerald-400",
+                    )}
+                  >
+                    {formatInvoiceMoney(selectedCustomer.totalDue || 0)}
+                  </span>
+                </div>
+
+                <div className="h-8 w-px bg-border hidden sm:block" />
+
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs font-semibold"
+                  >
+                    <Link href={`/customers/${selectedCustomer.id}`}>
+                      <ExternalLink className="size-3" />
+                      View Profile
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCustomerId("ALL");
+                      setPage(1);
+                    }}
+                    className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    title="Clear Customer Filter"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Table Data View */}
         <div className="overflow-x-auto">
           <Table>
@@ -404,6 +521,7 @@ export default function CustomerTransactionTable() {
                 <TableHead className="text-right text-xs">Cash</TableHead>
                 <TableHead className="text-right text-xs">Balance</TableHead>
                 <TableHead className="text-xs">Note</TableHead>
+                <TableHead className="text-xs">Invoice</TableHead>
                 <TableHead className="text-right text-xs w-[80px]">
                   Actions
                 </TableHead>
@@ -413,7 +531,7 @@ export default function CustomerTransactionTable() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-5 w-full" />
                       </TableCell>
@@ -423,7 +541,7 @@ export default function CustomerTransactionTable() {
               ) : transactions.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="h-36 text-center text-xs text-muted-foreground"
                   >
                     No transactions found matching your criteria.
@@ -435,24 +553,46 @@ export default function CustomerTransactionTable() {
                   const isPayment = tx.type === "PAYMENT";
                   const isReturn = tx.type === "RETURN_INVOICE";
 
+                  const receiptId =
+                    tx.receiptId ||
+                    tx.receipt?.id ||
+                    tx.payment?.receiptId ||
+                    tx.payment?.receipt?.id ||
+                    tx.returnInvoice?.receiptId ||
+                    tx.returnInvoice?.receipt?.id;
+
+                  const receiptNumber =
+                    tx.receipt?.receiptNumber ||
+                    tx.payment?.receipt?.receiptNumber ||
+                    tx.returnInvoice?.receipt?.receiptNumber ||
+                    (isReceipt ? tx.referenceNumber : null);
+
+                  const returnInvoiceId =
+                    tx.returnInvoiceId || tx.returnInvoice?.id;
+                  const returnNumber =
+                    tx.returnInvoice?.returnNumber ||
+                    (isReturn ? tx.referenceNumber : null);
+
                   return (
                     <TableRow
                       key={tx.id}
                       className="hover:bg-muted/40 transition-colors text-xs"
                     >
-                      {/* Date & Time + Customer below */}
+                      {/* Date & Time (Hide customer name when customer is selected) */}
                       <TableCell className="py-2.5">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5 font-mono text-muted-foreground whitespace-nowrap">
                             <Calendar className="size-3 text-muted-foreground/70 shrink-0" />
                             <span>{formatDateTime(tx.createdAt)}</span>
                           </div>
-                          <p
-                            className="font-semibold text-foreground text-xs truncate max-w-[170px]"
-                            title={tx.customer?.name}
-                          >
-                            {tx.customer?.name || "Walk-in Customer"}
-                          </p>
+                          {!selectedCustomer && (
+                            <p
+                              className="font-semibold text-foreground text-xs truncate max-w-[170px]"
+                              title={tx.customer?.name}
+                            >
+                              {tx.customer?.name || "Walk-in Customer"}
+                            </p>
+                          )}
                         </div>
                       </TableCell>
 
@@ -521,6 +661,43 @@ export default function CustomerTransactionTable() {
                       {/* Note - show full note without skipping */}
                       <TableCell className="text-muted-foreground whitespace-pre-wrap break-words min-w-[200px] leading-relaxed">
                         {tx.note || tx.payment?.note || tx.receipt?.note || "—"}
+                      </TableCell>
+
+                      {/* Invoice */}
+                      <TableCell className="font-mono text-xs whitespace-nowrap">
+                        {isReturn ? (
+                          returnInvoiceId && returnNumber ? (
+                            <Link
+                              href={`/return-invoices/${returnInvoiceId}/invoice`}
+                              className="group inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                              title={`View Return Invoice #${returnNumber}`}
+                            >
+                              <span>{returnNumber}</span>
+                              <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                            </Link>
+                          ) : returnNumber ? (
+                            <span className="font-semibold text-foreground">
+                              {returnNumber}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )
+                        ) : receiptId && receiptNumber ? (
+                          <Link
+                            href={`/receipts/${receiptId}/invoice`}
+                            className="group inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                            title={`View Invoice #${receiptNumber}`}
+                          >
+                            <span>{receiptNumber}</span>
+                            <ExternalLink className="size-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                          </Link>
+                        ) : receiptNumber ? (
+                          <span className="font-semibold text-foreground">
+                            {receiptNumber}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
 
                       {/* Actions */}

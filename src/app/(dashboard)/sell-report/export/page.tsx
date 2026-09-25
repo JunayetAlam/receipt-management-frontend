@@ -2,7 +2,6 @@
 
 import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useGetProductProfitQuery } from "@/redux/api/productApi";
 import SellReportExportView from "@/components/SellReport/SellReportExportView";
@@ -78,11 +77,15 @@ function SellReportExportPageInner() {
           <p className="text-destructive font-semibold">
             Failed to load the sell report
           </p>
-          <Link href="/sell-report">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Sell Report
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       </div>
     );

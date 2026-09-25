@@ -78,11 +78,15 @@ function ProductProfitLossExportPageInner() {
           <p className="text-destructive font-semibold">
             Failed to load the product profit/loss report
           </p>
-          <Link href="/product-profit-loss">
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowLeft className="size-4" /> Back to Product Profit/Loss
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Go Back</span>
+          </Button>
         </div>
       </div>
     );

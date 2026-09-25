@@ -331,5 +331,25 @@ input[type="number"] {
   animation: receipt-row-highlight 0.7s ease-in-out 3;
 }
 
+/* Navbar Welcome Marquee Animation */
+@keyframes navbar-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-navbar-marquee {
+  display: flex;
+  width: max-content;
+  animation: navbar-marquee 25s linear infinite;
+}
+
+.animate-navbar-marquee:hover {
+  animation-play-state: paused;
+}
+
 
 
