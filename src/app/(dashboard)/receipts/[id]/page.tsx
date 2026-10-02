@@ -14,6 +14,7 @@ import {
   X,
   Save,
   Activity,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -31,6 +32,13 @@ import ConfirmPopup from "@/components/Global/ConfirmPopup";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
+import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 
 export default function ReceiptDetailsPage() {
@@ -41,6 +49,7 @@ export default function ReceiptDetailsPage() {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
+  const [customerEditOpen, setCustomerEditOpen] = useState(false);
 
   const { data, isLoading, isError } = useGetReceiptByIdQuery(id, {
     skip: !id,
@@ -136,16 +145,47 @@ export default function ReceiptDetailsPage() {
                     <FileText className="size-3.5" /> View Invoice
                   </Button>
                 </Link>
-                <Link href={`/receipts/${receipt.id}/invoice?print=1`}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    title="Print Invoice"
-                    className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    <Printer className="size-3.5" /> Print Invoice
-                  </Button>
-                </Link>
+                {(() => {
+                  const printValidation = getCustomerPrintValidation(
+                    receipt.customer
+                  );
+                  if (printValidation.isPrintable) {
+                    return (
+                      <Link href={`/receipts/${receipt.id}/invoice?print=1`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          title="Print Invoice"
+                          className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                        >
+                          <Printer className="size-3.5" /> Print Invoice
+                        </Button>
+                      </Link>
+                    );
+                  }
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex cursor-not-allowed">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            className="h-8 gap-1.5 text-xs font-medium text-muted-foreground pointer-events-none opacity-50"
+                          >
+                            <Printer className="size-3.5" /> Print Invoice
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        className="max-w-xs text-xs text-center"
+                      >
+                        {printValidation.warningMessage}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })()}
                 <Link href={`/return-invoices/create?receiptId=${receipt.id}`}>
                   <Button
                     variant="outline"
@@ -286,6 +326,36 @@ export default function ReceiptDetailsPage() {
         </div>
       ) : (
         <>
+          {(() => {
+            const printValidation = getCustomerPrintValidation(receipt.customer);
+            if (printValidation.isPrintable) return null;
+            return (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-950/40 p-3.5 text-amber-900 dark:text-amber-200 shadow-xs mb-4">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-300">
+                      Receipt Incomplete for Printing
+                    </p>
+                    <p className="text-xs text-amber-800/90 dark:text-amber-200/90">
+                      {printValidation.warningMessage}
+                    </p>
+                  </div>
+                </div>
+                {receipt.customer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCustomerEditOpen(true)}
+                    className="shrink-0 text-xs border-amber-400/80 bg-white hover:bg-amber-100 text-amber-950 dark:bg-zinc-900 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-950 font-medium gap-1.5 h-8 px-3 cursor-pointer shadow-xs"
+                  >
+                    <Pencil className="size-3.5" /> Add Missing Customer Details
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
+
           <ReceiptForm initialData={receipt} isEditing={true} isDetails={true} />
 
           {(receipt.returnInvoices || []).filter((r) => !r.isDeleted).length >
@@ -356,6 +426,14 @@ export default function ReceiptDetailsPage() {
         onOpenChange={setActivitySheetOpen}
         receipt={receipt ?? null}
       />
+
+      {receipt?.customer && (
+        <CustomerFormModal
+          open={customerEditOpen}
+          onOpenChange={setCustomerEditOpen}
+          customerToEdit={receipt.customer as any}
+        />
+      )}
     </div>
   );
 }

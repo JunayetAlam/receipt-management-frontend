@@ -56,7 +56,7 @@ export default function RetIV_Details({
 
         {/* Right: Return Invoice */}
         <div className="min-w-[170px] text-right">
-          <h2 className="text-[22px] font-black leading-none tracking-[0.05em] text-slate-950 whitespace-nowrap">
+          <h2 className="text-[19px] font-black leading-none tracking-[0.05em] text-slate-950 whitespace-nowrap">
             RETURN INVOICE
           </h2>
 

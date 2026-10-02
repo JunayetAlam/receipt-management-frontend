@@ -55,7 +55,7 @@ export const customerApi = baseApi.injectEndpoints({
         method: "PUT",
         body,
       }),
-      invalidatesTags: ["Customer", "ActivityLog"],
+      invalidatesTags: ["Customer", "ActivityLog", "Receipt", "ReturnInvoice"],
     }),
 
     deleteCustomer: builder.mutation<

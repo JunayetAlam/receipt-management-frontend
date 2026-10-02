@@ -29,7 +29,7 @@ type ListMetrics = {
 
 const FALLBACK_METRICS: ListMetrics = {
   pageHeight: 1122.5,
-  footerHeight: 38,
+  footerHeight: 40,
   headerHeight: 110,
   continuationBarHeight: 32,
   tableHeaderHeight: 32,
@@ -102,6 +102,21 @@ export default function CustomerTransactionExportView({
     useGetShopDetailsQuery();
   const shop = shopResponse?.data as TShop | null | undefined;
   const shopName = shop?.name || "Shop";
+
+  const contactPhones =
+    shop?.phoneNumbers && shop.phoneNumbers.length > 0
+      ? shop.phoneNumbers.join(", ")
+      : "";
+
+  const contactLocations =
+    shop?.locations && shop.locations.length > 0
+      ? shop.locations.join(" | ")
+      : "";
+
+  const contactEmails =
+    shop?.emails && shop.emails.length > 0
+      ? shop.emails.join(", ")
+      : "";
 
   useEffect(() => {
     const previous = document.title;
@@ -297,7 +312,13 @@ export default function CustomerTransactionExportView({
           />
         </div>
         <div ref={footerProbeRef}>
-          <CustomerTransactionFooter pageNo={1} pageCount={1} />
+          <CustomerTransactionFooter
+            pageNo={1}
+            pageCount={1}
+            contactPhones={contactPhones}
+            contactLocations={contactLocations}
+            contactEmails={contactEmails}
+          />
         </div>
       </div>
 
@@ -360,6 +381,9 @@ export default function CustomerTransactionExportView({
                 <CustomerTransactionFooter
                   pageNo={p.pageNo}
                   pageCount={pageCount}
+                  contactPhones={contactPhones}
+                  contactLocations={contactLocations}
+                  contactEmails={contactEmails}
                 />
               </div>
             </div>

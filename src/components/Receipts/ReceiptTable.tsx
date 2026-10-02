@@ -53,7 +53,13 @@ import {
   PopoverHeader,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
 import ConfirmPopup from "../Global/ConfirmPopup";
 import ReceiptDeleteModal from "./ReceiptDeleteModal";
 import ReceiptStatusDropdown from "./ReceiptStatusDropdown";
@@ -523,16 +529,49 @@ export default function ReceiptTable() {
                                 <FileText className="size-3.5" /> View Invoice
                               </Button>
                             </Link>
-                            <Link href={`/receipts/${receipt.id}/invoice?print=1`}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                title="Print Invoice"
-                                className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1"
-                              >
-                                <Printer className="size-3.5" /> Print Invoice
-                              </Button>
-                            </Link>
+                            {(() => {
+                              const printValidation = getCustomerPrintValidation(
+                                receipt.customer
+                              );
+                              if (printValidation.isPrintable) {
+                                return (
+                                  <Link
+                                    href={`/receipts/${receipt.id}/invoice?print=1`}
+                                  >
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      title="Print Invoice"
+                                      className="h-7 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1"
+                                    >
+                                      <Printer className="size-3.5" /> Print Invoice
+                                    </Button>
+                                  </Link>
+                                );
+                              }
+                              return (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex cursor-not-allowed">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                        className="h-7 px-2 text-xs font-medium text-muted-foreground gap-1 pointer-events-none opacity-50"
+                                      >
+                                        <Printer className="size-3.5" /> Print Invoice
+                                      </Button>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent
+                                    side="top"
+                                    className="max-w-xs text-xs text-center"
+                                  >
+                                    {printValidation.warningMessage}
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })()}
                           </>
                         )}
 

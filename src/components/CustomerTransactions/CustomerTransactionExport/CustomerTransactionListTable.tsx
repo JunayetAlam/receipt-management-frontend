@@ -48,7 +48,7 @@ export default function CustomerTransactionListTable({
           <th className={thClass}>Type</th>
           <th className={`${thClass} text-right`}>Due</th>
           <th className={`${thClass} text-right`}>Cash</th>
-          <th className={`${thClass} text-right`}>Balance</th>
+          <th className={`${thClass} text-right`}>Net Due</th>
           <th className={thClass}>Note</th>
           <th className={`${thClass} whitespace-nowrap`}>Invoice #</th>
         </tr>

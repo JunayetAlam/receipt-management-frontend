@@ -27,12 +27,14 @@ interface CustomerFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   customerToEdit?: TCustomer | null;
+  onSuccess?: (customer: TCustomer) => void;
 }
 
 export default function CustomerFormModal({
   open,
   onOpenChange,
   customerToEdit,
+  onSuccess,
 }: CustomerFormModalProps) {
   const isEditing = Boolean(customerToEdit);
   const [createCustomer, { isLoading: isCreating }] = useCreateCustomerMutation();
@@ -145,11 +147,17 @@ export default function CustomerFormModal({
 
     try {
       if (isEditing && customerToEdit) {
-        await updateCustomer({ id: customerToEdit.id, body: payload }).unwrap();
+        const res = await updateCustomer({ id: customerToEdit.id, body: payload }).unwrap();
         toast.success("Customer updated successfully!");
+        if (res?.data && onSuccess) {
+          onSuccess(res.data);
+        }
       } else {
-        await createCustomer(payload).unwrap();
+        const res = await createCustomer(payload).unwrap();
         toast.success("Customer created successfully!");
+        if (res?.data && onSuccess) {
+          onSuccess(res.data);
+        }
       }
       onOpenChange(false);
     } catch (error) {

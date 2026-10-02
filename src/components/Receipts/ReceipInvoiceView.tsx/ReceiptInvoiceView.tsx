@@ -2,8 +2,15 @@
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, AlertTriangle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
+import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 
 import { TReceipt, TReceiptItem } from "@/types";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
@@ -66,13 +73,20 @@ export default function ReceiptInvoiceView({
   const compactFooterProbeRef = useRef<HTMLDivElement>(null);
   const lastFooterProbeRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState<InvoiceMetrics>(FALLBACK_METRICS);
+  const [customerEditOpen, setCustomerEditOpen] = useState(false);
   const didAutoPrint = useRef(false);
 
   const { data: shopResponse, isLoading: isShopLoading } =
     useGetShopDetailsQuery();
   const shop = shopResponse?.data;
 
+  const printValidation = useMemo(
+    () => getCustomerPrintValidation(receipt.customer),
+    [receipt.customer]
+  );
+
   const handlePrint = () => {
+    if (!printValidation.isPrintable) return;
     window.print();
   };
 
@@ -204,6 +218,7 @@ export default function ReceiptInvoiceView({
   };
 
   useEffect(() => {
+    if (!printValidation.isPrintable) return;
     if (didAutoPrint.current || isShopLoading) return;
     if (typeof window === "undefined") return;
     if (new URLSearchParams(window.location.search).get("print") !== "1") {
@@ -226,7 +241,7 @@ export default function ReceiptInvoiceView({
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [isShopLoading, pageCount, metrics]);
+  }, [isShopLoading, pageCount, metrics, printValidation.isPrintable]);
 
   return (
     <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
@@ -245,15 +260,74 @@ export default function ReceiptInvoiceView({
           <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
             {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
           </span>
-          <Button
-            onClick={handlePrint}
-            className="gap-2 bg-primary text-primary-foreground font-semibold shadow-xs hover:opacity-95 cursor-pointer"
-            size="sm"
-          >
-            <Printer className="size-4" /> Print / Save as PDF
-          </Button>
+          {printValidation.isPrintable ? (
+            <Button
+              onClick={handlePrint}
+              className="gap-2 bg-primary text-primary-foreground font-semibold shadow-xs hover:opacity-95 cursor-pointer"
+              size="sm"
+            >
+              <Printer className="size-4" /> Print / Save as PDF
+            </Button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex cursor-not-allowed">
+                  <Button
+                    disabled
+                    className="gap-2 font-semibold shadow-xs pointer-events-none opacity-50"
+                    size="sm"
+                  >
+                    <Printer className="size-4" /> Print / Save as PDF
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-xs text-center">
+                {printValidation.warningMessage}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       </div>
+
+      {/* Warning banner when customer info is incomplete */}
+      {!printValidation.isPrintable && (
+        <div className="max-w-[210mm] mx-auto px-4 mb-6 print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-950/40 p-4 text-amber-900 dark:text-amber-200 shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="size-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold tracking-tight text-amber-900 dark:text-amber-300">
+                  Invoice is Not Printable
+                </h4>
+                <p className="text-xs text-amber-800 dark:text-amber-200/90 leading-relaxed">
+                  {printValidation.warningMessage} Please update customer details to enable printing.
+                </p>
+              </div>
+            </div>
+            {receipt.customer && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setCustomerEditOpen(true)}
+                className="shrink-0 border-amber-400/80 bg-white hover:bg-amber-100 text-amber-950 dark:bg-zinc-900 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/80 font-medium text-xs gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Pencil className="size-3.5" />
+                Add Missing Details
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Customer Form Modal for updating customer details */}
+      {receipt.customer && (
+        <CustomerFormModal
+          open={customerEditOpen}
+          onOpenChange={setCustomerEditOpen}
+          customerToEdit={receipt.customer as any}
+        />
+      )}
 
       <div
         aria-hidden="true"

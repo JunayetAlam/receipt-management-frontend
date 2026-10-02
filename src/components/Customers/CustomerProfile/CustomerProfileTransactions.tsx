@@ -636,7 +636,7 @@ export default function CustomerProfileTransactions({
                   <TableHead className="text-xs">Type</TableHead>
                   <TableHead className="text-right text-xs">Due</TableHead>
                   <TableHead className="text-right text-xs">Cash</TableHead>
-                  <TableHead className="text-right text-xs">Balance</TableHead>
+                  <TableHead className="text-right text-xs">Net Due</TableHead>
                   <TableHead className="text-xs">Note</TableHead>
                   <TableHead className="text-xs">Invoice</TableHead>
                   <TableHead className="text-right text-xs w-[80px]">

@@ -55,9 +55,8 @@ export default function RIV_Details({
         {/* Right: Invoice */}{" "}
         <div className="min-w-[130px] text-right">
           {" "}
-          <h2 className="text-[28px] font-black leading-none tracking-[0.08em] text-slate-950">
-            {" "}
-            INVOICE{" "}
+          <h2 className="text-[24px] font-black leading-none tracking-[0.08em] text-slate-950">
+            INVOICE
           </h2>{" "}
           <p className="mt-1 text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-slate-500">
             {" "}
