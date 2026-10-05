@@ -11,7 +11,7 @@ export default function CustomerHeader() {
   return (
     <div className="flex items-center gap-2.5">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        Manage Customers
+        Customers
       </h1>
       {isLoading ? (
         <Skeleton className="h-6 w-9 rounded-full" />

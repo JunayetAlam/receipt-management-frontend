@@ -27,7 +27,7 @@ export default function SellReportListHeader({
   return (
     <div className="space-y-3">
       <PDFViewHeader
-        title="Sell Report"
+        title="Sales Report"
         name={shop?.name}
         logo={shop?.logo}
         subtitle={shop?.proprietor}

@@ -104,7 +104,7 @@ export default function ReturnInvoiceDetailsPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Manage Return Invoices
+              Return Invoice Details
             </h1>
             <span className="font-mono text-xs text-muted-foreground">
               Return Invoice #{returnInvoice.returnNumber}

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import ReceiptForm from "@/components/Receipts/ReceiptForm";
 
 export const metadata: Metadata = {
-  title: "Create Receipt | Receipt Management",
+  title: "Create Receipt",
   description: "Create a new customer receipt with automatic pricing, per-item discount, and payment tracking",
 };
 

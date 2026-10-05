@@ -3,7 +3,7 @@ import ProductTable from "@/components/Products/ProductTable";
 import ProductStatsCards from "@/components/Products/ProductStatsCards";
 
 export const metadata: Metadata = {
-  title: "Manage Products | Receipt Management",
+  title: "Products",
   description: "Manage product catalog, prices, stocks, and audit history",
 };
 
@@ -11,7 +11,7 @@ export default function ProductsPage() {
   return (
     <div className="space-y-6 p-6">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        Manage Products
+        Products
       </h1>
       <ProductStatsCards />
       <ProductTable />

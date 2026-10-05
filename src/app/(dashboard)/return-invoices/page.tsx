@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import ReturnInvoiceTable from "@/components/ReturnInvoices/ReturnInvoiceTable";
 
 export const metadata: Metadata = {
-  title: "Return Invoices | Receipt Management",
+  title: "Return Invoices",
   description: "Manage product return invoices linked to receipts",
 };
 

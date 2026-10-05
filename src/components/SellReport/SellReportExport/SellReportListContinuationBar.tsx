@@ -13,7 +13,7 @@ export default function SellReportListContinuationBar({
         {shopName}
       </span>
       <span className="uppercase tracking-wide text-[10px] font-semibold text-slate-500">
-        Sell Report Continued
+        Sales Report Continued
       </span>
       <span className="font-medium text-slate-800">
         Page {pageNo} of {pageCount}

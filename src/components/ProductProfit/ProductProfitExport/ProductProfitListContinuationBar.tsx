@@ -13,7 +13,7 @@ export default function ProductProfitListContinuationBar({
         {shopName}
       </span>
       <span className="uppercase tracking-wide text-[10px] font-semibold text-slate-500">
-        Product Profit/Loss Continued
+        Product Profit &amp; Loss Continued
       </span>
       <span className="font-medium text-slate-800">
         Page {pageNo} of {pageCount}

@@ -84,7 +84,7 @@ export default function ProductListExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Product List`;
+    document.title = `Products | ${shopName}`;
     return () => {
       document.title = previous;
     };

@@ -4,7 +4,7 @@ import CustomerStatsCards from "@/components/Customers/CustomerStatsCards";
 import CustomerHeader from "@/components/Customers/CustomerHeader";
 
 export const metadata: Metadata = {
-  title: "Manage Customers | Receipt Management",
+  title: "Customers",
   description: "Manage customer profiles, phone numbers, contact records, and audit history",
 };
 

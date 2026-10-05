@@ -101,7 +101,7 @@ export default function ProductProfitExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Product Profit/Loss`;
+    document.title = `Product Profit & Loss | ${shopName}`;
     return () => {
       document.title = previous;
     };

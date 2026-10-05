@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Receipt Management",
-  description: "Internal shop tool for products, customers, and receipts.",
+  description:
+    "Sanowar Electric shop management system for products, customers, receipts, and sales reports.",
 };
 
 export default function CommonLayout({

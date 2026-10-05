@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import PrivilegedMaintenanceControl from "@/components/Maintenance/PrivilegedMaintenanceControl";
 
 export const metadata: Metadata = {
-  title: "Manage Maintenance | Receipt Management",
+  title: "Maintenance",
   description: "Privileged System Maintenance Control Center",
 };
 

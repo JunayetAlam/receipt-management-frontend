@@ -106,7 +106,7 @@ export default function CustomerProfilePage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Manage Customers
+              Customer Details
             </h1>
             {customer && (
               <span className="text-xs text-muted-foreground font-mono">

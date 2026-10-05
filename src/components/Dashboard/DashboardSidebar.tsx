@@ -128,7 +128,7 @@ export default function DashboardSidebar() {
       ],
     },
     {
-      title: "Manage Inventory",
+      title: "Inventory",
       items: [
         { name: "Products", href: "/products", icon: Package },
         { name: "Low Stock", href: "/low-stock", icon: AlertTriangle },
@@ -149,15 +149,15 @@ export default function DashboardSidebar() {
     ...(isAdmin
       ? [
           {
-            title: "Report",
+            title: "Reports",
             items: [
               {
-                name: "Product Profit/Loss",
+                name: "Product Profit & Loss",
                 href: "/product-profit-loss",
                 icon: TrendingUp,
               },
               {
-                name: "Sell Report",
+                name: "Sales Report",
                 href: "/sell-report",
                 icon: FileSpreadsheet,
               },

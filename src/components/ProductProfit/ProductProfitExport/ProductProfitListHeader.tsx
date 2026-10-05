@@ -27,7 +27,7 @@ export default function ProductProfitListHeader({
   return (
     <div className="space-y-3">
       <PDFViewHeader
-        title="Product Profit/Loss"
+        title="Product Profit & Loss"
         name={shop?.name || ""}
         logo={shop?.logo}
         subtitle={shop?.proprietor}

@@ -4,7 +4,7 @@ import ReturnInvoiceForm from "@/components/ReturnInvoices/ReturnInvoiceForm";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
-  title: "Create Return Invoice | Receipt Management",
+  title: "Create Return Invoice",
   description: "Create a return invoice against a receipt",
 };
 

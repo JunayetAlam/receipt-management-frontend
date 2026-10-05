@@ -120,7 +120,7 @@ export default function CustomerTransactionExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Customer Transactions`;
+    document.title = `Customer Transactions | ${shopName}`;
     return () => {
       document.title = previous;
     };

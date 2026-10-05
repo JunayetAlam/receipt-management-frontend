@@ -101,7 +101,7 @@ export default function SellReportExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Sell Report`;
+    document.title = `Sales Report | ${shopName}`;
     return () => {
       document.title = previous;
     };

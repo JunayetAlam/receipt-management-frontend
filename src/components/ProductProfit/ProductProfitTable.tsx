@@ -175,7 +175,7 @@ export default function ProductProfitTable() {
 
   if (isAdminLoading || !isAdmin) {
     return (
-      <TableSkeleton headers={TABLE_HEADERS} title="Product Profit/Loss" />
+      <TableSkeleton headers={TABLE_HEADERS} title="Product Profit & Loss" />
     );
   }
 

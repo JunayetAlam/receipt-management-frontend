@@ -163,7 +163,7 @@ export default function PrivilegedMaintenanceControl() {
       {/* Page Title - Single h1 with no subtitle following project guidelines */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Manage Maintenance
+          Maintenance
         </h1>
 
         <div className="flex flex-wrap items-center gap-2">

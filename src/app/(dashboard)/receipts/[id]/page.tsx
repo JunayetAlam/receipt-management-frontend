@@ -117,7 +117,7 @@ export default function ReceiptDetailsPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Manage Receipts
+              Receipt Details
             </h1>
             {receipt && (
               <span className="font-mono text-xs text-muted-foreground">

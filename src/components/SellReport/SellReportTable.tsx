@@ -145,7 +145,7 @@ export default function SellReportTable() {
   }, [selectedSort, appliedStart, appliedEnd, searchTerm]);
 
   if (isAdminLoading || !isAdmin) {
-    return <TableSkeleton headers={TABLE_HEADERS} title="Sell Report" />;
+    return <TableSkeleton headers={TABLE_HEADERS} title="Sales Report" />;
   }
 
   return (

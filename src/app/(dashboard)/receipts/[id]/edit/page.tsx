@@ -20,7 +20,7 @@ export default function UpdateReceiptPage() {
   return (
     <div className="space-y-6 p-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        Update Receipt
+        Edit Receipt
       </h1>
 
       {isLoading ? (

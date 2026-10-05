@@ -85,7 +85,7 @@ export default function CustomerListExportView({
 
   useEffect(() => {
     const previous = document.title;
-    document.title = `${shopName} — Customer List`;
+    document.title = `Customers | ${shopName}`;
     return () => {
       document.title = previous;
     };
