@@ -39,7 +39,9 @@ import {
   TReceiptPayment,
 } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
+import { getCustomerSaveValidation } from "@/utils/customerPrintValidation";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
+import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 import CustomerSelect from "./CustomerSelect";
 import ProductSelect from "./ProductSelect";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
@@ -315,6 +317,35 @@ export default function ReceiptForm({
   const [isCustomerLocked, setIsCustomerLocked] = useState<boolean>(
     Boolean(initialData?.customerId),
   );
+  // Saved record of the linked customer; the backend validates against this, not the form inputs
+  const [linkedCustomer, setLinkedCustomer] = useState<TCustomer | null>(
+    (initialData?.customer as TCustomer | undefined) || null,
+  );
+  const [customerEditOpen, setCustomerEditOpen] = useState<boolean>(false);
+
+  const customerValidation = useMemo(
+    () =>
+      getCustomerSaveValidation(
+        selectedCustomerId
+          ? linkedCustomer
+          : {
+              name: customerName,
+              phoneNumber: customerPhone,
+              address: customerAddress,
+            },
+        "receipt",
+      ),
+    [
+      selectedCustomerId,
+      linkedCustomer,
+      customerName,
+      customerPhone,
+      customerAddress,
+    ],
+  );
+  const isLinkedCustomerIncomplete =
+    Boolean(selectedCustomerId && linkedCustomer) &&
+    !customerValidation.isSavable;
 
   // Items State
   const [items, setItems] = useState<FormItemState[]>([
@@ -386,6 +417,7 @@ export default function ReceiptForm({
         setCustomerEmail(initialData.customer.email || "");
         setCustomerAddress(initialData.customer.address || "");
         setIsCustomerLocked(true);
+        setLinkedCustomer(initialData.customer as TCustomer);
       }
 
       if (initialData.items && initialData.items.length > 0) {
@@ -407,16 +439,19 @@ export default function ReceiptForm({
     setCustomerEmail(cust.email || "");
     setCustomerAddress(cust.address || "");
     setIsCustomerLocked(true);
+    setLinkedCustomer(cust);
   };
 
   const handleNameChange = (name: string) => {
     setCustomerName(name);
     setSelectedCustomerId(null);
+    setLinkedCustomer(null);
     setIsCustomerLocked(false);
   };
 
   const handleClearCustomer = () => {
     setSelectedCustomerId(null);
+    setLinkedCustomer(null);
     setCustomerName("");
     setCustomerPhone("");
     setCustomerCountryCode("+880");
@@ -456,6 +491,7 @@ export default function ReceiptForm({
         setCustomerEmail(matched.email || "");
         setCustomerAddress(matched.address || "");
         setIsCustomerLocked(true);
+        setLinkedCustomer(matched);
         toast.success(`Customer verified: ${matched.name}`);
         return;
       }
@@ -481,6 +517,7 @@ export default function ReceiptForm({
           setCustomerEmail(reactivated.email || "");
           setCustomerAddress(reactivated.address || "");
           setIsCustomerLocked(true);
+          setLinkedCustomer(reactivated);
           toast.success(
             `Customer reactivated & details updated: ${reactivated.name}`,
           );
@@ -508,6 +545,7 @@ export default function ReceiptForm({
         setCustomerEmail(created.email || "");
         setCustomerAddress(created.address || "");
         setIsCustomerLocked(true);
+        setLinkedCustomer(created);
         toast.success(`New customer created and linked: ${created.name}`);
       }
     } catch (err) {
@@ -785,7 +823,13 @@ export default function ReceiptForm({
       return;
     }
 
-    // Customer Validation
+    // Customer Validation: name, phone number and address are all required
+    if (!customerValidation.isSavable) {
+      toast.error(customerValidation.message);
+      if (isLinkedCustomerIncomplete) setCustomerEditOpen(true);
+      return;
+    }
+
     let customerPayload: any = {};
     if (selectedCustomerId) {
       customerPayload.customerId = selectedCustomerId;
@@ -1112,6 +1156,7 @@ export default function ReceiptForm({
                       }
                       if (selectedCustomerId && !isCustomerLocked) {
                         setSelectedCustomerId(null);
+                        setLinkedCustomer(null);
                       }
                     }}
                   />
@@ -1141,7 +1186,7 @@ export default function ReceiptForm({
                     htmlFor="customer-address"
                     className="text-sm font-medium"
                   >
-                    Address (Optional)
+                    Address <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="customer-address"
@@ -1152,6 +1197,27 @@ export default function ReceiptForm({
                   />
                 </div>
               </div>
+
+              {isLinkedCustomerIncomplete && (
+                <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-950/40 p-3.5 text-amber-900 dark:text-amber-200">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                    <p className="text-xs leading-relaxed">
+                      {customerValidation.message}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCustomerEditOpen(true)}
+                    className="shrink-0 border-amber-400/80 bg-white hover:bg-amber-100 text-amber-950 dark:bg-zinc-900 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/80 font-medium text-xs gap-1.5 cursor-pointer"
+                  >
+                    <Pencil className="size-3.5" />
+                    Add Missing Details
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1799,6 +1865,17 @@ export default function ReceiptForm({
           )}
         </div>
       </form>
+
+      {/* Kept outside <form>: portal events bubble through the React tree */}
+      {linkedCustomer && (
+        <CustomerFormModal
+          open={customerEditOpen}
+          onOpenChange={setCustomerEditOpen}
+          customerToEdit={linkedCustomer}
+          onSuccess={handleSelectCustomer}
+          requireAddress
+        />
+      )}
 
       {initialData && (
         <PaymentModal

@@ -39,6 +39,8 @@ export const returnInvoiceApi = baseApi.injectEndpoints({
             name: string;
             countryCode?: string;
             phoneNumber: string;
+            email?: string | null;
+            address?: string | null;
           } | null;
           totalAmount: number;
           paidAmount: number;

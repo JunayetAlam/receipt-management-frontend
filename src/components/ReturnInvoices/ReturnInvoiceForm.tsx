@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   ArrowLeft,
   Loader2,
   Package,
+  Pencil,
   Plus,
   Save,
   X,
@@ -29,8 +31,10 @@ import {
   useUpdateReturnInvoiceMutation,
 } from "@/redux/api/returnInvoiceApi";
 import { useGetAllReceiptsQuery, useGetReceiptByIdQuery } from "@/redux/api/receiptApi";
-import { TReturnInvoice } from "@/types";
+import { TCustomer, TReturnInvoice } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
+import { getCustomerSaveValidation } from "@/utils/customerPrintValidation";
+import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 import { derivePositionAfterReturn } from "@/utils/deriveReceiptSettlement";
 import { cn } from "@/lib/utils";
 import ReceiptSelect from "./ReceiptSelect";
@@ -147,6 +151,16 @@ export default function ReturnInvoiceForm({
 
   const returnableItems = returnableRes?.data?.items || [];
   const returnableReceipt = returnableRes?.data?.receipt;
+
+  // Customer must have name, phone number and address before a return can be saved
+  const [customerEditOpen, setCustomerEditOpen] = useState(false);
+  const receiptCustomer = returnableReceipt?.customer ?? null;
+  const customerValidation = useMemo(
+    () => getCustomerSaveValidation(receiptCustomer, "return invoice"),
+    [receiptCustomer],
+  );
+  const isCustomerIncomplete =
+    Boolean(receiptCustomer) && !customerValidation.isSavable;
   const previousReturn =
     returnableRes?.data?.previousReturn ||
     initialData?.previousReturnInvoice ||
@@ -191,7 +205,8 @@ export default function ReturnInvoiceForm({
           return [""];
         };
 
-        if (existingInitial && isEditing) {
+        // Only seed from initialData once; a refetch (e.g. after a customer update) keeps edits
+        if (existingInitial && isEditing && !prevLine) {
           next[item.receiptItemId] = {
             selected: true,
             quantity: Math.min(
@@ -394,6 +409,16 @@ export default function ReturnInvoiceForm({
       return;
     }
 
+    if (!receiptCustomer) {
+      toast.error("Customer details are still loading, please try again");
+      return;
+    }
+    if (!customerValidation.isSavable) {
+      toast.error(customerValidation.message);
+      setCustomerEditOpen(true);
+      return;
+    }
+
     const items = Object.entries(lines)
       .filter(([, v]) => v.selected && v.quantity > 0)
       .map(([receiptItemId, v]) => {
@@ -480,6 +505,7 @@ export default function ReturnInvoiceForm({
     initialData?.previousReturnInvoice?.returnNumber;
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       {!readOnly && (
         <div className="sticky top-2 z-30 flex items-center justify-between gap-3 p-3 -mx-2 rounded-xl bg-background/95 backdrop-blur border border-border shadow-xs">
@@ -618,6 +644,27 @@ export default function ReturnInvoiceForm({
                   · refund due ৳{previousDue.toFixed(2)}
                 </p>
               )}
+            </div>
+          )}
+
+          {isCustomerIncomplete && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-300/80 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-950/40 p-3.5 text-amber-900 dark:text-amber-200">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                <p className="text-xs leading-relaxed">
+                  {customerValidation.message}
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setCustomerEditOpen(true)}
+                className="shrink-0 border-amber-400/80 bg-white hover:bg-amber-100 text-amber-950 dark:bg-zinc-900 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-950/80 font-medium text-xs gap-1.5 cursor-pointer"
+              >
+                <Pencil className="size-3.5" />
+                Add Missing Details
+              </Button>
             </div>
           )}
         </CardContent>
@@ -1056,5 +1103,16 @@ export default function ReturnInvoiceForm({
         </CardContent>
       </Card>
     </form>
+
+    {/* Kept outside <form>: portal events bubble through the React tree */}
+    {receiptCustomer && (
+      <CustomerFormModal
+        open={customerEditOpen}
+        onOpenChange={setCustomerEditOpen}
+        customerToEdit={receiptCustomer as TCustomer}
+        requireAddress
+      />
+    )}
+    </>
   );
 }

@@ -369,6 +369,7 @@ export default function ReturnInvoiceDetailsPage() {
           open={customerEditOpen}
           onOpenChange={setCustomerEditOpen}
           customerToEdit={returnInvoice.receipt.customer as any}
+          requireAddress
         />
       )}
     </div>

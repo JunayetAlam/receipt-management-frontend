@@ -323,6 +323,7 @@ export default function ReturnInvoiceView({
           open={customerEditOpen}
           onOpenChange={setCustomerEditOpen}
           customerToEdit={returnInvoice.receipt.customer as any}
+          requireAddress
         />
       )}
 

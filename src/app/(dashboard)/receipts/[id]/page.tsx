@@ -432,6 +432,7 @@ export default function ReceiptDetailsPage() {
           open={customerEditOpen}
           onOpenChange={setCustomerEditOpen}
           customerToEdit={receipt.customer as any}
+          requireAddress
         />
       )}
     </div>

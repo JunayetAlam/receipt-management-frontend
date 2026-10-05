@@ -22,12 +22,18 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const formatDateTime = (dateStr?: string) => {
+const formatDate = (dateStr?: string) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  });
+};
+
+const formatTime = (dateStr?: string) => {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -177,6 +183,8 @@ export default function CustomerTransactionTable({
     startDate,
     endDate,
   ]);
+
+  const columnCount = selectedCustomer ? 8 : 9;
 
   const isFiltersActive =
     activeTypeTab !== "ALL" ||
@@ -521,7 +529,10 @@ export default function CustomerTransactionTable({
           <Table>
             <TableHeader className="bg-muted/40">
               <TableRow>
-                <TableHead className="w-[180px] text-xs">Date & Time</TableHead>
+                <TableHead className="w-[130px] text-xs">Date</TableHead>
+                {!selectedCustomer && (
+                  <TableHead className="text-xs">Customer</TableHead>
+                )}
                 <TableHead className="text-xs">Type</TableHead>
                 <TableHead className="text-right text-xs">Due</TableHead>
                 <TableHead className="text-right text-xs">Cash</TableHead>
@@ -537,7 +548,7 @@ export default function CustomerTransactionTable({
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i} index={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: columnCount }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-5 w-full" />
                       </TableCell>
@@ -547,7 +558,7 @@ export default function CustomerTransactionTable({
               ) : transactions.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={columnCount}
                     className="h-36 text-center text-xs text-muted-foreground"
                   >
                     No transactions found matching your criteria.
@@ -585,23 +596,52 @@ export default function CustomerTransactionTable({
                       index={index}
                       className="hover:bg-muted/40 transition-colors text-xs"
                     >
-                      {/* Date & Time (Hide customer name when customer is selected) */}
+                      {/* Date with time below */}
                       <TableCell className="py-2.5">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5 font-mono text-muted-foreground whitespace-nowrap">
+                        <div className="space-y-0.5 font-mono whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-foreground">
                             <Calendar className="size-3 text-muted-foreground/70 shrink-0" />
-                            <span>{formatDateTime(tx.createdAt)}</span>
+                            <span>{formatDate(tx.createdAt)}</span>
                           </div>
-                          {!selectedCustomer && (
+                          <p className="pl-[18px] text-[11px] text-muted-foreground">
+                            {formatTime(tx.createdAt)}
+                          </p>
+                        </div>
+                      </TableCell>
+
+                      {/* Customer (hidden when a customer is selected) */}
+                      {!selectedCustomer && (
+                        <TableCell className="py-2.5">
+                          <div className="space-y-0.5 max-w-[220px]">
                             <p
-                              className="font-semibold text-foreground text-xs truncate max-w-[170px]"
+                              className="font-semibold text-foreground truncate"
                               title={tx.customer?.name}
                             >
                               {tx.customer?.name || "Walk-in Customer"}
                             </p>
-                          )}
-                        </div>
-                      </TableCell>
+                            {tx.customer?.phoneNumber && (
+                              <p className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
+                                <Phone className="size-3 text-muted-foreground/70 shrink-0" />
+                                <span>
+                                  {tx.customer.countryCode || "+880"}{" "}
+                                  {tx.customer.phoneNumber}
+                                </span>
+                              </p>
+                            )}
+                            {tx.customer?.address && (
+                              <p
+                                className="flex items-center gap-1 text-muted-foreground"
+                                title={tx.customer.address}
+                              >
+                                <MapPin className="size-3 text-muted-foreground/70 shrink-0" />
+                                <span className="truncate">
+                                  {tx.customer.address}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
 
                       {/* Type Badge */}
                       <TableCell>

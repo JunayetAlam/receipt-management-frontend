@@ -576,6 +576,7 @@ export interface TCustomerTransaction {
     phoneNumber: string;
     countryCode?: string;
     email?: string | null;
+    address?: string | null;
     image?: string | null;
   };
   receipt?: {

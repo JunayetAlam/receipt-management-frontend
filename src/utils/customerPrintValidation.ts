@@ -50,3 +50,28 @@ export function getCustomerPrintValidation(
     warningMessage,
   };
 }
+
+/**
+ * A receipt / return invoice can only be created or updated when the customer
+ * has a name, phone number and address. Mirrors the backend rule.
+ */
+export function getCustomerSaveValidation(
+  customer: CustomerPrintInfo | null | undefined,
+  documentLabel: "receipt" | "return invoice"
+): { isSavable: boolean; missingFields: string[]; message: string } {
+  const { missingFields } = getCustomerPrintValidation(customer);
+  if (missingFields.length === 0) {
+    return { isSavable: true, missingFields, message: "" };
+  }
+
+  const fields =
+    missingFields.length === 1
+      ? missingFields[0]
+      : `${missingFields.slice(0, -1).join(", ")} and ${missingFields[missingFields.length - 1]}`;
+
+  return {
+    isSavable: false,
+    missingFields,
+    message: `Customer ${fields} ${missingFields.length === 1 ? "is" : "are"} missing. Add the missing details before saving this ${documentLabel}.`,
+  };
+}

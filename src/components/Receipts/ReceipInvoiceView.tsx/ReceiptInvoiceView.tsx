@@ -326,6 +326,7 @@ export default function ReceiptInvoiceView({
           open={customerEditOpen}
           onOpenChange={setCustomerEditOpen}
           customerToEdit={receipt.customer as any}
+          requireAddress
         />
       )}
 

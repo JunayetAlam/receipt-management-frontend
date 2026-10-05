@@ -28,6 +28,8 @@ interface CustomerFormModalProps {
   onOpenChange: (open: boolean) => void;
   customerToEdit?: TCustomer | null;
   onSuccess?: (customer: TCustomer) => void;
+  /** Make address mandatory (used when completing details for a receipt / return invoice). */
+  requireAddress?: boolean;
 }
 
 export default function CustomerFormModal({
@@ -35,6 +37,7 @@ export default function CustomerFormModal({
   onOpenChange,
   customerToEdit,
   onSuccess,
+  requireAddress = false,
 }: CustomerFormModalProps) {
   const isEditing = Boolean(customerToEdit);
   const [createCustomer, { isLoading: isCreating }] = useCreateCustomerMutation();
@@ -91,6 +94,9 @@ export default function CustomerFormModal({
     }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errs.email = "Please enter a valid email address";
+    }
+    if (requireAddress && !address.trim()) {
+      errs.address = "Address is required";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -338,7 +344,15 @@ export default function CustomerFormModal({
 
           {/* Address */}
           <div className="space-y-1.5">
-            <Label htmlFor="customer-address">Address (Optional)</Label>
+            <Label htmlFor="customer-address">
+              {requireAddress ? (
+                <>
+                  Address <span className="text-destructive">*</span>
+                </>
+              ) : (
+                "Address (Optional)"
+              )}
+            </Label>
             <Textarea
               id="customer-address"
               placeholder="e.g. House #12, Road #4, Dhanmondi, Dhaka"
@@ -346,6 +360,9 @@ export default function CustomerFormModal({
               value={address}
               onChange={(e) => setAddress(e.target.value)}
             />
+            {errors.address && (
+              <p className="text-xs text-destructive">{errors.address}</p>
+            )}
           </div>
 
           {/* Actions */}
