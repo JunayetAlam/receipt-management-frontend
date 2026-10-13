@@ -10,6 +10,7 @@ export default function RIV_Footer({
   contactPhones,
   contactLocations,
   contactEmails,
+  copyType,
 }: {
   isLastPage: boolean;
   pageNo: number;
@@ -17,6 +18,7 @@ export default function RIV_Footer({
   contactPhones: string;
   contactLocations: string;
   contactEmails: string;
+  copyType?: string;
 }) {
   const [printTime, setPrintTime] = useState("");
 
@@ -82,7 +84,7 @@ export default function RIV_Footer({
             </span>
           )}
           <span className="font-semibold text-primary-foreground whitespace-nowrap">
-            Page {pageNo} of {pageCount}
+            {copyType ? `${copyType} • ` : ""}Page {pageNo} of {pageCount}
           </span>
         </div>
       </div>

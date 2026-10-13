@@ -28,6 +28,7 @@ import {
   MoreVertical,
   ExternalLink,
   Eye,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,7 +38,7 @@ import {
   useRestoreCustomerMutation,
 } from "@/redux/api/customerApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
-import { TCustomer } from "@/types";
+import { TCustomer, TCustomerType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,7 @@ export default function CustomerTable() {
   const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [page, setPage] = useState(1);
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<"ALL" | "CUSTOMER" | "RETAILER">("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortIndex, setSortIndex] = useState("0");
 
@@ -154,6 +156,10 @@ export default function CustomerTable() {
 
   if (searchTerm.trim()) {
     queryParams.searchTerm = searchTerm.trim();
+  }
+
+  if (customerTypeFilter !== "ALL") {
+    queryParams.customerType = customerTypeFilter;
   }
 
   // Tab Filtering logic
@@ -223,6 +229,7 @@ export default function CustomerTable() {
 
   const handleResetFilters = () => {
     setSearchTerm("");
+    setCustomerTypeFilter("ALL");
     setSortIndex("0");
     setPage(1);
   };
@@ -232,20 +239,76 @@ export default function CustomerTable() {
     params.set("sortBy", selectedSort.sortBy);
     params.set("sortOrder", selectedSort.sortOrder);
     if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
+    if (customerTypeFilter !== "ALL") params.set("customerType", customerTypeFilter);
     if (activeTab === "ARCHIVED") params.set("isDeleted", "true");
     else params.set("isDeleted", "false");
     if (activeTab === "PENDING_DELETION") {
       params.set("isDeleteRequested", "true");
     }
     return `/customers/export?${params.toString()}`;
-  }, [selectedSort, searchTerm, activeTab]);
+  }, [selectedSort, searchTerm, activeTab, customerTypeFilter]);
 
   return (
     <div className="space-y-4">
-      {/* Top Header Controls: Tabs & Add Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Navigation Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs">
+      {/* Top Header Controls: Customer Type Tabs, Status Tabs & Actions */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* Customer Type Tabs: All | Customer | Retailer */}
+        <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs shadow-2xs">
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("ALL");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "ALL"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Users className="size-3.5" />
+            All
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("CUSTOMER");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "CUSTOMER"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <User className="size-3.5" />
+            Customer
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("RETAILER");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "RETAILER"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Store className="size-3.5" />
+            Retailer
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Navigation Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs">
           <button
             type="button"
             onClick={() => {
@@ -355,6 +418,7 @@ export default function CustomerTable() {
           </Button>
         </div>
       </div>
+    </div>
 
       {/* Filter & Search Bar */}
       <div className="rounded-xl border border-border bg-card p-4 shadow-xs space-y-3">
@@ -531,6 +595,15 @@ export default function CustomerTable() {
                                   {customer.name}
                                 </span>
                                 <ExternalLink className="size-3 text-muted-foreground/60 group-hover:text-primary transition-colors shrink-0" />
+                                {customer.customerType === "RETAILER" ? (
+                                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 px-1.5 font-medium">
+                                    Retailer
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px] py-0 px-1.5 font-normal">
+                                    Customer
+                                  </Badge>
+                                )}
                                 {customer.isDeleteRequested && (
                                   <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0 px-1.5 font-normal">
                                     Pending Deletion
@@ -873,6 +946,15 @@ export default function CustomerTable() {
                                 <ExternalLink className="size-3 text-muted-foreground/60 group-hover:text-primary transition-colors shrink-0" />
                               </div>
                               <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                {customer.customerType === "RETAILER" ? (
+                                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[9px] py-0 px-1 font-medium">
+                                    Retailer
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[9px] py-0 px-1 font-normal">
+                                    Customer
+                                  </Badge>
+                                )}
                                 {customer.isDeleteRequested && (
                                   <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[9px] py-0 px-1 font-normal">
                                     Pending Delete

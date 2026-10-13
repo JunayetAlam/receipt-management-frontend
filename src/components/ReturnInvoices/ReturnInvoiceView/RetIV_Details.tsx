@@ -15,7 +15,7 @@ export default function RetIV_Details({
 }) {
   const customer = returnInvoice.receipt?.customer;
 
-  const shopName = shop?.name || "Rupayon Biddut";
+  const shopName = shop?.name || "Sanowar Electric";
 
   const customerPhone = [customer?.countryCode, customer?.phoneNumber]
     .filter(Boolean)

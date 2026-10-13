@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   description:
-    "Sanowar Electric shop management system for products, customers, receipts, and sales reports.",
+    "Sanowar Electric - Electrical & Electronics Store. Quality electrical cables, switches, lighting fixtures, appliances, and accessories.",
 };
 
 export default function CommonLayout({

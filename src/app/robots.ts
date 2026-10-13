@@ -1,8 +1,12 @@
 import type { MetadataRoute } from "next";
+import { siteConfig } from "@/lib/site";
 
-// Private business tool: block all crawlers
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", disallow: "/" },
+    rules: {
+      userAgent: "*",
+      allow: "/",
+    },
+    sitemap: `${siteConfig.url}/sitemap.xml`,
   };
 }

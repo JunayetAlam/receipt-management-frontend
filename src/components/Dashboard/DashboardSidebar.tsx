@@ -215,17 +215,17 @@ export default function DashboardSidebar() {
           <Link
             href="/dashboard"
             className={cn("block min-w-0", collapsed && "flex justify-center")}
-            aria-label={shop?.name || "Receipt Management"}
+            aria-label={shop?.name || "Sanowar Electric"}
           >
             {collapsed ? (
               <Store className="size-5" />
             ) : (
               <>
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">
-                  {shop?.name || "Receipt Management"}
+                  {shop?.name || "Sanowar Electric"}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {shop?.proprietor || "Store Management"}
+                  {shop?.proprietor || "Electrical & Electronics Store"}
                 </p>
               </>
             )}

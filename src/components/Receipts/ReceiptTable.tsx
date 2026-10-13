@@ -19,6 +19,9 @@ import {
   Printer,
   FileText,
   Activity,
+  Users,
+  User,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -98,6 +101,9 @@ export default function ReceiptTable() {
   // Filters & State
   const [activeTab, setActiveTab] = useState<TabType>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<
+    "ALL" | "CUSTOMER" | "RETAILER"
+  >("ALL");
   const [sortOption, setSortOption] = useState(SORT_OPTIONS[0]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -129,6 +135,10 @@ export default function ReceiptTable() {
 
   if (searchTerm.trim()) {
     queryParams.searchTerm = searchTerm.trim();
+  }
+
+  if (customerTypeFilter !== "ALL") {
+    queryParams.customerType = customerTypeFilter;
   }
 
   // Tab Filtering
@@ -240,7 +250,59 @@ export default function ReceiptTable() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Customer Type Tabs: All | Customer | Retailer */}
+          <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs shadow-2xs">
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("ALL");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "ALL"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Users className="size-3.5" />
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("CUSTOMER");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "CUSTOMER"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <User className="size-3.5" />
+              Customer
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("RETAILER");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "RETAILER"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Store className="size-3.5" />
+              Retailer
+            </button>
+          </div>
+
           <Link href="/receipts/create">
             <Button
               size="sm"
@@ -432,9 +494,20 @@ export default function ReceiptTable() {
                     {/* Customer Info */}
                     <TableCell>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-foreground truncate max-w-[150px]">
-                          {receipt.customer?.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-foreground truncate max-w-[150px]">
+                            {receipt.customer?.name}
+                          </span>
+                          {receipt.customer?.customerType === "RETAILER" ? (
+                            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 px-1.5 font-medium">
+                              Retailer
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px] py-0 px-1.5 font-normal">
+                              Customer
+                            </Badge>
+                          )}
+                        </div>
                         <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
                           <Phone className="size-3 text-muted-foreground/70" />
                           {receipt.customer?.countryCode || "+880"}{" "}

@@ -9,9 +9,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
 function filterLabelFromParams(params: URLSearchParams) {
-  if (params.get("isDeleted") === "true") return "Archived";
-  if (params.get("isDeleteRequested") === "true") return "Pending Deletion";
-  return "All Active";
+  const parts: string[] = [];
+  const customerType = params.get("customerType");
+  if (customerType === "CUSTOMER") parts.push("Customers");
+  else if (customerType === "RETAILER") parts.push("Retailers");
+
+  if (params.get("isDeleted") === "true") parts.push("Archived");
+  else if (params.get("isDeleteRequested") === "true") parts.push("Pending Deletion");
+  else parts.push("Active");
+
+  return parts.join(" • ") || "All Active";
 }
 
 function ExportLoading() {
@@ -35,6 +42,11 @@ function CustomerExportPageInner() {
       sortBy: searchParams.get("sortBy") || "createdAt",
       sortOrder: searchParams.get("sortOrder") || "desc",
     };
+
+    const customerType = searchParams.get("customerType");
+    if (customerType === "CUSTOMER" || customerType === "RETAILER") {
+      params.customerType = customerType;
+    }
 
     const searchTerm = searchParams.get("searchTerm")?.trim();
     if (searchTerm) params.searchTerm = searchTerm;

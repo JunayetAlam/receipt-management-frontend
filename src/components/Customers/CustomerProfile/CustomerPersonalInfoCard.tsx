@@ -105,6 +105,15 @@ export default function CustomerPersonalInfoCard({
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
                   {customer.name}
                 </h2>
+                {customer.customerType === "RETAILER" ? (
+                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 px-2 font-medium">
+                    Retailer
+                  </Badge>
+                ) : (
+                  <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px] py-0 px-2 font-normal">
+                    Customer
+                  </Badge>
+                )}
                 {customer.isDeleted ? (
                   <Badge
                     variant="destructive"

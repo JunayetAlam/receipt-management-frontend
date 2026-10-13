@@ -15,6 +15,9 @@ import {
   FileText,
   Undo2,
   Activity,
+  Users,
+  User,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -79,6 +82,9 @@ export default function ReturnInvoiceTable() {
   const [isAdmin] = useIsAdmin();
   const [activeTab, setActiveTab] = useState<TabType>("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<
+    "ALL" | "CUSTOMER" | "RETAILER"
+  >("ALL");
   const [sortOption, setSortOption] = useState(SORT_OPTIONS[0]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -103,6 +109,9 @@ export default function ReturnInvoiceTable() {
     sortOrder: sortOption.sortOrder,
   };
   if (searchTerm.trim()) queryParams.searchTerm = searchTerm.trim();
+  if (customerTypeFilter !== "ALL") {
+    queryParams.customerType = customerTypeFilter;
+  }
 
   if (activeTab === "ALL") queryParams.isDeleted = false;
   else if (activeTab === "PENDING") {
@@ -186,11 +195,65 @@ export default function ReturnInvoiceTable() {
             </SelectContent>
           </Select>
         </div>
-        <Link href="/return-invoices/create">
-          <Button size="sm" className="gap-1.5 font-semibold text-xs shadow-xs">
-            <Plus className="size-4" /> Create Return Invoice
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Customer Type Tabs: All | Customer | Retailer */}
+          <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs shadow-2xs">
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("ALL");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "ALL"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Users className="size-3.5" />
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("CUSTOMER");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "CUSTOMER"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <User className="size-3.5" />
+              Customer
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomerTypeFilter("RETAILER");
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+                customerTypeFilter === "RETAILER"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Store className="size-3.5" />
+              Retailer
+            </button>
+          </div>
+
+          <Link href="/return-invoices/create">
+            <Button size="sm" className="gap-1.5 font-semibold text-xs shadow-xs">
+              <Plus className="size-4" /> Create Return Invoice
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-1 border-b border-border overflow-x-auto text-xs font-medium">
@@ -283,7 +346,22 @@ export default function ReturnInvoiceTable() {
                     )}
                   </TableCell>
                   <TableCell className="text-xs">
-                    {row.receipt?.customer?.name || "—"}
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-foreground">
+                          {row.receipt?.customer?.name || "—"}
+                        </span>
+                        {row.receipt?.customer?.customerType === "RETAILER" ? (
+                          <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 px-1.5 font-medium">
+                            Retailer
+                          </Badge>
+                        ) : row.receipt?.customer?.customerType === "CUSTOMER" ? (
+                          <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px] py-0 px-1.5 font-normal">
+                            Customer
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-xs font-mono">
                     {row._count?.items ?? row.items?.length ?? "—"}

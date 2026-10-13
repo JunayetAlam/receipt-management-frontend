@@ -38,6 +38,11 @@ function CustomerTransactionExportPageInner() {
       sortOrder: searchParams.get("sortOrder") || "desc",
     };
 
+    const customerType = searchParams.get("customerType");
+    if (customerType && customerType !== "ALL") {
+      params.customerType = customerType;
+    }
+
     const customerId = searchParams.get("customerId");
     if (customerId && customerId !== "ALL") params.customerId = customerId;
 
@@ -57,6 +62,7 @@ function CustomerTransactionExportPageInner() {
   }, [searchParams]);
 
   const customerId = searchParams.get("customerId");
+  const customerType = searchParams.get("customerType");
   const type = searchParams.get("type");
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
@@ -82,7 +88,9 @@ function CustomerTransactionExportPageInner() {
       ? `Until ${endDate}`
       : undefined;
 
-  const filterLabel = filterTypeLabel(type);
+  let filterLabel = filterTypeLabel(type);
+  if (customerType === "CUSTOMER") filterLabel += " • Customers";
+  else if (customerType === "RETAILER") filterLabel += " • Retailers";
 
   const { data, isLoading, isError } = useGetAllCustomerTransactionsQuery(queryParams);
   const transactions = data?.data || [];

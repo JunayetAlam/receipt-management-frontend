@@ -33,6 +33,14 @@ export default function ReceiptStyle() {
           padding: 0 !important;
           gap: 0 !important;
         }
+        .invoice-copy-group {
+          display: flex !important;
+          flex-direction: column !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          gap: 0 !important;
+        }
         .invoice-page {
           width: 210mm !important;
           height: 297mm !important;
@@ -45,7 +53,8 @@ export default function ReceiptStyle() {
           page-break-after: always;
           break-after: page;
         }
-        .invoice-page:last-child {
+        .invoice-copy-group:last-of-type > .invoice-page:last-child,
+        #a4-invoice-sheet > .invoice-page:last-child {
           page-break-after: auto;
           break-after: auto;
         }

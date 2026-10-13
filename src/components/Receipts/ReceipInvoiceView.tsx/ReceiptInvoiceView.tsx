@@ -74,6 +74,7 @@ export default function ReceiptInvoiceView({
   const lastFooterProbeRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState<InvoiceMetrics>(FALLBACK_METRICS);
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"customer" | "shop">("customer");
   const didAutoPrint = useRef(false);
 
   const { data: shopResponse, isLoading: isShopLoading } =
@@ -90,7 +91,7 @@ export default function ReceiptInvoiceView({
     window.print();
   };
 
-  const shopName = shop?.name || "Rupayon Biddut";
+  const shopName = shop?.name || "Sanowar Electric";
 
   const contactPhones =
     shop?.phoneNumbers && shop.phoneNumbers.length > 0
@@ -110,7 +111,7 @@ export default function ReceiptInvoiceView({
     shop?.emails && shop.emails.length > 0
       ? shop.emails.join(", ")
       : !shop
-        ? "contact@rupayonbiddut.com"
+        ? "contact@sanowarelectric.store"
         : "";
 
   const probeItem: TReceiptItem = useMemo(() => {
@@ -256,9 +257,35 @@ export default function ReceiptInvoiceView({
           <span className="hidden sm:inline">Go Back</span>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tabs for Customer Copy / Shop Copy */}
+          <div className="inline-flex items-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-0.5 shadow-xs">
+            <button
+              type="button"
+              onClick={() => setActiveTab("customer")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                activeTab === "customer"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              Customer Copy
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("shop")}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                activeTab === "shop"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              Shop Copy
+            </button>
+          </div>
+
           <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
-            {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
+            {pageCount} {pageCount === 1 ? "Page" : "Pages"} × 2 Copies
           </span>
           {printValidation.isPrintable ? (
             <Button
@@ -389,65 +416,141 @@ export default function ReceiptInvoiceView({
         id="a4-invoice-sheet"
         className="flex flex-col items-center gap-6 print:gap-0"
       >
-        {pages.map((page) => {
-          const footerHeight = page.isLast
-            ? metrics.lastFooterHeight
-            : metrics.compactFooterHeight;
+        {/* Customer Copy */}
+        <div
+          className={`invoice-copy-group flex-col items-center gap-6 print:gap-0 w-full ${
+            activeTab === "customer" ? "flex" : "hidden print:flex"
+          }`}
+        >
+          {pages.map((page) => {
+            const footerHeight = page.isLast
+              ? metrics.lastFooterHeight
+              : metrics.compactFooterHeight;
 
-          return (
-            <div
-              key={page.pageNo}
-              className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none print:max-w-none overflow-hidden"
-              style={{
-                width: "210mm",
-                height: "297mm",
-                boxSizing: "border-box",
-              }}
-            >
+            return (
               <div
-                className="px-10 pt-10"
+                key={`customer-${page.pageNo}`}
+                className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none print:max-w-none overflow-hidden"
                 style={{
-                  paddingBottom: footerHeight + INVOICE_CONTENT_FOOTER_GAP,
+                  width: "210mm",
+                  height: "297mm",
+                  boxSizing: "border-box",
                 }}
               >
-                {page.pageNo === 1 ? (
-                  <RIV_Details shop={shop} receipt={receipt} />
-                ) : (
-                  <RIV_ContinuationBar
-                    shopName={shopName}
-                    receipt={receipt}
-                    pageNo={page.pageNo}
-                    pageCount={pageCount}
-                  />
-                )}
+                <div
+                  className="px-10 pt-10"
+                  style={{
+                    paddingBottom: footerHeight + INVOICE_CONTENT_FOOTER_GAP,
+                  }}
+                >
+                  {page.pageNo === 1 ? (
+                    <RIV_Details shop={shop} receipt={receipt} />
+                  ) : (
+                    <RIV_ContinuationBar
+                      shopName={shopName}
+                      receipt={receipt}
+                      pageNo={page.pageNo}
+                      pageCount={pageCount}
+                    />
+                  )}
 
-                <div className="pt-4">
-                  <RIV_ProductTable
-                    items={page.items}
-                    startIndex={page.startIndex}
-                    broughtForward={page.broughtForward}
-                    carriedForward={page.carriedForward}
-                    fromPage={page.pageNo - 1}
-                    toPage={page.pageNo + 1}
-                    showBroughtForward={page.showBroughtForward}
-                    showCarryForward={page.showCarryForward}
-                  />
+                  <div className="pt-4">
+                    <RIV_ProductTable
+                      items={page.items}
+                      startIndex={page.startIndex}
+                      broughtForward={page.broughtForward}
+                      carriedForward={page.carriedForward}
+                      fromPage={page.pageNo - 1}
+                      toPage={page.pageNo + 1}
+                      showBroughtForward={page.showBroughtForward}
+                      showCarryForward={page.showCarryForward}
+                    />
+                  </div>
+
+                  {page.showCalculation && <RIV_Calculation receipt={receipt} />}
                 </div>
 
-                {page.showCalculation && <RIV_Calculation receipt={receipt} />}
+                <div className="absolute left-0 right-0 bottom-0">
+                  <RIV_Footer
+                    isLastPage={page.isLast}
+                    pageNo={page.pageNo}
+                    pageCount={pageCount}
+                    copyType="Customer Copy"
+                    {...footerContacts}
+                  />
+                </div>
               </div>
+            );
+          })}
+        </div>
 
-              <div className="absolute left-0 right-0 bottom-0">
-                <RIV_Footer
-                  isLastPage={page.isLast}
-                  pageNo={page.pageNo}
-                  pageCount={pageCount}
-                  {...footerContacts}
-                />
+        {/* Shop Copy */}
+        <div
+          className={`invoice-copy-group flex-col items-center gap-6 print:gap-0 w-full ${
+            activeTab === "shop" ? "flex" : "hidden print:flex"
+          }`}
+        >
+          {pages.map((page) => {
+            const footerHeight = page.isLast
+              ? metrics.lastFooterHeight
+              : metrics.compactFooterHeight;
+
+            return (
+              <div
+                key={`shop-${page.pageNo}`}
+                className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none print:max-w-none overflow-hidden"
+                style={{
+                  width: "210mm",
+                  height: "297mm",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  className="px-10 pt-10"
+                  style={{
+                    paddingBottom: footerHeight + INVOICE_CONTENT_FOOTER_GAP,
+                  }}
+                >
+                  {page.pageNo === 1 ? (
+                    <RIV_Details shop={shop} receipt={receipt} />
+                  ) : (
+                    <RIV_ContinuationBar
+                      shopName={shopName}
+                      receipt={receipt}
+                      pageNo={page.pageNo}
+                      pageCount={pageCount}
+                    />
+                  )}
+
+                  <div className="pt-4">
+                    <RIV_ProductTable
+                      items={page.items}
+                      startIndex={page.startIndex}
+                      broughtForward={page.broughtForward}
+                      carriedForward={page.carriedForward}
+                      fromPage={page.pageNo - 1}
+                      toPage={page.pageNo + 1}
+                      showBroughtForward={page.showBroughtForward}
+                      showCarryForward={page.showCarryForward}
+                    />
+                  </div>
+
+                  {page.showCalculation && <RIV_Calculation receipt={receipt} />}
+                </div>
+
+                <div className="absolute left-0 right-0 bottom-0">
+                  <RIV_Footer
+                    isLastPage={page.isLast}
+                    pageNo={page.pageNo}
+                    pageCount={pageCount}
+                    copyType="Shop Copy"
+                    {...footerContacts}
+                  />
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       <ReceiptStyle />

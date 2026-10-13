@@ -19,6 +19,9 @@ import {
   MapPin,
   Phone,
   X,
+  Users,
+  User,
+  Store,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -83,6 +86,9 @@ export default function CustomerTransactionTable({
   hideStats?: boolean;
 } = {}) {
   const [activeTypeTab, setActiveTypeTab] = useState<TransactionTab>("ALL");
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<
+    "ALL" | "CUSTOMER" | "RETAILER"
+  >("ALL");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -125,6 +131,9 @@ export default function CustomerTransactionTable({
   if (searchTerm.trim()) {
     queryParams.searchTerm = searchTerm.trim();
   }
+  if (customerTypeFilter !== "ALL") {
+    queryParams.customerType = customerTypeFilter;
+  }
   if (selectedCustomerId !== "ALL") {
     queryParams.customerId = selectedCustomerId;
   }
@@ -151,6 +160,7 @@ export default function CustomerTransactionTable({
 
   const handleResetFilters = () => {
     setActiveTypeTab("ALL");
+    setCustomerTypeFilter("ALL");
     setSelectedCustomerId("ALL");
     setStartDate("");
     setEndDate("");
@@ -169,6 +179,8 @@ export default function CustomerTransactionTable({
     params.set("sortBy", selectedSort.sortBy);
     params.set("sortOrder", selectedSort.sortOrder);
     if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
+    if (customerTypeFilter !== "ALL")
+      params.set("customerType", customerTypeFilter);
     if (selectedCustomerId !== "ALL")
       params.set("customerId", selectedCustomerId);
     if (activeTypeTab !== "ALL") params.set("type", activeTypeTab);
@@ -178,6 +190,7 @@ export default function CustomerTransactionTable({
   }, [
     selectedSort,
     searchTerm,
+    customerTypeFilter,
     selectedCustomerId,
     activeTypeTab,
     startDate,
@@ -188,6 +201,7 @@ export default function CustomerTransactionTable({
 
   const isFiltersActive =
     activeTypeTab !== "ALL" ||
+    customerTypeFilter !== "ALL" ||
     selectedCustomerId !== "ALL" ||
     startDate !== "" ||
     endDate !== "" ||
@@ -206,43 +220,98 @@ export default function CustomerTransactionTable({
             ...(startDate ? { startDate } : {}),
             ...(endDate ? { endDate } : {}),
             ...(activeTypeTab !== "ALL" ? { type: activeTypeTab } : {}),
+            ...(customerTypeFilter !== "ALL"
+              ? { customerType: customerTypeFilter }
+              : {}),
           }}
         />
       )}
 
-      {/* 2. Top Header Controls: Filter Tabs & Export Button */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Type Filter Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs">
-          {(
-            [
-              { label: "All Transactions", value: "ALL" },
-              { label: "Receipts / Sales", value: "RECEIPT" },
-              { label: "Cash Payments", value: "PAYMENT" },
-              { label: "Return Invoices", value: "RETURN_INVOICE" },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => {
-                setActiveTypeTab(tab.value);
-                setPage(1);
-              }}
-              className={cn(
-                "rounded-md px-3 py-1.5 font-medium transition-colors",
-                activeTypeTab === tab.value
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* 2. Top Header Controls: Customer Type Tabs, Filter Tabs & Export Button */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* Customer Type Tabs: All | Customer | Retailer */}
+        <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1 text-xs shadow-2xs self-start">
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("ALL");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "ALL"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Users className="size-3.5" />
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("CUSTOMER");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "CUSTOMER"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <User className="size-3.5" />
+            Customer
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCustomerTypeFilter("RETAILER");
+              setPage(1);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
+              customerTypeFilter === "RETAILER"
+                ? "bg-background text-foreground shadow-xs font-semibold"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Store className="size-3.5" />
+            Retailer
+          </button>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Type Filter Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1 text-xs">
+            {(
+              [
+                { label: "All Transactions", value: "ALL" },
+                { label: "Receipts / Sales", value: "RECEIPT" },
+                { label: "Cash Payments", value: "PAYMENT" },
+                { label: "Return Invoices", value: "RETURN_INVOICE" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => {
+                  setActiveTypeTab(tab.value);
+                  setPage(1);
+                }}
+                className={cn(
+                  "rounded-md px-3 py-1.5 font-medium transition-colors",
+                  activeTypeTab === tab.value
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Action Controls */}
           <Button
             asChild
             variant="outline"
@@ -443,12 +512,15 @@ export default function CustomerTransactionTable({
                     <h2 className="text-base font-bold text-foreground truncate">
                       {selectedCustomer.name}
                     </h2>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-semibold uppercase tracking-wider py-0"
-                    >
-                      Customer Details
-                    </Badge>
+                    {selectedCustomer.customerType === "RETAILER" ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px] py-0 px-1.5 font-medium">
+                        Retailer
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px] py-0 px-1.5 font-normal">
+                        Customer
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -613,12 +685,23 @@ export default function CustomerTransactionTable({
                       {!selectedCustomer && (
                         <TableCell className="py-2.5">
                           <div className="space-y-0.5 max-w-[220px]">
-                            <p
-                              className="font-semibold text-foreground truncate"
-                              title={tx.customer?.name}
-                            >
-                              {tx.customer?.name || "Walk-in Customer"}
-                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p
+                                className="font-semibold text-foreground truncate"
+                                title={tx.customer?.name}
+                              >
+                                {tx.customer?.name || "Walk-in Customer"}
+                              </p>
+                              {tx.customer?.customerType === "RETAILER" ? (
+                                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[9px] py-0 px-1 font-medium">
+                                  Retailer
+                                </Badge>
+                              ) : tx.customer?.customerType === "CUSTOMER" ? (
+                                <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[9px] py-0 px-1 font-normal">
+                                  Customer
+                                </Badge>
+                              ) : null}
+                            </div>
                             {tx.customer?.phoneNumber && (
                               <p className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
                                 <Phone className="size-3 text-muted-foreground/70 shrink-0" />

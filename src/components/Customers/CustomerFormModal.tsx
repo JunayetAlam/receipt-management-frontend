@@ -18,10 +18,11 @@ import {
   useUpdateCustomerMutation,
 } from "@/redux/api/customerApi";
 import { useUploadAssetMutation } from "@/redux/api/assestApi";
-import { TCustomer } from "@/types";
-import { UserPlus, UserCheck, Camera, Trash2, Loader2 } from "lucide-react";
+import { TCustomer, TCustomerType } from "@/types";
+import { UserPlus, UserCheck, Camera, Trash2, Loader2, Store, User } from "lucide-react";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
+import { cn } from "@/lib/utils";
 
 interface CustomerFormModalProps {
   open: boolean;
@@ -44,6 +45,7 @@ export default function CustomerFormModal({
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
   const [uploadAsset, { isLoading: isUploadingImage }] = useUploadAssetMutation();
 
+  const [customerType, setCustomerType] = useState<TCustomerType>("CUSTOMER");
   const [name, setName] = useState("");
   const [countryCode, setCountryCode] = useState("+880");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -55,6 +57,7 @@ export default function CustomerFormModal({
 
   useEffect(() => {
     if (customerToEdit) {
+      setCustomerType(customerToEdit.customerType || "CUSTOMER");
       setName(customerToEdit.name || "");
       setCountryCode(customerToEdit.countryCode || "+880");
       setPhoneNumber(customerToEdit.phoneNumber || "");
@@ -64,6 +67,7 @@ export default function CustomerFormModal({
       setAddress(customerToEdit.address || "");
       setErrors({});
     } else {
+      setCustomerType("CUSTOMER");
       setName("");
       setCountryCode("+880");
       setPhoneNumber("");
@@ -149,6 +153,7 @@ export default function CustomerFormModal({
       image: image.trim() || null,
       email: email.trim() || null,
       address: address.trim() || null,
+      customerType,
     };
 
     try {
@@ -243,6 +248,41 @@ export default function CustomerFormModal({
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground">JPG, PNG or WEBP (Max 5MB)</p>
+            </div>
+          </div>
+
+          {/* Customer Type Selector */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Customer Type
+            </Label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-muted/60 rounded-lg border border-border/60">
+              <button
+                type="button"
+                onClick={() => setCustomerType("CUSTOMER")}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                  customerType === "CUSTOMER"
+                    ? "bg-background text-foreground shadow-xs border border-border/80"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <User className="size-3.5" />
+                Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomerType("RETAILER")}
+                className={cn(
+                  "flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                  customerType === "RETAILER"
+                    ? "bg-background text-foreground shadow-xs border border-border/80"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Store className="size-3.5" />
+                Retailer
+              </button>
             </div>
           </div>
 

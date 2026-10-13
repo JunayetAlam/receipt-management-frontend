@@ -3,7 +3,7 @@
 import React, { useId, useMemo, useEffect, useState } from "react";
 import Select from "react-select";
 import { TCustomer } from "@/types";
-import { Users, User } from "lucide-react";
+import { Users, User, Store } from "lucide-react";
 
 export interface CustomerFilterOption {
   value: string;
@@ -127,7 +127,11 @@ export default function CustomerFilterSelect({
             const cust = option.customer;
             return (
               <div className="flex items-center gap-1.5 text-xs text-foreground font-medium truncate">
-                <User className="size-3.5 text-muted-foreground shrink-0" />
+                {cust.customerType === "RETAILER" ? (
+                  <Store className="size-3.5 text-emerald-600 shrink-0" />
+                ) : (
+                  <User className="size-3.5 text-muted-foreground shrink-0" />
+                )}
                 <span className="truncate">{cust.name}</span>
                 <span className="text-muted-foreground font-mono text-[11px] shrink-0">
                   ({cust.phoneNumber})
@@ -148,9 +152,20 @@ export default function CustomerFilterSelect({
           const cust = option.customer;
           return (
             <div className="flex items-center justify-between py-0.5 gap-2 text-xs">
-              <span className="font-medium text-foreground truncate">
-                {cust.name}
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {cust.customerType === "RETAILER" ? (
+                  <span className="text-[10px] px-1 py-0 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-medium shrink-0">
+                    Retailer
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1 py-0 rounded bg-sky-500/10 text-sky-700 dark:text-sky-300 font-normal shrink-0">
+                    Customer
+                  </span>
+                )}
+                <span className="font-medium text-foreground truncate">
+                  {cust.name}
+                </span>
+              </div>
               <span className="text-[11px] text-muted-foreground font-mono shrink-0">
                 {cust.countryCode || "+880"} {cust.phoneNumber}
               </span>

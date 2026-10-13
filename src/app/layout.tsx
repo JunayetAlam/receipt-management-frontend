@@ -22,18 +22,18 @@ export const metadata: Metadata = {
   authors: [{ name: siteConfig.name, url: siteConfig.url }],
   creator: siteConfig.name,
   publisher: siteConfig.name,
-  category: "business",
+  category: "shopping",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: siteConfig.name,
+    title: `${siteConfig.name} | Electrical & Electronics Store`,
     description: siteConfig.description,
   },
   twitter: {
-    card: "summary",
-    title: siteConfig.name,
+    card: "summary_large_image",
+    title: `${siteConfig.name} | Electrical & Electronics Store`,
     description: siteConfig.description,
   },
   appleWebApp: {
@@ -46,11 +46,16 @@ export const metadata: Metadata = {
     email: false,
     address: false,
   },
-  // Private business tool: keep it out of search engines
   robots: {
-    index: false,
-    follow: false,
-    googleBot: { index: false, follow: false },
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

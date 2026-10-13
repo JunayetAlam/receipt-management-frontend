@@ -339,7 +339,7 @@ export default function PublicMaintenanceView() {
 
       {/* Subtle footer */}
       <footer className="mt-8 text-center text-xs text-muted-foreground">
-        <p>Receipt Management System &bull; All Rights Reserved</p>
+        <p>Sanowar Electric &bull; All Rights Reserved</p>
         <p className="mt-1 text-[11px] text-muted-foreground/60">
           Press <kbd className="rounded border bg-muted px-1 py-0.5 font-mono text-[10px]">Ctrl+Shift+M</kbd> for operator login
         </p>

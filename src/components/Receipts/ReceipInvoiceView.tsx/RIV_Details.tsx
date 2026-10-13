@@ -12,7 +12,7 @@ export default function RIV_Details({
   shop: TShop | null | undefined;
   receipt: TReceipt;
 }) {
-  const shopName = shop?.name || "Rupayon Biddut";
+  const shopName = shop?.name || "Sanowar Electric";
   const customerPhone = [
     receipt.customer?.countryCode,
     receipt.customer?.phoneNumber,

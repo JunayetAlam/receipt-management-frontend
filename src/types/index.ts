@@ -226,9 +226,12 @@ export interface TProductProfitReport {
   filters: TProductProfitFilters;
 }
 
+export type TCustomerType = "CUSTOMER" | "RETAILER";
+
 export interface TCustomer {
   id: string;
   name: string;
+  customerType?: TCustomerType;
   countryCode?: string;
   phoneNumber: string;
   whatsappNumber?: string | null;
@@ -329,6 +332,7 @@ export interface TReceipt {
   customer: {
     id: string;
     name: string;
+    customerType?: TCustomerType;
     countryCode?: string;
     phoneNumber: string;
     email?: string | null;
@@ -457,6 +461,7 @@ export interface TReturnInvoice extends TReturnInvoiceMoney {
     customer?: {
       id: string;
       name: string;
+      customerType?: TCustomerType;
       countryCode?: string;
       phoneNumber: string;
       email?: string | null;
@@ -573,6 +578,7 @@ export interface TCustomerTransaction {
   customer: {
     id: string;
     name: string;
+    customerType?: TCustomerType;
     phoneNumber: string;
     countryCode?: string;
     email?: string | null;
