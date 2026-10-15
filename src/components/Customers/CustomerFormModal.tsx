@@ -23,6 +23,7 @@ import { UserPlus, UserCheck, Camera, Trash2, Loader2, Store, User } from "lucid
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 import { cn } from "@/lib/utils";
+import { tabPillClass } from "@/lib/tabColors";
 
 interface CustomerFormModalProps {
   open: boolean;
@@ -262,9 +263,7 @@ export default function CustomerFormModal({
                 onClick={() => setCustomerType("CUSTOMER")}
                 className={cn(
                   "flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
-                  customerType === "CUSTOMER"
-                    ? "bg-background text-foreground shadow-xs border border-border/80"
-                    : "text-muted-foreground hover:text-foreground"
+                  tabPillClass("CUSTOMER", customerType === "CUSTOMER")
                 )}
               >
                 <User className="size-3.5" />
@@ -275,9 +274,7 @@ export default function CustomerFormModal({
                 onClick={() => setCustomerType("RETAILER")}
                 className={cn(
                   "flex items-center justify-center gap-2 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer",
-                  customerType === "RETAILER"
-                    ? "bg-background text-foreground shadow-xs border border-border/80"
-                    : "text-muted-foreground hover:text-foreground"
+                  tabPillClass("RETAILER", customerType === "RETAILER")
                 )}
               >
                 <Store className="size-3.5" />

@@ -54,38 +54,51 @@ export default function RIV_Footer({
           </div>
         </div>
       )}
-      <div className="bg-primary text-primary-foreground py-3.5 px-9 flex flex-wrap justify-between items-center gap-3 text-xs font-medium">
-        {contactPhones && (
-          <div className="flex items-center gap-2">
-            <Phone className="size-3.5 text-primary-foreground/90 shrink-0" />
-            <span>{contactPhones}</span>
+      <div className="bg-primary text-primary-foreground py-3.5 px-9 flex flex-col gap-2.5 text-xs font-medium">
+        <div className="grid grid-cols-3 items-center gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {contactPhones && (
+              <>
+                <Phone className="size-3.5 text-primary-foreground/90 shrink-0" />
+                <span className="truncate">{contactPhones}</span>
+              </>
+            )}
           </div>
-        )}
 
-        {contactLocations && (
-          <div className="flex items-center gap-2">
-            <MapPin className="size-3.5 text-primary-foreground/90 shrink-0" />
-            <span>{contactLocations}</span>
+          <div className="flex items-center justify-center gap-2 min-w-0">
+            {contactEmails && (
+              <>
+                <Mail className="size-3.5 text-primary-foreground/90 shrink-0" />
+                <span className="truncate">{contactEmails}</span>
+              </>
+            )}
           </div>
-        )}
 
-        {contactEmails && (
-          <div className="flex items-center gap-2">
-            <Mail className="size-3.5 text-primary-foreground/90 shrink-0" />
-            <span>{contactEmails}</span>
+          <div className="flex items-center justify-end gap-2 min-w-0">
+            {contactLocations && (
+              <>
+                <MapPin className="size-3.5 text-primary-foreground/90 shrink-0" />
+                <span className="text-right">{contactLocations}</span>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 ml-auto shrink-0 font-mono text-[11px]">
-          {printTime && (
-            <span className="text-primary-foreground/80 flex items-center gap-1.5 whitespace-nowrap">
-              <Clock className="size-3 opacity-70 shrink-0" />
-              <span>Printed: {printTime}</span>
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-3 font-mono text-[11px]">
           <span className="font-semibold text-primary-foreground whitespace-nowrap">
-            {copyType ? `${copyType} • ` : ""}Page {pageNo} of {pageCount}
+            {copyType}
           </span>
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            {printTime && (
+              <span className="text-primary-foreground/80 flex items-center gap-1.5 whitespace-nowrap">
+                <Clock className="size-3 opacity-70 shrink-0" />
+                <span>Printed: {printTime}</span>
+              </span>
+            )}
+            <span className="font-semibold text-primary-foreground whitespace-nowrap">
+              Page {pageNo} of {pageCount}
+            </span>
+          </div>
         </div>
       </div>
     </div>

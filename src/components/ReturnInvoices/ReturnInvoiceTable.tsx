@@ -51,6 +51,8 @@ import ReturnInvoiceStatusDropdown from "./ReturnInvoiceStatusDropdown";
 import ReturnInvoiceActivitySheet from "./ReturnInvoiceActivitySheet";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
+import { tabPillClass, tabUnderlineClass } from "@/lib/tabColors";
+import { getCustomerTypeRowTone } from "@/lib/customerRowTone";
 import {
   Table,
   TableBody,
@@ -206,9 +208,7 @@ export default function ReturnInvoiceTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "ALL"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("ALL", customerTypeFilter === "ALL"),
               )}
             >
               <Users className="size-3.5" />
@@ -222,9 +222,7 @@ export default function ReturnInvoiceTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "CUSTOMER"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("CUSTOMER", customerTypeFilter === "CUSTOMER"),
               )}
             >
               <User className="size-3.5" />
@@ -238,9 +236,7 @@ export default function ReturnInvoiceTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "RETAILER"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("RETAILER", customerTypeFilter === "RETAILER"),
               )}
             >
               <Store className="size-3.5" />
@@ -267,9 +263,7 @@ export default function ReturnInvoiceTable() {
             }}
             className={cn(
               "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap",
-              activeTab === tab.key
-                ? "border-primary text-primary font-semibold"
-                : "border-transparent text-muted-foreground hover:text-foreground",
+              tabUnderlineClass(tab.key, activeTab === tab.key),
             )}
           >
             {tab.icon}
@@ -319,7 +313,14 @@ export default function ReturnInvoiceTable() {
               </TableRow>
             ) : (
               rows.map((row, index) => (
-                <TableRow key={row.id} index={index}>
+                <TableRow
+                  key={row.id}
+                  className={getCustomerTypeRowTone(
+                    row.receipt?.customer?.customerType,
+                    index,
+                    customerTypeFilter,
+                  )}
+                >
                   <TableCell>
                     <div className="flex flex-col">
                       <Link

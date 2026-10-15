@@ -74,6 +74,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { tabPillClass } from "@/lib/tabColors";
+import { getCustomerTypeRowTone } from "@/lib/customerRowTone";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -262,9 +264,7 @@ export default function CustomerTable() {
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "ALL"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("ALL", customerTypeFilter === "ALL"),
             )}
           >
             <Users className="size-3.5" />
@@ -279,9 +279,7 @@ export default function CustomerTable() {
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "CUSTOMER"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("CUSTOMER", customerTypeFilter === "CUSTOMER"),
             )}
           >
             <User className="size-3.5" />
@@ -296,9 +294,7 @@ export default function CustomerTable() {
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "RETAILER"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("RETAILER", customerTypeFilter === "RETAILER"),
             )}
           >
             <Store className="size-3.5" />
@@ -317,9 +313,7 @@ export default function CustomerTable() {
             }}
             className={cn(
               "rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
-              activeTab === "ACTIVE"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("ACTIVE", activeTab === "ACTIVE"),
             )}
           >
             All Active
@@ -333,9 +327,7 @@ export default function CustomerTable() {
             }}
             className={cn(
               "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
-              activeTab === "PENDING_DELETION"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("PENDING_DELETION", activeTab === "PENDING_DELETION"),
             )}
           >
             <Clock className="size-3 text-rose-500" />
@@ -351,9 +343,7 @@ export default function CustomerTable() {
               }}
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
-                activeTab === "ARCHIVED"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("ARCHIVED", activeTab === "ARCHIVED"),
               )}
             >
               <Archive className="size-3 text-slate-500" />
@@ -372,9 +362,7 @@ export default function CustomerTable() {
               onClick={() => setViewMode("list")}
               className={cn(
                 "h-8 px-2.5 text-xs font-medium gap-1.5 cursor-pointer",
-                viewMode === "list"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("list", viewMode === "list"),
               )}
               title="List View"
             >
@@ -388,9 +376,7 @@ export default function CustomerTable() {
               onClick={() => setViewMode("grid")}
               className={cn(
                 "h-8 px-2.5 text-xs font-medium gap-1.5 cursor-pointer",
-                viewMode === "grid"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("grid", viewMode === "grid"),
               )}
               title="Grid View"
             >
@@ -561,9 +547,9 @@ export default function CustomerTable() {
                   return (
                     <TableRow
                       key={customer.id}
-                      index={index}
                       className={cn(
-                        "hover:bg-muted/50 transition-colors",
+                        "transition-colors",
+                        getCustomerTypeRowTone(customer.customerType, index, customerTypeFilter),
                         isFetching && "opacity-60",
                         customer.isDeleteRequested &&
                           "bg-amber-500/5 hover:bg-amber-500/10",
@@ -888,7 +874,7 @@ export default function CustomerTable() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {customers.map((customer) => {
+              {customers.map((customer, index) => {
                 const initials = customer.name
                   ? customer.name
                       .split(" ")
@@ -909,6 +895,7 @@ export default function CustomerTable() {
                     key={customer.id}
                     className={cn(
                       "overflow-hidden shadow-xs ring-border/60 hover:shadow-md hover:border-primary/50 transition-all flex flex-col justify-between border p-0",
+                      getCustomerTypeRowTone(customer.customerType, index, customerTypeFilter),
                       isFetching && "opacity-60",
                       customer.isDeleteRequested &&
                         "bg-amber-500/5 border-amber-500/30",

@@ -13,12 +13,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatSignedDue } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
+import {
+  statCardClass,
+  statIconClass,
+  statLabelClass,
+  type StatTone,
+} from "@/lib/statCardTone";
 
 interface StatItemProps {
   title: string;
   icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
+  tone: StatTone;
   due: number;
   deposit: number;
   isLoading: boolean;
@@ -28,15 +33,14 @@ interface StatItemProps {
 function PeriodStatCard({
   title,
   icon: Icon,
-  iconBg,
-  iconColor,
+  tone,
   due,
   deposit,
   isLoading,
   subtitle,
 }: StatItemProps) {
   return (
-    <Card className="shadow-xs ring-border/60 hover:shadow-sm transition-shadow">
+    <Card className={statCardClass(tone)}>
       <CardContent className="p-4 space-y-3">
         {/* Card Header */}
         <div className="flex items-center justify-between">
@@ -44,14 +48,13 @@ function PeriodStatCard({
             <div
               className={cn(
                 "flex size-8 shrink-0 items-center justify-center rounded-lg",
-                iconBg,
-                iconColor,
+                statIconClass(tone),
               )}
             >
               <Icon className="size-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate">
+              <p className={cn("text-xs font-semibold truncate", statLabelClass(tone))}>
                 {title}
               </p>
               {subtitle && (
@@ -143,8 +146,7 @@ export default function CustomerStatsCards() {
       <PeriodStatCard
         title="Today Amount"
         icon={CalendarClock}
-        iconBg="bg-blue-500/10"
-        iconColor="text-blue-600 dark:text-blue-400"
+        tone="blue"
         due={todayDue}
         deposit={todayDeposit}
         isLoading={isLoading}
@@ -154,8 +156,7 @@ export default function CustomerStatsCards() {
       <PeriodStatCard
         title="This Month Amount"
         icon={CalendarDays}
-        iconBg="bg-violet-500/10"
-        iconColor="text-violet-600 dark:text-violet-400"
+        tone="violet"
         due={thisMonthDue}
         deposit={thisMonthDeposit}
         isLoading={isLoading}
@@ -165,8 +166,7 @@ export default function CustomerStatsCards() {
       <PeriodStatCard
         title="This Year Amount"
         icon={CalendarRange}
-        iconBg="bg-amber-500/10"
-        iconColor="text-amber-600 dark:text-amber-400"
+        tone="amber"
         due={thisYearDue}
         deposit={thisYearDeposit}
         isLoading={isLoading}
@@ -177,8 +177,7 @@ export default function CustomerStatsCards() {
         title="Total Amount"
         subtitle={`${totalCustomers} active ${totalCustomers === 1 ? "customer" : "customers"}`}
         icon={Wallet}
-        iconBg="bg-primary/10"
-        iconColor="text-primary"
+        tone="teal"
         due={totalDue}
         deposit={totalDeposit}
         isLoading={isLoading}

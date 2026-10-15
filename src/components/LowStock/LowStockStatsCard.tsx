@@ -4,6 +4,11 @@ import { AlertTriangle, PackageX } from "lucide-react";
 import { useGetProductStatsQuery } from "@/redux/api/productApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  statCardClass,
+  statIconClass,
+  statLabelClass,
+} from "@/lib/statCardTone";
 
 export default function LowStockStatsCard({
   fallbackCount,
@@ -16,9 +21,9 @@ export default function LowStockStatsCard({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Card className="shadow-xs ring-border/60 border-amber-500/20 bg-amber-500/3">
+      <Card className={statCardClass("amber")}>
         <CardContent className="flex items-center gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${statIconClass("amber")}`}>
             {lowStockCount === 0 ? (
               <PackageX className="size-5" />
             ) : (
@@ -26,7 +31,7 @@ export default function LowStockStatsCard({
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className={`text-xs font-semibold ${statLabelClass("amber")}`}>
               Total Low Stock
             </p>
             {isLoading ? (

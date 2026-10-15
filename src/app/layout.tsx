@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { siteConfig } from "@/lib/site";
+import StarryBackground from "@/components/Global/StarryBackground";
 
 const nunito = Nunito({
   subsets: ["latin", "latin-ext"],
@@ -76,6 +77,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={nunito.variable}>
       <body className={`${nunito.className} antialiased`}>
+        <StarryBackground />
         <Providers>{children}</Providers>
       </body>
     </html>

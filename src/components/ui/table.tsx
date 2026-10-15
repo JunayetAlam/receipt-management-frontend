@@ -69,7 +69,7 @@ function TableRow({
       className={cn(
         "border border-border/50 transition-colors hover:bg-muted/40 has-aria-expanded:bg-muted/40 data-[state=selected]:bg-muted",
         className,
-        typeof index === "number" && index % 2 === 1 ? "bg-muted" : "",
+        typeof index === "number" && index % 2 === 1 ? "bg-muted/50" : "",
       )}
       {...props}
     />

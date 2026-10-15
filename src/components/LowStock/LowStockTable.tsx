@@ -46,6 +46,10 @@ const PRODUCT_UNITS: { label: string; value: string }[] = [
   { label: "Liter (L)", value: "LITER" },
   { label: "Box", value: "BOX" },
   { label: "Packet (pkt)", value: "PACKET" },
+  { label: "Dozen (dz)", value: "DOZEN" },
+  { label: "Carton (ctn)", value: "CARTON" },
+  { label: "Yard (yd)", value: "YARD" },
+  { label: "Feet (ft)", value: "FEET" },
   { label: "Meter (m)", value: "METER" },
   { label: "Other", value: "OTHER" },
 ];

@@ -3,6 +3,12 @@
 import { Package, ShoppingCart, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  statCardClass,
+  statIconClass,
+  statLabelClass,
+  type StatTone,
+} from "@/lib/statCardTone";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import type { TProductProfitSummary } from "@/types";
 
@@ -28,16 +34,19 @@ export default function SellReportSummaryCards({
       label: "Products",
       value: String(productCount),
       icon: Package,
+      tone: "indigo" as StatTone,
     },
     {
       label: "Sold Qty",
       value: formatQty(soldQty),
       icon: ShoppingCart,
+      tone: "orange" as StatTone,
     },
     {
       label: "Total Sales",
       value: formatInvoiceMoney(salesTotal),
       icon: Wallet,
+      tone: "emerald" as StatTone,
     },
   ];
 
@@ -46,13 +55,13 @@ export default function SellReportSummaryCards({
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.label} className="shadow-xs ring-border/60">
+          <Card key={card.label} className={statCardClass(card.tone)}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${statIconClass(card.tone)}`}>
                 <Icon className="size-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className={`text-xs font-semibold ${statLabelClass(card.tone)}`}>
                   {card.label}
                 </p>
                 {isLoading ? (

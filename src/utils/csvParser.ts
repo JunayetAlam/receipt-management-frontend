@@ -24,6 +24,10 @@ const VALID_UNITS: ProductUnit[] = [
   "BOX",
   "PACKET",
   "METER",
+  "DOZEN",
+  "YARD",
+  "FEET",
+  "CARTON",
   "OTHER",
 ];
 
@@ -44,6 +48,16 @@ const UNIT_MAP: Record<string, ProductUnit> = {
   pkt: "PACKET",
   meter: "METER",
   m: "METER",
+  dozen: "DOZEN",
+  dz: "DOZEN",
+  doz: "DOZEN",
+  yard: "YARD",
+  yd: "YARD",
+  feet: "FEET",
+  foot: "FEET",
+  ft: "FEET",
+  carton: "CARTON",
+  ctn: "CARTON",
   other: "OTHER",
 };
 

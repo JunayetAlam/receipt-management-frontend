@@ -47,6 +47,7 @@ import {
   formatSignedDue,
 } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
+import { tabPillClass } from "@/lib/tabColors";
 import CustomerTransactionDetailModal from "@/components/CustomerTransactions/CustomerTransactionDetailModal";
 
 const formatDateTime = (dateStr?: string) => {
@@ -194,9 +195,7 @@ export default function CustomerProfileTransactions({
                   }}
                   className={cn(
                     "px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
-                    activeTypeTab === tab.id
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
+                    tabPillClass(tab.id, activeTypeTab === tab.id)
                   )}
                 >
                   {tab.label}
@@ -227,9 +226,7 @@ export default function CustomerProfileTransactions({
                 onClick={() => setViewFormat("timeline")}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
-                  viewFormat === "timeline"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
+                  tabPillClass("timeline", viewFormat === "timeline")
                 )}
                 title="Timeline View"
               >
@@ -241,9 +238,7 @@ export default function CustomerProfileTransactions({
                 onClick={() => setViewFormat("table")}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
-                  viewFormat === "table"
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
+                  tabPillClass("table", viewFormat === "table")
                 )}
                 title="Table View"
               >

@@ -4,6 +4,12 @@ import { Package, ShoppingCart, Warehouse } from "lucide-react";
 import { useGetProductStatsQuery } from "@/redux/api/productApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  statCardClass,
+  statIconClass,
+  statLabelClass,
+  type StatTone,
+} from "@/lib/statCardTone";
 
 function formatQty(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -23,16 +29,19 @@ export default function ProductStatsCards() {
       label: "Total Product",
       value: String(totalProducts),
       icon: Package,
+      tone: "indigo" as StatTone,
     },
     {
       label: "Total Stock",
       value: formatQty(totalStock),
       icon: Warehouse,
+      tone: "teal" as StatTone,
     },
     {
       label: "Total Sold Qty",
       value: formatQty(totalSoldQty),
       icon: ShoppingCart,
+      tone: "emerald" as StatTone,
     },
   ];
 
@@ -41,13 +50,13 @@ export default function ProductStatsCards() {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.label} className="shadow-xs ring-border/60">
+          <Card key={card.label} className={statCardClass(card.tone)}>
             <CardContent className="flex items-center gap-4">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${statIconClass(card.tone)}`}>
                 <Icon className="size-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">
+                <p className={`text-xs font-semibold ${statLabelClass(card.tone)}`}>
                   {card.label}
                 </p>
                 {isLoading ? (

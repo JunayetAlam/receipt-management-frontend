@@ -7,7 +7,7 @@
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
-  --card: #ffffff;
+  --card: rgb(255 255 255 / 0.55);
   --card-foreground: #0a0a0a;
   --popover: #ffffff;
   --popover-foreground: #0a0a0a;
@@ -59,7 +59,7 @@
 .dark {
   --background: #0a0a0a;
   --foreground: #fafafa;
-  --card: #171717;
+  --card: rgb(23 23 23 / 0.6);
   --card-foreground: #fafafa;
   --popover: #171717;
   --popover-foreground: #fafafa;
@@ -367,4 +367,66 @@ input[type="number"] {
 
 .animate-navbar-marquee:hover {
   animation-play-state: paused;
+}
+
+/* Starry background (StarryBackground component) */
+@keyframes starry-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.15);
+  }
+}
+
+/* Smooth up-and-down float; `translate` keeps it separate from the twinkle scale */
+@keyframes starry-float {
+  0%,
+  100% {
+    translate: 0 -10px;
+  }
+  50% {
+    translate: 0 10px;
+  }
+}
+
+.starry-twinkle {
+  opacity: 0.5;
+  animation: starry-twinkle 4s ease-in-out infinite;
+}
+
+.starry-float {
+  animation: starry-float 8s ease-in-out infinite;
+  will-change: translate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starry-twinkle,
+  .starry-float {
+    animation: none;
+  }
+}
+
+/* Sidebar climber: the menu item the figure is standing on gets a soft gray/white
+   highlight. Kept in the base layer so the active item's own background still wins. */
+@layer base {
+  [data-climber-here] {
+    background-color: color-mix(in srgb, #ffffff 75%, #e5e7eb);
+    box-shadow:
+      inset 0 0 0 1px #e5e7eb,
+      0 1px 3px rgb(15 23 42 / 0.08);
+    transition:
+      background-color 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+
+  .dark [data-climber-here] {
+    background-color: rgb(255 255 255 / 0.08);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 1px 3px rgb(0 0 0 / 0.3);
+  }
 }

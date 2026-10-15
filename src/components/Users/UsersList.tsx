@@ -140,7 +140,7 @@ export default function UsersList() {
       {isLoading ? (
         <TableSkeleton headers={headers} showHeader={false} />
       ) : (
-        <div className="rounded-lg border border-border bg-background">
+        <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

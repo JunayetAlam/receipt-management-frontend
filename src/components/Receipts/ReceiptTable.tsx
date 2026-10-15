@@ -68,6 +68,8 @@ import ReceiptDeleteModal from "./ReceiptDeleteModal";
 import ReceiptStatusDropdown from "./ReceiptStatusDropdown";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
+import { tabPillClass, tabUnderlineClass } from "@/lib/tabColors";
+import { getCustomerTypeRowTone } from "@/lib/customerRowTone";
 import {
   Table,
   TableBody,
@@ -261,9 +263,7 @@ export default function ReceiptTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "ALL"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("ALL", customerTypeFilter === "ALL"),
               )}
             >
               <Users className="size-3.5" />
@@ -277,9 +277,7 @@ export default function ReceiptTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "CUSTOMER"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("CUSTOMER", customerTypeFilter === "CUSTOMER"),
               )}
             >
               <User className="size-3.5" />
@@ -293,9 +291,7 @@ export default function ReceiptTable() {
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-                customerTypeFilter === "RETAILER"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("RETAILER", customerTypeFilter === "RETAILER"),
               )}
             >
               <Store className="size-3.5" />
@@ -324,9 +320,7 @@ export default function ReceiptTable() {
           }}
           className={cn(
             "pb-2.5 px-3 border-b-2 transition-colors",
-            activeTab === "ALL"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+            tabUnderlineClass("ALL", activeTab === "ALL"),
           )}
         >
           All Receipts
@@ -339,9 +333,7 @@ export default function ReceiptTable() {
           }}
           className={cn(
             "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5",
-            activeTab === "PENDING"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+            tabUnderlineClass("PENDING", activeTab === "PENDING"),
           )}
         >
           <Clock className="size-3 text-amber-600" />
@@ -355,9 +347,7 @@ export default function ReceiptTable() {
           }}
           className={cn(
             "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5",
-            activeTab === "APPROVED"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+            tabUnderlineClass("APPROVED", activeTab === "APPROVED"),
           )}
         >
           <ShieldCheck className="size-3 text-emerald-600" />
@@ -371,9 +361,7 @@ export default function ReceiptTable() {
           }}
           className={cn(
             "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5",
-            activeTab === "PENDING_DELETION"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+            tabUnderlineClass("PENDING_DELETION", activeTab === "PENDING_DELETION"),
           )}
         >
           <ShieldAlert className="size-3 text-rose-600" />
@@ -387,9 +375,7 @@ export default function ReceiptTable() {
           }}
           className={cn(
             "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5",
-            activeTab === "ARCHIVED"
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+            tabUnderlineClass("ARCHIVED", activeTab === "ARCHIVED"),
           )}
         >
           <Archive className="size-3" />
@@ -471,8 +457,12 @@ export default function ReceiptTable() {
                 return (
                   <TableRow
                     key={receipt.id}
-                    index={index}
                     className={cn(
+                      getCustomerTypeRowTone(
+                        receipt.customer?.customerType,
+                        index,
+                        customerTypeFilter,
+                      ),
                       isFetching && "opacity-60",
                       receipt.isDeleteRequested &&
                         "bg-rose-500/5 hover:bg-rose-500/10",

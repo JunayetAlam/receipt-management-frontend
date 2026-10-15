@@ -113,6 +113,10 @@ export type ProductUnit =
   | "METER"
   | "BOX"
   | "PACKET"
+  | "DOZEN"
+  | "YARD"
+  | "FEET"
+  | "CARTON"
   | "OTHER";
 
 export interface TProduct {

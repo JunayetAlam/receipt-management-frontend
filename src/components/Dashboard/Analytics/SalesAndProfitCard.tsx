@@ -37,6 +37,23 @@ const compact = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+// One color per month bar; amber and teal are left out so bars stay distinct
+// from the Expenses and Profit lines.
+const SALES_BAR_COLORS = [
+  "#0ea5e9", // sky
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#f97316", // orange
+  "#6366f1", // indigo
+  "#84cc16", // lime
+  "#3b82f6", // blue
+  "#f43f5e", // rose
+  "#06b6d4", // cyan
+  "#d946ef", // fuchsia
+  "#a855f7", // purple
+  "#ef4444", // red
+];
+
 const salesChartConfig = {
   sales: { label: "Sales", color: "var(--chart-6)" },
   expenses: { label: "Expenses", color: "var(--chart-7)" },
@@ -165,7 +182,14 @@ export default function SalesAndProfitCard({
                     }
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="sales" fill="var(--color-sales)" radius={4} />
+                  <Bar dataKey="sales" fill="var(--color-sales)" radius={4}>
+                    {salesData?.map((point, index) => (
+                      <Cell
+                        key={point.month}
+                        fill={SALES_BAR_COLORS[index % SALES_BAR_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
                   <Line
                     dataKey="expenses"
                     type="monotone"

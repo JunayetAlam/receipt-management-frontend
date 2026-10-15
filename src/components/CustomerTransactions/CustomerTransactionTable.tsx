@@ -69,6 +69,8 @@ import {
   formatSignedDue,
 } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
+import { tabPillClass } from "@/lib/tabColors";
+import { getCustomerTypeRowTone } from "@/lib/customerRowTone";
 import CustomerTransactionStatsCards from "./CustomerTransactionStatsCards";
 import CustomerTransactionDetailModal from "./CustomerTransactionDetailModal";
 import CustomerFilterSelect from "./CustomerFilterSelect";
@@ -239,9 +241,7 @@ export default function CustomerTransactionTable({
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "ALL"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("ALL", customerTypeFilter === "ALL"),
             )}
           >
             <Users className="size-3.5" />
@@ -255,9 +255,7 @@ export default function CustomerTransactionTable({
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "CUSTOMER"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("CUSTOMER", customerTypeFilter === "CUSTOMER"),
             )}
           >
             <User className="size-3.5" />
@@ -271,9 +269,7 @@ export default function CustomerTransactionTable({
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
-              customerTypeFilter === "RETAILER"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("RETAILER", customerTypeFilter === "RETAILER"),
             )}
           >
             <Store className="size-3.5" />
@@ -301,9 +297,7 @@ export default function CustomerTransactionTable({
                 }}
                 className={cn(
                   "rounded-md px-3 py-1.5 font-medium transition-colors",
-                  activeTypeTab === tab.value
-                    ? "bg-background text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
+                  tabPillClass(tab.value, activeTypeTab === tab.value),
                 )}
               >
                 {tab.label}
@@ -665,8 +659,14 @@ export default function CustomerTransactionTable({
                   return (
                     <TableRow
                       key={tx.id}
-                      index={index}
-                      className="hover:bg-muted/40 transition-colors text-xs"
+                      className={cn(
+                        "transition-colors text-xs",
+                        getCustomerTypeRowTone(
+                          tx.customer?.customerType,
+                          index,
+                          customerTypeFilter,
+                        ),
+                      )}
                     >
                       {/* Date with time below */}
                       <TableCell className="py-2.5">

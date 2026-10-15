@@ -48,6 +48,7 @@ import ProductDeleteModal from "./ProductDeleteModal";
 import ConfirmPopup from "../Global/ConfirmPopup";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
+import { tabPillClass } from "@/lib/tabColors";
 import {
   Table,
   TableBody,
@@ -67,6 +68,10 @@ const PRODUCT_UNITS: { label: string; value: string }[] = [
   { label: "Liter (L)", value: "LITER" },
   { label: "Box", value: "BOX" },
   { label: "Packet (pkt)", value: "PACKET" },
+  { label: "Dozen (dz)", value: "DOZEN" },
+  { label: "Carton (ctn)", value: "CARTON" },
+  { label: "Yard (yd)", value: "YARD" },
+  { label: "Feet (ft)", value: "FEET" },
   { label: "Meter (m)", value: "METER" },
   { label: "Other", value: "OTHER" },
 ];
@@ -238,9 +243,7 @@ export default function ProductTable() {
             }}
             className={cn(
               "rounded-md px-3 py-1.5 font-medium transition-colors",
-              activeTab === "ACTIVE"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("ACTIVE", activeTab === "ACTIVE"),
             )}
           >
             All Active
@@ -254,9 +257,7 @@ export default function ProductTable() {
             }}
             className={cn(
               "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
-              activeTab === "PENDING_DELETION"
-                ? "bg-background text-foreground shadow-xs font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+              tabPillClass("PENDING_DELETION", activeTab === "PENDING_DELETION"),
             )}
           >
             <Clock className="size-3 text-rose-500" />
@@ -272,9 +273,7 @@ export default function ProductTable() {
               }}
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
-                activeTab === "ARCHIVED"
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
+                tabPillClass("ARCHIVED", activeTab === "ARCHIVED"),
               )}
             >
               <Archive className="size-3 text-slate-500" />

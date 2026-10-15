@@ -92,6 +92,10 @@ const PRODUCT_UNITS: ProductUnit[] = [
   "METER",
   "PACKET",
   "BOX",
+  "DOZEN",
+  "YARD",
+  "FEET",
+  "CARTON",
   "OTHER",
 ];
 

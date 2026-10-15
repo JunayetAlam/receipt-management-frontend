@@ -6,6 +6,12 @@ import { useGetCustomerTransactionStatsQuery } from "@/redux/api/customerTransac
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  statCardClass,
+  statIconClass,
+  statLabelClass,
+  type StatTone,
+} from "@/lib/statCardTone";
+import {
   formatInvoiceMoney,
   formatSignedDue,
 } from "@/utils/formatInvoiceMoney";
@@ -33,31 +39,28 @@ export default function CustomerProfileStatsCards({
       label: "Total Transactions",
       value: totalTransactions.toLocaleString(),
       icon: ArrowLeftRight,
-      iconBg: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+      tone: "blue" as StatTone,
       description: "Total recorded transactions",
     },
     {
       label: "Total Due",
       value: formatInvoiceMoney(totalDue),
       icon: Clock,
-      iconBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      tone: "amber" as StatTone,
       description: "Sum of all invoiced amounts",
     },
     {
       label: "Total Cash / Payment",
       value: formatInvoiceMoney(totalPayment),
       icon: Wallet,
-      iconBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+      tone: "emerald" as StatTone,
       description: "Total payments & return credits",
     },
     {
       label: "Present Due",
       value: formatSignedDue(totalBalance),
       icon: Scale,
-      iconBg:
-        totalBalance > 0
-          ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-          : "bg-purple-500/10 text-purple-600 dark:text-purple-400",
+      tone: (totalBalance > 0 ? "rose" : "violet") as StatTone,
       description: "Net outstanding balance (Due - Paid)",
     },
   ];
@@ -67,15 +70,15 @@ export default function CustomerProfileStatsCards({
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <Card key={card.label} className="shadow-xs ring-border/60 border">
+          <Card key={card.label} className={statCardClass(card.tone)}>
             <CardContent className="flex items-center gap-4">
               <div
-                className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${card.iconBg}`}
+                className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${statIconClass(card.tone)}`}
               >
                 <Icon className="size-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground truncate">
+                <p className={`text-xs font-semibold truncate ${statLabelClass(card.tone)}`}>
                   {card.label}
                 </p>
                 {isLoading ? (

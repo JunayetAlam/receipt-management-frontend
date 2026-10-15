@@ -4,6 +4,8 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Printer, ArrowLeft, AlertTriangle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { tabPillClass } from "@/lib/tabColors";
 import {
   Tooltip,
   TooltipContent,
@@ -95,9 +97,9 @@ export default function ReceiptInvoiceView({
 
   const contactPhones =
     shop?.phoneNumbers && shop.phoneNumbers.length > 0
-      ? shop.phoneNumbers.join(", ")
+      ? shop.phoneNumbers[0]
       : !shop
-        ? "+880 1712-345678, +880 1912-345678"
+        ? "+880 1712-345678"
         : "";
 
   const contactLocations =
@@ -109,7 +111,7 @@ export default function ReceiptInvoiceView({
 
   const contactEmails =
     shop?.emails && shop.emails.length > 0
-      ? shop.emails.join(", ")
+      ? shop.emails[0]
       : !shop
         ? "contact@sanowarelectric.store"
         : "";
@@ -263,24 +265,22 @@ export default function ReceiptInvoiceView({
             <button
               type="button"
               onClick={() => setActiveTab("customer")}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                activeTab === "customer"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={cn(
+                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                tabPillClass("customer", activeTab === "customer"),
+              )}
             >
-              Customer Copy
+              Customer's Copy
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("shop")}
-              className={`px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
-                activeTab === "shop"
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+              className={cn(
+                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+                tabPillClass("shop", activeTab === "shop"),
+              )}
             >
-              Shop Copy
+              Dealer's Copy
             </button>
           </div>
 
@@ -475,7 +475,7 @@ export default function ReceiptInvoiceView({
                     isLastPage={page.isLast}
                     pageNo={page.pageNo}
                     pageCount={pageCount}
-                    copyType="Customer Copy"
+                    copyType="Customer's Copy"
                     {...footerContacts}
                   />
                 </div>
@@ -543,7 +543,7 @@ export default function ReceiptInvoiceView({
                     isLastPage={page.isLast}
                     pageNo={page.pageNo}
                     pageCount={pageCount}
-                    copyType="Shop Copy"
+                    copyType="Dealer's Copy"
                     {...footerContacts}
                   />
                 </div>
