@@ -24,17 +24,17 @@ import {
 import { cn } from "@/lib/utils";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import SidebarClimber from "@/components/Dashboard/SidebarClimber/SidebarClimber";
-import { StarField } from "@/components/Global/StarryBackground";
+// import { StarField } from "@/components/Global/StarryBackground";
 
 // Stars behind the sidebar menu, matching the page background.
-const SIDEBAR_STARS = {
-  seed: 7202,
-  dots: 45,
-  sparkles: 8,
-  sparkleMin: 10,
-  sparkleMax: 22,
-  topWeighted: false,
-};
+// const SIDEBAR_STARS = {
+//   seed: 7202,
+//   dots: 45,
+//   sparkles: 8,
+//   sparkleMin: 10,
+//   sparkleMax: 22,
+//   topWeighted: false,
+// };
 import useIsPrivileged from "@/hooks/useIsPrivileged";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import Image from "next/image";
@@ -319,7 +319,7 @@ export default function DashboardSidebar() {
         collapsed ? "w-16" : "w-64",
       )}
     >
-      <StarField className="absolute inset-0 -z-10 opacity-70" {...SIDEBAR_STARS} />
+      {/* <StarField className="absolute inset-0 -z-10 opacity-70" {...SIDEBAR_STARS} /> */}
       <SidebarClimber navRef={navRef} collapsed={collapsed} />
 
       <div
