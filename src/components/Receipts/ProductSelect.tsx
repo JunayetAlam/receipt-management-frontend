@@ -131,7 +131,7 @@ export default function ProductSelect({
         formatOptionLabel={(option, { context }) => {
           if (context === "value") {
             return (
-              <span className="font-medium text-xs text-foreground truncate block leading-none">
+              <span className="font-medium text-[13px] text-foreground whitespace-normal wrap-break-word block leading-tight">
                 {option.label}
               </span>
             );
@@ -141,7 +141,7 @@ export default function ProductSelect({
             return (
               <div className="flex items-center gap-2 py-0.5">
                 <PlusCircle className="size-3 text-primary shrink-0" />
-                <span className="font-medium text-xs text-foreground">
+                <span className="font-medium text-xs text-foreground whitespace-normal wrap-break-word">
                   Custom: &quot;{option.label}&quot;
                 </span>
               </div>
@@ -151,7 +151,7 @@ export default function ProductSelect({
           const prod = option.product;
           return (
             <div className="flex flex-col py-0.5 text-xs text-left">
-              <span className="font-medium text-foreground truncate leading-tight">
+              <span className="font-medium text-sm text-foreground whitespace-normal wrap-break-word leading-tight">
                 {prod.name}
               </span>
               <span
@@ -171,7 +171,7 @@ export default function ProductSelect({
         styles={{
           control: (base, state) => ({
             ...base,
-            height: "2rem",
+            height: "auto",
             minHeight: "2rem",
             backgroundColor: "color-mix(in srgb, var(--input) 50%, transparent)",
             borderColor: state.isFocused ? "var(--ring)" : "transparent",
@@ -199,7 +199,7 @@ export default function ProductSelect({
             height: "100%",
             display: "grid",
             alignItems: "center",
-            overflow: "hidden",
+            overflow: "visible",
           }),
           singleValue: (base) => ({
             ...base,
@@ -207,9 +207,8 @@ export default function ProductSelect({
             fontSize: "0.75rem",
             margin: 0,
             gridArea: "1 / 1 / 2 / 3",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            whiteSpace: "normal",
+            overflowWrap: "anywhere",
             maxWidth: "100%",
           }),
           placeholder: (base) => ({

@@ -904,8 +904,7 @@ export default function ReceiptForm({
       if (seenCustomNames.has(nameKey)) {
         const first = items.find(
           (row) =>
-            !row.productId &&
-            normalizeProductName(row.productName) === nameKey,
+            !row.productId && normalizeProductName(row.productName) === nameKey,
         );
         toast.error(
           "Duplicate product on receipt; each product can only appear once",
@@ -1274,14 +1273,14 @@ export default function ReceiptForm({
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               {/* Desktop Column Headers for Clean 1-Line Table View */}
-              <div className="hidden md:grid md:grid-cols-[2rem_3.4fr_1.2fr_1.1fr_1.5fr_2.8fr_1.6fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
-                <div className="text-center">#</div>
-                <div>Product Name *</div>
-                <div>Unit</div>
-                <div className="text-right">Qty *</div>
-                <div className="text-right">Price (৳) *</div>
-                <div>Disc (%)</div>
-                <div className="text-right">Total (৳)</div>
+              <div className="hidden xl:flex gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
+                <div className="xl:w-8 shrink-0 text-center">#</div>
+                <div className="xl:flex-1 min-w-0">Product Name *</div>
+                <div className="xl:w-26 shrink-0">Unit</div>
+                <div className="xl:w-20 shrink-0 text-right">Qty *</div>
+                <div className="xl:w-24 shrink-0 text-right">Price (৳) *</div>
+                <div className="xl:w-60 shrink-0">Disc (%)</div>
+                <div className="xl:w-28 shrink-0 text-right">Total (৳)</div>
               </div>
 
               {calculatedRows.map((it, index) => {
@@ -1375,10 +1374,10 @@ export default function ReceiptForm({
                     </div>
 
                     {/* All Inputs in One Single Line (on md+) */}
-                    <div className="grid grid-cols-1 md:grid-cols-[2rem_3.4fr_1.2fr_1.1fr_1.5fr_2.8fr_1.6fr] gap-2 items-center">
+                    <div className="flex flex-wrap gap-2 items-start xl:flex-nowrap xl:items-center">
                       {/* 0. Row index */}
-                      <div className="flex items-center gap-2 md:justify-center">
-                        <span className="md:hidden text-[11px] font-medium text-muted-foreground">
+                      <div className="flex items-center justify-center w-8 h-8 shrink-0 self-end xl:self-auto xl:h-auto">
+                        <span className="hidden text-[11px] font-medium text-muted-foreground">
                           #
                         </span>
                         <span className="inline-flex size-6 items-center justify-center rounded-md bg-muted text-[11px] font-mono font-semibold text-muted-foreground">
@@ -1387,8 +1386,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 1. Merged Product Name & Selection (React Select) */}
-                      <div>
-                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                      <div className="flex-[1_1_calc(100%-2.5rem)] md:flex-[1_1_16rem] xl:flex-1 min-w-0">
+                        <label className="text-[11px] font-medium text-muted-foreground xl:hidden block mb-1">
                           Product Name *
                         </label>
                         <ProductSelect
@@ -1408,8 +1407,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 2. Unit (Locked when product selected from DB, unlocked if custom or cleared) */}
-                      <div>
-                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                      <div className="flex-[1_1_calc(50%-0.25rem)] md:flex-[1_1_6.5rem] xl:flex-none xl:w-26 min-w-0">
+                        <label className="text-[11px] font-medium text-muted-foreground xl:hidden block mb-1">
                           Unit
                         </label>
                         <Select
@@ -1441,8 +1440,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 3. Quantity */}
-                      <div>
-                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                      <div className="flex-[1_1_calc(50%-0.25rem)] md:flex-[1_1_5rem] xl:flex-none xl:w-20 min-w-0">
+                        <label className="text-[11px] font-medium text-muted-foreground xl:hidden block mb-1">
                           Qty *
                         </label>
                         <Input
@@ -1462,8 +1461,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 4. Unit Price (Editable!) */}
-                      <div>
-                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                      <div className="flex-[1_1_calc(50%-0.25rem)] md:flex-[1_1_6rem] xl:flex-none xl:w-24 min-w-0">
+                        <label className="text-[11px] font-medium text-muted-foreground xl:hidden block mb-1">
                           Price (৳) *
                         </label>
                         <Input
@@ -1484,8 +1483,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 5. Multiple Discounts % */}
-                      <div>
-                        <div className="flex items-center justify-between mb-1 md:hidden">
+                      <div className="flex-[1_1_calc(50%-0.25rem)] md:flex-[1_1_15rem] xl:flex-none xl:w-60 min-w-0">
+                        <div className="flex items-center justify-between mb-1 xl:hidden">
                           <label className="text-[11px] font-medium text-muted-foreground">
                             Disc (%)
                           </label>
@@ -1496,7 +1495,7 @@ export default function ReceiptForm({
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
                           {it.discounts.map((discVal, dIdx) => (
                             <div
                               key={dIdx}
@@ -1518,7 +1517,7 @@ export default function ReceiptForm({
                                 }
                                 disabled={isLocked}
                                 className={`h-8 text-xs font-mono text-right ${
-                                  it.discounts.length > 1 ? "w-14 pr-4" : "w-16"
+                                  it.discounts.length > 1 ? "w-12" : "w-14"
                                 }`}
                                 title={`Discount #${dIdx + 1} (%)`}
                               />
@@ -1528,7 +1527,7 @@ export default function ReceiptForm({
                                   onClick={() =>
                                     handleRemoveDiscountField(it.tempId, dIdx)
                                   }
-                                  className="absolute right-1 text-muted-foreground hover:text-destructive transition-colors p-0.5 cursor-pointer"
+                                  className="absolute -top-2.5 -right-1.5 z-10 size-4 rounded-full bg-background border border-border shadow-xs flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors cursor-pointer"
                                   title="Remove discount tier"
                                 >
                                   <X className="size-2.5" />
@@ -1573,8 +1572,8 @@ export default function ReceiptForm({
                       </div>
 
                       {/* 6. Total */}
-                      <div className="text-right">
-                        <label className="text-[11px] font-medium text-muted-foreground md:hidden block mb-1">
+                      <div className="flex-[1_1_100%] md:flex-[1_1_7rem] xl:flex-none xl:w-28 text-right">
+                        <label className="text-[11px] font-medium text-muted-foreground xl:hidden block mb-1">
                           Total (৳)
                         </label>
                         <span className="text-sm font-semibold font-mono text-foreground block">

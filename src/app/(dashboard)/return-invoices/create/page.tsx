@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function CreateReturnInvoicePage() {
   return (
-    <div className="space-y-6 p-6 max-w-5xl mx-auto">
+    <div className="space-y-6 p-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
         Create Return Invoice
       </h1>

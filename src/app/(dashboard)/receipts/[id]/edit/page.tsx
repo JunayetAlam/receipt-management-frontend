@@ -18,7 +18,7 @@ export default function UpdateReceiptPage() {
   const receipt = data?.data;
 
   return (
-    <div className="space-y-6 p-6 max-w-6xl mx-auto">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">
         Edit Receipt
       </h1>

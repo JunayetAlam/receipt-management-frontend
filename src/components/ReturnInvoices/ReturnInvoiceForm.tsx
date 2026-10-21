@@ -737,7 +737,7 @@ export default function ReturnInvoiceForm({
             </p>
           ) : (
             <div className="space-y-2">
-              <div className="hidden md:grid md:grid-cols-[2.75rem_minmax(0,2.6fr)_1.1fr_1.3fr_2.4fr_1.3fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
+              <div className="hidden md:grid md:grid-cols-[2.75rem_minmax(0,3.12fr)_1.1fr_1.3fr_2.4fr_1.3fr] gap-2 px-3 py-1 text-xs font-semibold text-muted-foreground border-b border-border/40">
                 <div className="text-center">#</div>
                 <div>Product</div>
                 <div className="text-right">Qty *</div>
@@ -783,7 +783,7 @@ export default function ReturnInvoiceForm({
                       disabled && "opacity-50",
                     )}
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-[2.75rem_minmax(0,2.6fr)_1.1fr_1.3fr_2.4fr_1.3fr] gap-2 items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-[2.75rem_minmax(0,3.12fr)_1.1fr_1.3fr_2.4fr_1.3fr] gap-2 items-center">
                       <div className="flex items-center gap-1.5 md:justify-center">
                         <input
                           type="checkbox"
