@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -82,14 +84,18 @@ const SORT_OPTIONS = [
 
 export default function ReturnInvoiceTable() {
   const [isAdmin] = useIsAdmin();
-  const [activeTab, setActiveTab] = useState<TabType>("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [customerTypeFilter, setCustomerTypeFilter] = useState<
-    "ALL" | "CUSTOMER" | "RETAILER"
-  >("ALL");
-  const [sortOption, setSortOption] = useState(SORT_OPTIONS[0]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const activeTab = (getString("tab", "ALL") as TabType);
+  const setActiveTab = (v: TabType) => setParams({ tab: v === "ALL" ? null : v });
+  
+  const customerTypeFilter = getString("customerType", "ALL") as "ALL" | "CUSTOMER" | "RETAILER";
+  const setCustomerTypeFilter = (v: string) => setParams({ customerType: v === "ALL" ? null : v });
+  const sortOption = SORT_OPTIONS[Number(getString("sort", "0"))] || SORT_OPTIONS[0];
+  const setSortOption = (opt: (typeof SORT_OPTIONS)[number]) => setParams({ sort: SORT_OPTIONS.indexOf(opt) || null });
+  const page = getNumber("page", 1);
+  const limit = getNumber("limit", 10);
+  const setLimit = (n: number) => setParams({ limit: n === 10 ? null : n });
   const [selectedForDelete, setSelectedForDelete] =
     useState<TReturnInvoice | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -167,10 +173,9 @@ export default function ReturnInvoiceTable() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search by return #..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="pl-9 text-xs"
             />
@@ -181,7 +186,6 @@ export default function ReturnInvoiceTable() {
               const opt = SORT_OPTIONS.find((s) => s.label === val);
               if (opt) {
                 setSortOption(opt);
-                setPage(1);
               }
             }}
           >
@@ -204,7 +208,6 @@ export default function ReturnInvoiceTable() {
               type="button"
               onClick={() => {
                 setCustomerTypeFilter("ALL");
-                setPage(1);
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -218,7 +221,6 @@ export default function ReturnInvoiceTable() {
               type="button"
               onClick={() => {
                 setCustomerTypeFilter("CUSTOMER");
-                setPage(1);
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -232,7 +234,6 @@ export default function ReturnInvoiceTable() {
               type="button"
               onClick={() => {
                 setCustomerTypeFilter("RETAILER");
-                setPage(1);
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -259,7 +260,6 @@ export default function ReturnInvoiceTable() {
             type="button"
             onClick={() => {
               setActiveTab(tab.key);
-              setPage(1);
             }}
             className={cn(
               "pb-2.5 px-3 border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap",
@@ -608,7 +608,6 @@ export default function ReturnInvoiceTable() {
             value={String(limit)}
             onValueChange={(v) => {
               setLimit(Number(v));
-              setPage(1);
             }}
           >
             <SelectTrigger className="w-16 h-8 text-xs">
@@ -623,29 +622,11 @@ export default function ReturnInvoiceTable() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <span className="text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={page >= totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
+        <PageNav
+          page={page}
+          totalPage={totalPages}
+          onPageChange={(p) => setParams({ page: p })}
+        />
       </div>
 
       <ReturnInvoiceDeleteModal

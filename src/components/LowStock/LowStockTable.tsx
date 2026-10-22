@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -63,15 +65,19 @@ const SORT_OPTIONS = [
   { label: "Selling Price: High to Low", sortBy: "sellingPrice", sortOrder: "desc" },
 ];
 
-type StockFilterType = "ALL" | "NEGATIVE" | "OUT_OF_STOCK" | "CRITICAL" | "LOW";
+type StockFilterType = "ALL" | "NEGATIVE" | "OUT_OF_STOCK" | "CRITICAL";
 
 export default function LowStockTable() {
   // Filter & Pagination States
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState("ALL");
-  const [stockFilter, setStockFilter] = useState<StockFilterType>("ALL");
-  const [sortIndex, setSortIndex] = useState("0");
-  const [page, setPage] = useState(1);
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const selectedUnit = getString("unit", "ALL");
+  const setSelectedUnit = (v: string) => setParams({ unit: v === "ALL" ? null : v });
+  const stockFilter = getString("stock", "ALL") as StockFilterType;
+  const setStockFilter = (v: string) => setParams({ stock: v === "ALL" ? null : v });
+  const sortIndex = getString("sort", "0");
+  const setSortIndex = (v: string) => setParams({ sort: v === "0" ? null : v });
+  const page = getNumber("page", 1);
 
   // Modals
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -130,19 +136,14 @@ export default function LowStockTable() {
     products = products.filter((p) => p.stock === 0);
   } else if (stockFilter === "CRITICAL") {
     products = products.filter((p) => p.stock > 0 && p.stock <= 5);
-  } else if (stockFilter === "LOW") {
-    products = products.filter((p) => p.stock > 5 && p.stock <= 20);
   }
 
   const totalCount =
     stockFilter === "ALL" ? (meta?.total ?? products.length) : products.length;
 
   const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedUnit("ALL");
-    setStockFilter("ALL");
-    setSortIndex("0");
-    setPage(1);
+    setSearchInput("");
+    resetParams(["searchTerm", "unit", "stock", "sort", "page"]);
   };
 
   const hasActiveFilters =
@@ -197,10 +198,9 @@ export default function LowStockTable() {
             <Input
               type="text"
               placeholder="Search product by name or description..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="pl-9 text-xs"
             />
@@ -213,7 +213,6 @@ export default function LowStockTable() {
               value={stockFilter}
               onValueChange={(val: StockFilterType) => {
                 setStockFilter(val);
-                setPage(1);
               }}
             >
               <SelectTrigger className="h-9 text-xs w-44">
@@ -221,11 +220,10 @@ export default function LowStockTable() {
                 <SelectValue placeholder="Stock Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All Low Stock (≤ 20)</SelectItem>
+                <SelectItem value="ALL">All Low Stock (≤ 5)</SelectItem>
                 <SelectItem value="NEGATIVE">Negative / Minus (&lt; 0)</SelectItem>
                 <SelectItem value="OUT_OF_STOCK">Out of Stock (0)</SelectItem>
                 <SelectItem value="CRITICAL">Critical Low (1 – 5)</SelectItem>
-                <SelectItem value="LOW">Low Stock (6 – 20)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -234,7 +232,6 @@ export default function LowStockTable() {
               value={selectedUnit}
               onValueChange={(val) => {
                 setSelectedUnit(val);
-                setPage(1);
               }}
             >
               <SelectTrigger className="h-9 text-xs w-36">
@@ -254,7 +251,6 @@ export default function LowStockTable() {
               value={sortIndex}
               onValueChange={(val) => {
                 setSortIndex(val);
-                setPage(1);
               }}
             >
               <SelectTrigger className="h-9 text-xs w-44">
@@ -316,33 +312,12 @@ export default function LowStockTable() {
 
           {/* Top Pagination Controls */}
           {meta && meta.totalPage > 1 && (
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           )}
         </div>
 
@@ -555,33 +530,12 @@ export default function LowStockTable() {
             </p>
 
             {meta.totalPage > 1 && (
-              <div className="flex items-center gap-1 self-end sm:self-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1 || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  <ChevronLeft className="mr-1 size-3.5" />
-                  Previous
-                </Button>
-
-                <div className="px-2 text-xs font-medium text-muted-foreground">
-                  Page {meta.page} of {meta.totalPage}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= meta.totalPage || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  Next
-                  <ChevronRight className="ml-1 size-3.5" />
-                </Button>
-              </div>
+              <PageNav
+                page={page}
+                totalPage={meta.totalPage}
+                onPageChange={(p) => setParams({ page: p })}
+                disabled={isFetching}
+              />
             )}
           </div>
         )}

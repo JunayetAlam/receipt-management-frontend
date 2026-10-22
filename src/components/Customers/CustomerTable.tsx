@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -119,12 +121,18 @@ const SORT_OPTIONS = [
 
 export default function CustomerTable() {
   const [isAdmin] = useIsAdmin();
-  const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [page, setPage] = useState(1);
-  const [customerTypeFilter, setCustomerTypeFilter] = useState<"ALL" | "CUSTOMER" | "RETAILER">("ALL");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortIndex, setSortIndex] = useState("0");
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const activeTab = (getString("tab", "ACTIVE") as TabType);
+  const setActiveTab = (v: TabType) => setParams({ tab: v === "ACTIVE" ? null : v });
+  const viewMode = getString("view", "list") as ViewMode;
+  const setViewMode = (v: ViewMode) => setParams({ view: v === "list" ? null : v }, { keepPage: true });
+  const page = getNumber("page", 1);
+  const customerTypeFilter = getString("customerType", "ALL") as "ALL" | "CUSTOMER" | "RETAILER";
+  const setCustomerTypeFilter = (v: string) => setParams({ customerType: v === "ALL" ? null : v });
+  
+  const sortIndex = getString("sort", "0");
+  const setSortIndex = (v: string) => setParams({ sort: v === "0" ? null : v });
 
   // Modal States
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -230,10 +238,8 @@ export default function CustomerTable() {
   };
 
   const handleResetFilters = () => {
-    setSearchTerm("");
-    setCustomerTypeFilter("ALL");
-    setSortIndex("0");
-    setPage(1);
+    setSearchInput("");
+    resetParams(["searchTerm", "customerType", "sort", "page"]);
   };
 
   const exportHref = useMemo(() => {
@@ -260,7 +266,6 @@ export default function CustomerTable() {
             type="button"
             onClick={() => {
               setCustomerTypeFilter("ALL");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
@@ -275,7 +280,6 @@ export default function CustomerTable() {
             type="button"
             onClick={() => {
               setCustomerTypeFilter("CUSTOMER");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
@@ -290,7 +294,6 @@ export default function CustomerTable() {
             type="button"
             onClick={() => {
               setCustomerTypeFilter("RETAILER");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-medium transition-all cursor-pointer",
@@ -309,7 +312,6 @@ export default function CustomerTable() {
             type="button"
             onClick={() => {
               setActiveTab("ACTIVE");
-              setPage(1);
             }}
             className={cn(
               "rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
@@ -323,7 +325,6 @@ export default function CustomerTable() {
             type="button"
             onClick={() => {
               setActiveTab("PENDING_DELETION");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
@@ -339,7 +340,6 @@ export default function CustomerTable() {
               type="button"
               onClick={() => {
                 setActiveTab("ARCHIVED");
-                setPage(1);
               }}
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors cursor-pointer",
@@ -414,10 +414,9 @@ export default function CustomerTable() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search customer by name, phone number, email or address..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="pl-9 text-xs"
             />
@@ -428,7 +427,6 @@ export default function CustomerTable() {
             value={sortIndex}
             onValueChange={(val) => {
               setSortIndex(val);
-              setPage(1);
             }}
           >
             <SelectTrigger className="text-xs">
@@ -1167,33 +1165,12 @@ export default function CustomerTable() {
             customers
           </p>
 
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || isFetching}
-              className="h-8 px-2.5 text-xs cursor-pointer"
-            >
-              <ChevronLeft className="mr-1 size-3.5" />
-              Previous
-            </Button>
-
-            <div className="px-2 text-xs font-medium text-muted-foreground">
-              Page {meta.page} of {meta.totalPage}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= meta.totalPage || isFetching}
-              className="h-8 px-2.5 text-xs cursor-pointer"
-            >
-              Next
-              <ChevronRight className="ml-1 size-3.5" />
-            </Button>
-          </div>
+          <PageNav
+            page={page}
+            totalPage={meta.totalPage}
+            onPageChange={(p) => setParams({ page: p })}
+            disabled={isFetching}
+          />
         </div>
       )}
 

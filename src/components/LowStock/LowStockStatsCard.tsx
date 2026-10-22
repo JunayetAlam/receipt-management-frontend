@@ -42,7 +42,7 @@ export default function LowStockStatsCard({
                   {lowStockCount}
                 </p>
                 <span className="text-xs text-muted-foreground">
-                  items (≤ 20 units)
+                  items (≤ 5 units)
                 </span>
               </div>
             )}

@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,15 +91,20 @@ export default function ProductProfitTable() {
   const router = useRouter();
   const [isAdmin, isAdminLoading] = useIsAdmin();
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [appliedStart, setAppliedStart] = useState("");
-  const [appliedEnd, setAppliedEnd] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortIndex, setSortIndex] = useState("0");
-  const [page, setPage] = useState(1);
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const appliedStart = getString("startDate");
+  const appliedEnd = getString("endDate");
+  const sortIndex = getString("sort", "0");
+  const page = getNumber("page", 1);
+  // Date inputs are drafts until "Apply dates" is pressed; applied values live in the URL.
+  const [startDate, setStartDate] = useState(appliedStart);
+  const [endDate, setEndDate] = useState(appliedEnd);
   const [dateError, setDateError] = useState<string | null>(null);
+  useEffect(() => {
+    setStartDate(appliedStart);
+    setEndDate(appliedEnd);
+  }, [appliedStart, appliedEnd]);
 
   const selectedSort = SORT_OPTIONS[Number(sortIndex)] || SORT_OPTIONS[0];
 
@@ -140,27 +147,20 @@ export default function ProductProfitTable() {
       return;
     }
     setDateError(null);
-    setAppliedStart(startDate);
-    setAppliedEnd(endDate);
-    setPage(1);
+    setParams({ startDate: startDate || null, endDate: endDate || null });
   };
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    setSearchTerm(searchInput.trim());
-    setPage(1);
+    setParams({ searchTerm: searchInput.trim() || null }, { replace: true });
   };
 
   const handleReset = () => {
     setStartDate("");
     setEndDate("");
-    setAppliedStart("");
-    setAppliedEnd("");
     setSearchInput("");
-    setSearchTerm("");
-    setSortIndex("0");
-    setPage(1);
     setDateError(null);
+    resetParams(["startDate", "endDate", "searchTerm", "sort", "page"]);
   };
 
   const exportHref = useMemo(() => {
@@ -235,8 +235,7 @@ export default function ProductProfitTable() {
           <Select
             value={sortIndex}
             onValueChange={(value) => {
-              setSortIndex(value);
-              setPage(1);
+              setParams({ sort: value === "0" ? null : value });
             }}
           >
             <SelectTrigger className="w-full sm:w-52">
@@ -328,33 +327,12 @@ export default function ProductProfitTable() {
 
           {/* Top Pagination Controls */}
           {meta && meta.totalPage > 1 && (
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           )}
         </div>
 
@@ -552,33 +530,12 @@ export default function ProductProfitTable() {
             </p>
 
             {meta.totalPage > 1 && (
-              <div className="flex items-center gap-1 self-end sm:self-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1 || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  <ChevronLeft className="mr-1 size-3.5" />
-                  Previous
-                </Button>
-
-                <div className="px-2 text-xs font-medium text-muted-foreground">
-                  Page {meta.page} of {meta.totalPage}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= meta.totalPage || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  Next
-                  <ChevronRight className="ml-1 size-3.5" />
-                </Button>
-              </div>
+              <PageNav
+                page={page}
+                totalPage={meta.totalPage}
+                onPageChange={(p) => setParams({ page: p })}
+                disabled={isFetching}
+              />
             )}
           </div>
         )}

@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import React, { useState } from "react";
 import Link from "next/link";
 import {
@@ -77,14 +79,23 @@ interface CustomerProfileTransactionsProps {
 export default function CustomerProfileTransactions({
   customerId,
 }: CustomerProfileTransactionsProps) {
-  const [viewFormat, setViewFormat] = useState<ViewFormat>("timeline");
-  const [activeTypeTab, setActiveTypeTab] = useState<TransactionTab>("ALL");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortIndex, setSortIndex] = useState<string>("0");
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(20);
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const activeTypeTab = getString("tab", "ALL") as TransactionTab;
+  const setActiveTypeTab = (v: TransactionTab) => setParams({ tab: v === "ALL" ? null : v });
+  const viewFormat = getString("view", "timeline") as ViewFormat;
+  const setViewFormat = (v: ViewFormat) => setParams({ view: v === "timeline" ? null : v }, { keepPage: true });
+  const startDate = getString("startDate");
+  const setStartDate = (v: string) => setParams({ startDate: v || null });
+  const endDate = getString("endDate");
+  const setEndDate = (v: string) => setParams({ endDate: v || null });
+  
+  const sortIndex = getString("sort", "0");
+  const setSortIndex = (v: string) => setParams({ sort: v === "0" ? null : v });
+  const page = getNumber("page", 1);
+  const setPage = (n: number) => setParams({ page: n === 1 ? null : n });
+  const limit = getNumber("limit", 20);
+  const setLimit = (n: number) => setParams({ limit: n === 20 ? null : n });
 
   // Selected transaction for modal
   const [selectedTx, setSelectedTx] = useState<TCustomerTransaction | null>(null);
@@ -127,18 +138,14 @@ export default function CustomerProfileTransactions({
 
   const isFiltersActive =
     activeTypeTab !== "ALL" ||
-    searchTerm.trim() !== "" ||
+    searchInput.trim() !== "" ||
     sortIndex !== "0" ||
     startDate !== "" ||
     endDate !== "";
 
   const handleResetFilters = () => {
-    setActiveTypeTab("ALL");
-    setSearchTerm("");
-    setStartDate("");
-    setEndDate("");
-    setSortIndex("0");
-    setPage(1);
+    setSearchInput("");
+    resetParams(["tab", "startDate", "endDate", "searchTerm", "sort", "page"]);
   };
 
   const handleOpenDetail = (tx: TCustomerTransaction) => {
@@ -191,7 +198,6 @@ export default function CustomerProfileTransactions({
                   type="button"
                   onClick={() => {
                     setActiveTypeTab(tab.id);
-                    setPage(1);
                   }}
                   className={cn(
                     "px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
@@ -256,17 +262,16 @@ export default function CustomerProfileTransactions({
             <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
             <Input
               placeholder="Search note, receipt, return..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="h-8 pl-8 text-xs bg-background"
             />
           </div>
 
           {/* Date Range Selection (Start Date to End Date) */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             <div className="relative">
               <Input
                 type="date"
@@ -274,12 +279,11 @@ export default function CustomerProfileTransactions({
                 value={startDate}
                 onChange={(e) => {
                   setStartDate(e.target.value);
-                  setPage(1);
                 }}
-                className="h-8 text-xs px-2 bg-background w-32 sm:w-36 font-mono"
+                className="h-8 text-xs px-2 bg-background w-36 font-mono"
               />
             </div>
-            <span className="text-xs text-muted-foreground">to</span>
+            <span className="shrink-0 text-xs text-muted-foreground">to</span>
             <div className="relative">
               <Input
                 type="date"
@@ -287,9 +291,8 @@ export default function CustomerProfileTransactions({
                 value={endDate}
                 onChange={(e) => {
                   setEndDate(e.target.value);
-                  setPage(1);
                 }}
-                className="h-8 text-xs px-2 bg-background w-32 sm:w-36 font-mono"
+                className="h-8 text-xs px-2 bg-background w-36 font-mono"
               />
             </div>
           </div>
@@ -299,7 +302,6 @@ export default function CustomerProfileTransactions({
             value={sortIndex}
             onValueChange={(val) => {
               setSortIndex(val);
-              setPage(1);
             }}
           >
             <SelectTrigger className="h-8 w-32 text-xs bg-background">
@@ -354,33 +356,12 @@ export default function CustomerProfileTransactions({
           </p>
 
           {meta && meta.totalPage > 1 && (
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-7 px-2 text-xs cursor-pointer"
-              >
-                <ChevronLeft className="mr-1 size-3" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground font-mono">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(meta.totalPage, p + 1))}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-7 px-2 text-xs cursor-pointer"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           )}
         </div>
       </div>
@@ -837,7 +818,6 @@ export default function CustomerProfileTransactions({
               value={String(limit)}
               onValueChange={(val) => {
                 setLimit(Number(val));
-                setPage(1);
               }}
             >
               <SelectTrigger className="h-7 w-16 text-xs bg-background">
@@ -857,33 +837,12 @@ export default function CustomerProfileTransactions({
             </Select>
           </div>
 
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || isFetching}
-              className="h-8 px-2.5 text-xs cursor-pointer"
-            >
-              <ChevronLeft className="mr-1 size-3.5" />
-              Previous
-            </Button>
-
-            <div className="px-2 text-xs font-medium text-muted-foreground font-mono">
-              Page {meta.page} of {meta.totalPage}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(meta.totalPage, p + 1))}
-              disabled={page >= meta.totalPage || isFetching}
-              className="h-8 px-2.5 text-xs cursor-pointer"
-            >
-              Next
-              <ChevronRight className="ml-1 size-3.5" />
-            </Button>
-          </div>
+          <PageNav
+            page={page}
+            totalPage={meta.totalPage}
+            onPageChange={(p) => setParams({ page: p })}
+            disabled={isFetching}
+          />
         </div>
       )}
 

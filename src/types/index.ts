@@ -165,6 +165,15 @@ export interface TCustomerStats {
   total?: TCustomerStatsPeriod;
 }
 
+/** Slim product shape returned by GET /products/options (for pickers). */
+export interface TProductOption {
+  id: string;
+  name: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  stock: number;
+}
+
 export interface TProductStats {
   totalProducts: number;
   totalStock: number;

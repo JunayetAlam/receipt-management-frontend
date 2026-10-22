@@ -1,6 +1,8 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
 import { useMemo, useState } from "react";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import Link from "next/link";
 import {
   Package,
@@ -88,11 +90,13 @@ const SORT_OPTIONS = [
 
 export default function ProductTable() {
   const [isAdmin] = useIsAdmin();
-  const [activeTab, setActiveTab] = useState<TabType>("ACTIVE");
-  const [page, setPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState("ALL");
-  const [sortIndex, setSortIndex] = useState("0");
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const activeTab = (getString("tab", "ACTIVE") as TabType);
+  const page = getNumber("page", 1);
+  const selectedUnit = getString("unit", "ALL");
+  const sortIndex = getString("sort", "0");
+  const setActiveTab = (t: TabType) => setParams({ tab: t === "ACTIVE" ? null : t });
 
   // Modal States
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -209,10 +213,8 @@ export default function ProductTable() {
   };
 
   const handleResetFilters = () => {
-    setSearchTerm("");
-    setSelectedUnit("ALL");
-    setSortIndex("0");
-    setPage(1);
+    setSearchInput("");
+    resetParams(["searchTerm", "unit", "sort", "page"]);
   };
 
   const exportHref = useMemo(() => {
@@ -239,7 +241,6 @@ export default function ProductTable() {
             type="button"
             onClick={() => {
               setActiveTab("ACTIVE");
-              setPage(1);
             }}
             className={cn(
               "rounded-md px-3 py-1.5 font-medium transition-colors",
@@ -253,7 +254,6 @@ export default function ProductTable() {
             type="button"
             onClick={() => {
               setActiveTab("PENDING_DELETION");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
@@ -269,7 +269,6 @@ export default function ProductTable() {
               type="button"
               onClick={() => {
                 setActiveTab("ARCHIVED");
-                setPage(1);
               }}
               className={cn(
                 "flex items-center gap-1 rounded-md px-3 py-1.5 font-medium transition-colors",
@@ -322,11 +321,8 @@ export default function ProductTable() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search product by name or description..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="pl-9 text-xs"
             />
           </div>
@@ -336,10 +332,9 @@ export default function ProductTable() {
             <div className="flex-1 flex gap-4">
               <Select
                 value={selectedUnit}
-                onValueChange={(val) => {
-                  setSelectedUnit(val);
-                  setPage(1);
-                }}
+                onValueChange={(val) =>
+                  setParams({ unit: val === "ALL" ? null : val })
+                }
               >
                 <SelectTrigger className="text-xs">
                   <SelectValue placeholder="Filter by Unit" />
@@ -358,10 +353,9 @@ export default function ProductTable() {
               </Select>
               <Select
                 value={sortIndex}
-                onValueChange={(val) => {
-                  setSortIndex(val);
-                  setPage(1);
-                }}
+                onValueChange={(val) =>
+                  setParams({ sort: val === "0" ? null : val })
+                }
               >
                 <SelectTrigger className="text-xs">
                   <SelectValue placeholder="Sort by" />
@@ -383,7 +377,7 @@ export default function ProductTable() {
         </div>
 
         {/* Reset Filter info */}
-        {(searchTerm || selectedUnit !== "ALL" || sortIndex !== "0") && (
+        {(searchInput || selectedUnit !== "ALL" || sortIndex !== "0") && (
           <div className="flex items-center justify-between pt-2 border-t border-border/60">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Filter className="size-3.5" />
@@ -432,33 +426,12 @@ export default function ProductTable() {
 
           {/* Top Pagination Controls */}
           {meta && meta.totalPage > 1 && (
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           )}
         </div>
 
@@ -600,7 +573,7 @@ export default function ProductTable() {
                           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-semibold">
                             Out of stock (0)
                           </Badge>
-                        ) : product.stock <= 20 ? (
+                        ) : product.stock <= 5 ? (
                           <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-xs font-semibold">
                             Low stock ({product.stock} {product.unit})
                           </Badge>
@@ -785,33 +758,12 @@ export default function ProductTable() {
             </p>
 
             {meta.totalPage > 1 && (
-              <div className="flex items-center gap-1 self-end sm:self-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1 || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  <ChevronLeft className="mr-1 size-3.5" />
-                  Previous
-                </Button>
-
-                <div className="px-2 text-xs font-medium text-muted-foreground">
-                  Page {meta.page} of {meta.totalPage}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= meta.totalPage || isFetching}
-                  className="h-8 px-2.5 text-xs"
-                >
-                  Next
-                  <ChevronRight className="ml-1 size-3.5" />
-                </Button>
-              </div>
+              <PageNav
+                page={page}
+                totalPage={meta.totalPage}
+                onPageChange={(p) => setParams({ page: p })}
+                disabled={isFetching}
+              />
             )}
           </div>
         )}

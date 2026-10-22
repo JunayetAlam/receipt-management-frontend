@@ -1,4 +1,4 @@
-import { TProduct, TProductProfitReport, TProductStats, TResponse } from "@/types";
+import { TProduct, TProductOption, TProductProfitReport, TProductStats, TResponse } from "@/types";
 import { baseApi } from "./baseApi";
 
 export const productApi = baseApi.injectEndpoints({
@@ -9,6 +9,18 @@ export const productApi = baseApi.injectEndpoints({
     >({
       query: (params) => ({
         url: "/products",
+        method: "GET",
+        params,
+      }),
+      providesTags: ["Product"],
+    }),
+
+    getProductOptions: builder.query<
+      TResponse<TProductOption[]>,
+      { searchTerm?: string; limit?: number } | undefined
+    >({
+      query: (params) => ({
+        url: "/products/options",
         method: "GET",
         params,
       }),
@@ -119,6 +131,7 @@ export const productApi = baseApi.injectEndpoints({
 
 export const {
   useGetAllProductsQuery,
+  useGetProductOptionsQuery,
   useGetProductStatsQuery,
   useGetProductProfitQuery,
   useGetProductByIdQuery,

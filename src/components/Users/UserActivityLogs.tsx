@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState } from "@/hooks/useUrlState";
 import { useState } from "react";
 import { useGetAllActivityLogsQuery } from "@/redux/api/activityLogApi";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +78,10 @@ const getActionBadge = (action: string) => {
 };
 
 export default function UserActivityLogs({ userId }: { userId: string }) {
-  const [page, setPage] = useState(1);
+  const { getNumber, setParams } = useUrlState();
+  const page = getNumber("page", 1);
+  const setPage = (n: number | ((p: number) => number)) =>
+    setParams({ page: typeof n === "function" ? n(page) : n });
   const [detailModalLog, setDetailModalLog] = useState<TActivityLog | null>(null);
 
   const { data, isLoading } = useGetAllActivityLogsQuery({
@@ -193,26 +198,11 @@ export default function UserActivityLogs({ userId }: { userId: string }) {
           <p className="text-xs text-muted-foreground">
             Page {meta.page} of {meta.totalPage} ({meta.total} logs)
           </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="h-7 px-2 text-xs"
-            >
-              <ChevronLeft className="size-3.5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= meta.totalPage}
-              className="h-7 px-2 text-xs"
-            >
-              <ChevronRight className="size-3.5" />
-            </Button>
-          </div>
+          <PageNav
+            page={page}
+            totalPage={meta.totalPage}
+            onPageChange={(p) => setParams({ page: p })}
+          />
         </div>
       )}
 

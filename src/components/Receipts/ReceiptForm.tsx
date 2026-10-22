@@ -22,7 +22,6 @@ import {
   useApprovePaymentMutation,
   useDeletePaymentMutation,
 } from "@/redux/api/receiptApi";
-import { useGetAllProductsQuery } from "@/redux/api/productApi";
 import {
   useGetAllCustomersQuery,
   useLazyLookupCustomerByPhoneQuery,
@@ -35,7 +34,7 @@ import {
   TReceipt,
   TReceiptFormItem,
   TCustomer,
-  TProduct,
+  TProductOption,
   TReceiptPayment,
 } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
@@ -280,12 +279,6 @@ export default function ReceiptForm({
   const [createReceipt, { isLoading: isCreating }] = useCreateReceiptMutation();
   const [updateReceipt, { isLoading: isUpdating }] = useUpdateReceiptMutation();
 
-  const { data: productsResponse, isLoading: isProductsLoading } =
-    useGetAllProductsQuery({
-      isDeleted: false,
-      limit: 250,
-    });
-  const products = productsResponse?.data || [];
 
   const { data: customersResponse, isLoading: isCustomersLoading } =
     useGetAllCustomersQuery({
@@ -559,7 +552,7 @@ export default function ReceiptForm({
   };
 
   // Product Selection Handlers
-  const handleSelectProduct = (tempId: string, product: TProduct) => {
+  const handleSelectProduct = (tempId: string, product: TProductOption) => {
     const existing = items.find(
       (it) => it.tempId !== tempId && it.productId === product.id,
     );
@@ -662,17 +655,6 @@ export default function ReceiptForm({
               productName: "",
               sellingPrice: 0,
               availableStock: null,
-            };
-          }
-          const chosen = products.find((p) => p.id === value);
-          if (chosen) {
-            return {
-              ...it,
-              productId: chosen.id,
-              productName: chosen.name,
-              unit: chosen.unit,
-              sellingPrice: chosen.sellingPrice,
-              availableStock: chosen.stock,
             };
           }
         }
@@ -1412,7 +1394,6 @@ export default function ReceiptForm({
                           Product Name *
                         </label>
                         <ProductSelect
-                          products={products}
                           selectedProductId={it.productId}
                           valueName={it.productName}
                           onSelectProduct={(prod) =>
@@ -1422,7 +1403,7 @@ export default function ReceiptForm({
                             handleCustomProductNameChange(it.tempId, name)
                           }
                           onClear={() => handleClearProduct(it.tempId)}
-                          disabled={isLocked || isProductsLoading}
+                          disabled={isLocked}
                           placeholder="Search product or type custom name..."
                           addedProductRows={addedProductRows}
                           hideAdded={hideAddedProducts}

@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -87,17 +89,25 @@ export default function CustomerTransactionTable({
 }: {
   hideStats?: boolean;
 } = {}) {
-  const [activeTypeTab, setActiveTypeTab] = useState<TransactionTab>("ALL");
-  const [customerTypeFilter, setCustomerTypeFilter] = useState<
-    "ALL" | "CUSTOMER" | "RETAILER"
-  >("ALL");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("ALL");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortIndex, setSortIndex] = useState<string>("0");
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(25);
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const activeTypeTab = getString("tab", "ALL") as TransactionTab;
+  const setActiveTypeTab = (v: TransactionTab) => setParams({ tab: v === "ALL" ? null : v });
+  const customerTypeFilter = getString("customerType", "ALL") as "ALL" | "CUSTOMER" | "RETAILER";
+  const setCustomerTypeFilter = (v: string) => setParams({ customerType: v === "ALL" ? null : v });
+  const selectedCustomerId = getString("customerId", "ALL");
+  const setSelectedCustomerId = (v: string) => setParams({ customerId: v === "ALL" ? null : v });
+  const startDate = getString("startDate");
+  const setStartDate = (v: string) => setParams({ startDate: v || null });
+  const endDate = getString("endDate");
+  const setEndDate = (v: string) => setParams({ endDate: v || null });
+  
+  const sortIndex = getString("sort", "0");
+  const setSortIndex = (v: string) => setParams({ sort: v === "0" ? null : v });
+  const page = getNumber("page", 1);
+  const setPage = (n: number) => setParams({ page: n === 1 ? null : n });
+  const limit = getNumber("limit", 25);
+  const setLimit = (n: number) => setParams({ limit: n === 25 ? null : n });
 
   // Selected transaction for detail modal
   const [selectedTx, setSelectedTx] = useState<TCustomerTransaction | null>(
@@ -161,14 +171,8 @@ export default function CustomerTransactionTable({
   const totalCount = meta?.total ?? 0;
 
   const handleResetFilters = () => {
-    setActiveTypeTab("ALL");
-    setCustomerTypeFilter("ALL");
-    setSelectedCustomerId("ALL");
-    setStartDate("");
-    setEndDate("");
-    setSearchTerm("");
-    setSortIndex("0");
-    setPage(1);
+    setSearchInput("");
+    resetParams(["tab", "customerType", "customerId", "startDate", "endDate", "searchTerm", "sort", "page"]);
   };
 
   const handleOpenDetail = (tx: TCustomerTransaction) => {
@@ -237,7 +241,6 @@ export default function CustomerTransactionTable({
             type="button"
             onClick={() => {
               setCustomerTypeFilter("ALL");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -251,7 +254,6 @@ export default function CustomerTransactionTable({
             type="button"
             onClick={() => {
               setCustomerTypeFilter("CUSTOMER");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -265,7 +267,6 @@ export default function CustomerTransactionTable({
             type="button"
             onClick={() => {
               setCustomerTypeFilter("RETAILER");
-              setPage(1);
             }}
             className={cn(
               "flex items-center gap-1.5 rounded-lg px-3 py-1 font-medium transition-all cursor-pointer",
@@ -293,7 +294,6 @@ export default function CustomerTransactionTable({
                 type="button"
                 onClick={() => {
                   setActiveTypeTab(tab.value);
-                  setPage(1);
                 }}
                 className={cn(
                   "rounded-md px-3 py-1.5 font-medium transition-colors",
@@ -323,29 +323,27 @@ export default function CustomerTransactionTable({
 
       {/* 3. Filter & Search Bar */}
       <div className="rounded-xl border border-border bg-card p-4 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-12">
           {/* Text Search */}
-          <div className="relative lg:col-span-4">
+          <div className="relative min-w-0 2xl:col-span-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search by customer, phone, reference, or note..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="pl-9 text-xs"
             />
           </div>
 
           {/* Select Customer */}
-          <div className="lg:col-span-3">
+          <div className="min-w-0 2xl:col-span-3">
             <CustomerFilterSelect
               customers={customers}
               selectedCustomerId={selectedCustomerId}
               onChange={(val) => {
                 setSelectedCustomerId(val);
-                setPage(1);
               }}
               isLoading={isCustomersLoading}
               placeholder="All Customers"
@@ -353,44 +351,41 @@ export default function CustomerTransactionTable({
           </div>
 
           {/* Start Date & End Date */}
-          <div className="flex items-center gap-2 lg:col-span-3">
-            <div className="relative flex-1">
+          <div className="flex min-w-0 items-center gap-2 2xl:col-span-4">
+            <div className="relative min-w-0 flex-1">
               <Input
                 type="date"
                 title="Start Date"
                 value={startDate}
                 onChange={(e) => {
                   setStartDate(e.target.value);
-                  setPage(1);
                 }}
-                className="text-xs px-2"
+                className="w-full min-w-0 text-xs px-2"
               />
             </div>
-            <span className="text-xs text-muted-foreground">to</span>
-            <div className="relative flex-1">
+            <span className="shrink-0 text-xs text-muted-foreground">to</span>
+            <div className="relative min-w-0 flex-1">
               <Input
                 type="date"
                 title="End Date"
                 value={endDate}
                 onChange={(e) => {
                   setEndDate(e.target.value);
-                  setPage(1);
                 }}
-                className="text-xs px-2"
+                className="w-full min-w-0 text-xs px-2"
               />
             </div>
           </div>
 
           {/* Sort Selector */}
-          <div className="lg:col-span-2">
+          <div className="min-w-0 2xl:col-span-2">
             <Select
               value={sortIndex}
               onValueChange={(val) => {
                 setSortIndex(val);
-                setPage(1);
               }}
             >
-              <SelectTrigger className="text-xs">
+              <SelectTrigger className="w-full text-xs">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -454,33 +449,12 @@ export default function CustomerTransactionTable({
 
           {/* Top Pagination Controls */}
           {meta && meta.totalPage > 1 && (
-            <div className="flex items-center gap-1 self-end sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(meta.totalPage, p + 1))}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           )}
         </div>
 
@@ -577,7 +551,6 @@ export default function CustomerTransactionTable({
                     size="sm"
                     onClick={() => {
                       setSelectedCustomerId("ALL");
-                      setPage(1);
                     }}
                     className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                     title="Clear Customer Filter"
@@ -859,7 +832,6 @@ export default function CustomerTransactionTable({
                 value={String(limit)}
                 onValueChange={(val) => {
                   setLimit(Number(val));
-                  setPage(1);
                 }}
               >
                 <SelectTrigger className="h-7 w-16 text-xs">
@@ -879,49 +851,12 @@ export default function CustomerTransactionTable({
               </Select>
             </div>
 
-            <div className="flex items-center gap-1.5 self-center sm:self-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(1)}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2 text-xs"
-              >
-                First
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2 text-xs"
-              >
-                Previous
-              </Button>
-
-              <span className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </span>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(meta.totalPage, p + 1))}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2 text-xs"
-              >
-                Next
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(meta.totalPage)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2 text-xs"
-              >
-                Last
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           </div>
         )}
       </div>

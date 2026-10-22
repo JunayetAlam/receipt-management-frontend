@@ -1,5 +1,6 @@
 "use client";
 
+import { useUrlSearch } from "@/hooks/useUrlState";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
@@ -42,13 +43,12 @@ export default function UsersList() {
   const { data: me } = useGetMeQuery(undefined);
   const actorRole = me?.data?.role;
 
-  const searchTerm = searchParams.get("searchTerm") || "";
   const role = searchParams.get("role") || "";
   const status = searchParams.get("status") || "";
   const page = searchParams.get("page") || "1";
   const limit = searchParams.get("limit") || "10";
 
-  const [search, setSearch] = useState(searchTerm);
+  const { value: search, setValue: setSearch, searchTerm } = useUrlSearch();
 
   const args: TQueryParam[] = [
     { name: "page", value: page },

@@ -1,5 +1,7 @@
 "use client";
 
+import PageNav from "@/components/Global/PageNav";
+import { useUrlState, useUrlSearch } from "@/hooks/useUrlState";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -229,11 +231,16 @@ const formatDateTime = (dateString: string) => {
 };
 
 export default function ActivityLogsTable() {
-  const [page, setPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [selectedAction, setSelectedAction] = useState<string>("ALL");
-  const [selectedEntity, setSelectedEntity] = useState<string>("ALL");
+  const { getString, getNumber, setParams, resetParams } = useUrlState();
+  const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
+  const page = getNumber("page", 1);
+  
+  const selectedUser = getString("userId") || null;
+  const setSelectedUser = (v: string | null) => setParams({ userId: v });
+  const selectedAction = getString("action", "ALL");
+  const setSelectedAction = (v: string) => setParams({ action: v === "ALL" ? null : v });
+  const selectedEntity = getString("entity", "ALL");
+  const setSelectedEntity = (v: string) => setParams({ entity: v === "ALL" ? null : v });
   const [userComboboxOpen, setUserComboboxOpen] = useState(false);
   const [detailModalLog, setDetailModalLog] = useState<TActivityLog | null>(
     null,
@@ -273,11 +280,8 @@ export default function ActivityLogsTable() {
   const meta = logsResponse?.meta;
 
   const handleResetFilters = () => {
-    setPage(1);
-    setSearchTerm("");
-    setSelectedUser(null);
-    setSelectedAction("ALL");
-    setSelectedEntity("ALL");
+    setSearchInput("");
+    resetParams(["searchTerm", "userId", "action", "entity", "page"]);
   };
 
   const selectedUserObj = usersList.find((u) => u.id === selectedUser);
@@ -292,10 +296,9 @@ export default function ActivityLogsTable() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search action or IP..."
-              value={searchTerm}
+              value={searchInput}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
+                setSearchInput(e.target.value);
               }}
               className="pl-9"
             />
@@ -331,7 +334,6 @@ export default function ActivityLogsTable() {
                       onSelect={() => {
                         setSelectedUser(null);
                         setUserComboboxOpen(false);
-                        setPage(1);
                       }}
                     >
                       <Check
@@ -348,7 +350,6 @@ export default function ActivityLogsTable() {
                         onSelect={() => {
                           setSelectedUser(user.id);
                           setUserComboboxOpen(false);
-                          setPage(1);
                         }}
                       >
                         <Check
@@ -380,7 +381,6 @@ export default function ActivityLogsTable() {
             value={selectedAction}
             onValueChange={(val) => {
               setSelectedAction(val);
-              setPage(1);
             }}
           >
             <SelectTrigger>
@@ -400,7 +400,6 @@ export default function ActivityLogsTable() {
             value={selectedEntity}
             onValueChange={(val) => {
               setSelectedEntity(val);
-              setPage(1);
             }}
           >
             <SelectTrigger>
@@ -670,33 +669,12 @@ export default function ActivityLogsTable() {
               logs
             </p>
 
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                <ChevronLeft className="mr-1 size-3.5" />
-                Previous
-              </Button>
-
-              <div className="px-2 text-xs font-medium text-muted-foreground">
-                Page {meta.page} of {meta.totalPage}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= meta.totalPage || isFetching}
-                className="h-8 px-2.5 text-xs"
-              >
-                Next
-                <ChevronRight className="ml-1 size-3.5" />
-              </Button>
-            </div>
+            <PageNav
+              page={page}
+              totalPage={meta.totalPage}
+              onPageChange={(p) => setParams({ page: p })}
+              disabled={isFetching}
+            />
           </div>
         )}
       </div>

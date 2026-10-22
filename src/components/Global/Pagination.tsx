@@ -1,13 +1,6 @@
 'use client'
 import { TMeta } from "@/types";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import PageNav from "@/components/Global/PageNav";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSearchParams } from "next/navigation";
 import useHandleSearchParams from "@/hooks/useHandleSearchParams";
@@ -24,48 +17,11 @@ export default function DefaultPagination({ meta, showItemPerPage = true }: { me
   return (
     <div className="flex flex-col justify-end gap-4 mt-6">
       {/* Pagination Controls */}
-      <Pagination className="max-w-max mx-0 ml-auto">
-        <PaginationContent>
-          {/* Previous */}
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => {
-                if (meta.page > 1) {
-                  handleSetSearchParams({ page: String(meta.page - 1) })
-                }
-              }}
-            />
-          </PaginationItem>
-
-          {/* Page Numbers */}
-          {[...Array(meta.totalPage)].map((_, index) => {
-            const currentPage = index + 1;
-            return (
-              <PaginationItem key={currentPage}>
-                <PaginationLink
-                  isActive={currentPage === meta.page}
-                  onClick={() => {
-                    handleSetSearchParams({ page: String(currentPage) })
-                  }}
-                >
-                  {currentPage}
-                </PaginationLink>
-              </PaginationItem>
-            );
-          })}
-
-          {/* Next */}
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => {
-                if (meta.page < meta.totalPage) {
-                  handleSetSearchParams({ page: String(meta.page + 1) })
-                }
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+      <PageNav
+        page={meta.page}
+        totalPage={meta.totalPage}
+        onPageChange={(p) => handleSetSearchParams({ page: String(p) })}
+      />
       {/* Limit Selector */}
       {
         showItemPerPage && <div className="flex items-center gap-2 ml-auto">

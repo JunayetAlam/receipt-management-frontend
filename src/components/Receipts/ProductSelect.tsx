@@ -4,21 +4,21 @@ import React, { useId, useMemo, useEffect, useState } from "react";
 import CreatableSelect from "react-select/creatable";
 import { components, type MenuListProps } from "react-select";
 import { Switch } from "@/components/ui/switch";
-import { TProduct } from "@/types";
+import { TProductOption } from "@/types";
+import { useGetProductOptionsQuery } from "@/redux/api/productApi";
 import { CheckCircle2, PlusCircle } from "lucide-react";
 
 export interface ProductOption {
   value: string;
   label: string;
-  product?: TProduct;
+  product?: TProductOption;
   isNew?: boolean;
 }
 
 interface ProductSelectProps {
-  products: TProduct[];
   selectedProductId?: string | null;
   valueName?: string;
-  onSelectProduct: (product: TProduct) => void;
+  onSelectProduct: (product: TProductOption) => void;
   onNameChange: (name: string) => void;
   onClear: () => void;
   disabled?: boolean;
@@ -31,7 +31,6 @@ interface ProductSelectProps {
 }
 
 export default function ProductSelect({
-  products,
   selectedProductId,
   valueName = "",
   onSelectProduct,
@@ -45,6 +44,23 @@ export default function ProductSelect({
 }: ProductSelectProps) {
   const instanceId = useId();
   const [isMounted, setIsMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce typing so the API is hit only after the user pauses.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Server-side search; only fetched once the dropdown has been opened.
+  const { data: optionsResponse, isFetching } = useGetProductOptionsQuery(
+    { searchTerm: debouncedSearch || undefined, limit: 200 },
+    { skip: !menuOpen },
+  );
+  const products = optionsResponse?.data || [];
+  const totalMatches = optionsResponse?.meta?.total ?? products.length;
 
   useEffect(() => {
     setIsMounted(true);
@@ -84,13 +100,22 @@ export default function ProductSelect({
   // Toggle bar pinned at the top of the popup. Mouse-down is swallowed so the
   // click doesn't blur the input and close the menu.
   const selectComponents = useMemo(() => {
-    if (!onHideAddedChange) return undefined;
     const MenuList = (props: MenuListProps<ProductOption, false>) => (
       <components.MenuList {...props}>
+        <div className="sticky top-0 z-10 border-b border-border bg-popover px-3 py-1.5 text-[11px] text-muted-foreground">
+          {isFetching && !optionsResponse
+            ? "Searching..."
+            : `${totalMatches} product${totalMatches === 1 ? "" : "s"} found${
+                totalMatches > products.length
+                  ? ` · showing first ${products.length}`
+                  : ""
+              }`}
+        </div>
+        {onHideAddedChange && (
         <div
           role="switch"
           aria-checked={hideAdded}
-          className="sticky top-0 z-10 mb-1 flex cursor-pointer items-center justify-between gap-3 border-b border-border bg-popover px-3 py-2 text-xs"
+          className="mb-1 flex cursor-pointer items-center justify-between gap-3 border-b border-border bg-popover px-3 py-2 text-xs"
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -110,11 +135,12 @@ export default function ProductSelect({
             className="pointer-events-none"
           />
         </div>
+        )}
         {props.children}
       </components.MenuList>
     );
     return { MenuList };
-  }, [hideAdded, onHideAddedChange, addedElsewhereCount]);
+  }, [hideAdded, onHideAddedChange, addedElsewhereCount, totalMatches, products.length, isFetching, optionsResponse]);
 
   // Determine current selected option or custom value
   const currentValue: ProductOption | null = useMemo(() => {
@@ -131,26 +157,6 @@ export default function ProductSelect({
     return null;
   }, [selectedProductId, options, valueName]);
 
-  // Filter option: searches product name or SKU/unit
-  const filterOption = (
-    candidate: { label: string; value: string; data: ProductOption },
-    input: string
-  ) => {
-    if (!input || !input.trim()) return true;
-    const term = input.trim().toLowerCase();
-    const prod = candidate.data.product;
-
-    if (!prod) {
-      return candidate.label.toLowerCase().includes(term);
-    }
-
-    return (
-      prod.name.toLowerCase().includes(term) ||
-      prod.unit.toLowerCase().includes(term) ||
-      String(prod.sellingPrice).includes(term)
-    );
-  };
-
   return (
     <div className="w-full">
       <CreatableSelect<ProductOption, false>
@@ -160,7 +166,13 @@ export default function ProductSelect({
         options={visibleOptions}
         components={selectComponents}
         value={currentValue}
-        filterOption={filterOption}
+        filterOption={() => true}
+        isLoading={isFetching}
+        onMenuOpen={() => setMenuOpen(true)}
+        onMenuClose={() => {
+          setMenuOpen(false);
+          setSearchInput("");
+        }}
         placeholder={placeholder}
         menuPortalTarget={isMounted ? document.body : undefined}
         menuPosition="fixed"
@@ -196,6 +208,7 @@ export default function ProductSelect({
         }}
         onInputChange={(inputValue, { action }) => {
           if (action === "input-change") {
+            setSearchInput(inputValue);
             onNameChange(inputValue);
           }
         }}
