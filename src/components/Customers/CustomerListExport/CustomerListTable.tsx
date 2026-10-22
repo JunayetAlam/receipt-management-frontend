@@ -1,10 +1,11 @@
 import { TCustomer } from "@/types";
 import { formatSignedDue } from "@/utils/formatInvoiceMoney";
-
-const thClass =
-  "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-black dark:text-foreground whitespace-nowrap border-b border-slate-200 bg-slate-50";
-const tdClass =
-  "px-2 border-b border-slate-200/80 py-[6px] align-middle text-[11px] text-slate-900";
+import {
+  PRINT_TABLE_STYLE,
+  PRINT_TD as tdClass,
+  PRINT_TH as thClass,
+  printRowClass,
+} from "@/components/Global/printTable";
 
 export default function CustomerListTable({
   customers,
@@ -16,10 +17,13 @@ export default function CustomerListTable({
   empty?: boolean;
 }) {
   return (
-    <table className="w-full caption-bottom text-sm border-collapse">
+    <table
+      className="w-full caption-bottom border-collapse"
+      style={PRINT_TABLE_STYLE}
+    >
       <thead data-probe="header">
         <tr>
-          <th className={`${thClass} w-8 text-center`}>#</th>
+          <th className={`${thClass} w-[3.2em] text-center`}>#</th>
           <th className={thClass}>Name</th>
           <th className={thClass}>Phone</th>
           <th className={thClass}>Email</th>
@@ -32,7 +36,7 @@ export default function CustomerListTable({
           <tr data-row="empty">
             <td
               colSpan={6}
-              className={`${tdClass} text-center text-slate-500 italic py-6`}
+              className={`${tdClass} text-center text-slate-500 italic py-[1.6em]`}
             >
               No customers found for this filter.
             </td>
@@ -44,21 +48,21 @@ export default function CustomerListTable({
               <tr
                 key={customer.id}
                 data-row="item"
-                className={(startIndex + idx) % 2 === 1 ? "bg-muted" : ""}
+                className={printRowClass(startIndex + idx)}
               >
                 <td className={`${tdClass} text-center text-slate-500 font-mono`}>
                   {startIndex + idx + 1}
                 </td>
-                <td className={`${tdClass} font-semibold truncate max-w-[180px]`}>
+                <td className={`${tdClass} font-semibold truncate max-w-[18em]`}>
                   {customer.name}
                 </td>
                 <td className={`${tdClass} font-mono whitespace-nowrap`}>
                   {customer.countryCode || "+880"} {customer.phoneNumber}
                 </td>
-                <td className={`${tdClass} truncate max-w-[180px] text-slate-700`}>
+                <td className={`${tdClass} truncate max-w-[18em] text-slate-700`}>
                   {customer.email || "—"}
                 </td>
-                <td className={`${tdClass} truncate max-w-[200px] text-slate-700`}>
+                <td className={`${tdClass} truncate max-w-[20em] text-slate-700`}>
                   {customer.address || "—"}
                 </td>
                 <td

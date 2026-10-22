@@ -2,8 +2,10 @@
 
 import React, { useId, useMemo, useEffect, useState } from "react";
 import CreatableSelect from "react-select/creatable";
+import { components, type MenuListProps } from "react-select";
+import { Switch } from "@/components/ui/switch";
 import { TProduct } from "@/types";
-import { PlusCircle } from "lucide-react";
+import { CheckCircle2, PlusCircle } from "lucide-react";
 
 export interface ProductOption {
   value: string;
@@ -21,6 +23,11 @@ interface ProductSelectProps {
   onClear: () => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Products already on the receipt: product id → row number (1-based). */
+  addedProductRows?: Map<string, number>;
+  /** Hide products already on the receipt from the list (toggle shown in the popup). */
+  hideAdded?: boolean;
+  onHideAddedChange?: (hide: boolean) => void;
 }
 
 export default function ProductSelect({
@@ -32,6 +39,9 @@ export default function ProductSelect({
   onClear,
   disabled = false,
   placeholder = "Search product or type custom name...",
+  addedProductRows,
+  hideAdded = false,
+  onHideAddedChange,
 }: ProductSelectProps) {
   const instanceId = useId();
   const [isMounted, setIsMounted] = useState(false);
@@ -48,6 +58,63 @@ export default function ProductSelect({
       product: p,
     }));
   }, [products]);
+
+  // Products on other rows (this row's own product is not a duplicate).
+  const isAddedElsewhere = (productId: string) =>
+    productId !== selectedProductId && !!addedProductRows?.has(productId);
+
+  const addedElsewhereCount = useMemo(
+    () =>
+      options.filter(
+        (o) => o.value !== selectedProductId && addedProductRows?.has(o.value),
+      ).length,
+    [options, selectedProductId, addedProductRows],
+  );
+
+  const visibleOptions = useMemo(
+    () =>
+      hideAdded
+        ? options.filter(
+            (o) => o.value === selectedProductId || !addedProductRows?.has(o.value),
+          )
+        : options,
+    [options, hideAdded, selectedProductId, addedProductRows],
+  );
+
+  // Toggle bar pinned at the top of the popup. Mouse-down is swallowed so the
+  // click doesn't blur the input and close the menu.
+  const selectComponents = useMemo(() => {
+    if (!onHideAddedChange) return undefined;
+    const MenuList = (props: MenuListProps<ProductOption, false>) => (
+      <components.MenuList {...props}>
+        <div
+          role="switch"
+          aria-checked={hideAdded}
+          className="sticky top-0 z-10 mb-1 flex cursor-pointer items-center justify-between gap-3 border-b border-border bg-popover px-3 py-2 text-xs"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={() => onHideAddedChange(!hideAdded)}
+        >
+          <span className="font-medium text-foreground">
+            Show only not-added products
+            <span className="ml-1.5 text-muted-foreground font-normal">
+              ({addedElsewhereCount} added)
+            </span>
+          </span>
+          <Switch
+            size="sm"
+            checked={hideAdded}
+            tabIndex={-1}
+            className="pointer-events-none"
+          />
+        </div>
+        {props.children}
+      </components.MenuList>
+    );
+    return { MenuList };
+  }, [hideAdded, onHideAddedChange, addedElsewhereCount]);
 
   // Determine current selected option or custom value
   const currentValue: ProductOption | null = useMemo(() => {
@@ -90,14 +157,18 @@ export default function ProductSelect({
         instanceId={instanceId}
         isDisabled={disabled}
         isClearable
-        options={options}
+        options={visibleOptions}
+        components={selectComponents}
         value={currentValue}
         filterOption={filterOption}
         placeholder={placeholder}
         menuPortalTarget={isMounted ? document.body : undefined}
         menuPosition="fixed"
+        maxMenuHeight={400}
         noOptionsMessage={({ inputValue }) =>
-          inputValue
+          hideAdded && !inputValue && addedElsewhereCount > 0
+            ? "All products are already added. Turn off the toggle to see them."
+            : inputValue
             ? `No product matching "${inputValue}". Press Enter to use as custom product.`
             : "No products available"
         }
@@ -149,10 +220,23 @@ export default function ProductSelect({
           }
 
           const prod = option.product;
+          // This row's own product is not a duplicate.
+          const addedRow = isAddedElsewhere(prod.id)
+            ? addedProductRows?.get(prod.id)
+            : undefined;
           return (
-            <div className="flex flex-col py-0.5 text-xs text-left">
-              <span className="font-medium text-sm text-foreground whitespace-normal wrap-break-word leading-tight">
-                {prod.name}
+            <div
+              className={`flex flex-col py-0.5 text-xs text-left ${addedRow ? "opacity-60" : ""}`}
+            >
+              <span className="flex items-start justify-between gap-2">
+                <span className="font-medium text-sm text-foreground whitespace-normal wrap-break-word leading-tight">
+                  {prod.name}
+                </span>
+                {addedRow && (
+                  <span className="inline-flex items-center gap-1 shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-px text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                    <CheckCircle2 className="size-3" /> Added · Row {addedRow}
+                  </span>
+                )}
               </span>
               <span
                 className={`text-[11px] font-mono mt-0.5 ${
@@ -276,7 +360,7 @@ export default function ProductSelect({
           menuList: (base) => ({
             ...base,
             padding: 0,
-            maxHeight: "240px",
+            maxHeight: "400px",
             scrollbarWidth: "thin",
           }),
           option: (base, state) => ({

@@ -55,33 +55,31 @@ export default function RIV_Footer({
         </div>
       )}
       <div className="bg-primary text-primary-foreground py-3.5 px-9 flex flex-col gap-2.5 text-xs font-medium">
-        <div className="grid grid-cols-3 items-center gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {contactPhones && (
-              <>
-                <Phone className="size-3.5 text-primary-foreground/90 shrink-0" />
-                <span className="truncate">{contactPhones}</span>
-              </>
-            )}
-          </div>
+        {/* Phone and email take only the width they need; the address gets all
+            the remaining width so it stays on one line. */}
+        <div className="flex items-center gap-6">
+          {contactPhones && (
+            <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+              <Phone className="size-3.5 text-primary-foreground/90 shrink-0" />
+              <span>{contactPhones}</span>
+            </div>
+          )}
 
-          <div className="flex items-center justify-center gap-2 min-w-0">
-            {contactEmails && (
-              <>
-                <Mail className="size-3.5 text-primary-foreground/90 shrink-0" />
-                <span className="truncate">{contactEmails}</span>
-              </>
-            )}
-          </div>
+          {contactEmails && (
+            <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
+              <Mail className="size-3.5 text-primary-foreground/90 shrink-0" />
+              <span>{contactEmails}</span>
+            </div>
+          )}
 
-          <div className="flex items-center justify-end gap-2 min-w-0">
-            {contactLocations && (
-              <>
-                <MapPin className="size-3.5 text-primary-foreground/90 shrink-0" />
-                <span className="text-right">{contactLocations}</span>
-              </>
-            )}
-          </div>
+          {contactLocations && (
+            <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
+              <MapPin className="size-3.5 text-primary-foreground/90 shrink-0" />
+              <span className="truncate" title={contactLocations}>
+                {contactLocations}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 font-mono text-[11px]">

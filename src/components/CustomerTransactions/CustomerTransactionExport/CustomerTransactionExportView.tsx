@@ -1,11 +1,13 @@
 "use client";
 
+import TextSizeControl, {
+  textScaleStyle,
+  useTextScale,
+} from "@/components/Global/TextSizeControl";
+import PrintToolbar from "@/components/Global/PrintToolbar";
 import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
-import { Button } from "@/components/ui/button";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import { TCustomer, TCustomerTransaction, TShop } from "@/types";
-import { ArrowLeft, Printer } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import CustomerTransactionContinuationBar from "./CustomerTransactionContinuationBar";
 import CustomerTransactionFooter from "./CustomerTransactionFooter";
@@ -89,13 +91,13 @@ export default function CustomerTransactionExportView({
   searchTerm?: string;
   backHref?: string;
 }) {
-  const router = useRouter();
   const rulerRef = useRef<HTMLDivElement>(null);
   const headerProbeRef = useRef<HTMLDivElement>(null);
   const barProbeRef = useRef<HTMLDivElement>(null);
   const tableProbeRef = useRef<HTMLDivElement>(null);
   const footerProbeRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState<ListMetrics>(FALLBACK_METRICS);
+  const [textScale, changeTextScale] = useTextScale();
   const didAutoPrint = useRef(false);
 
   const { data: shopResponse, isLoading: isShopLoading } =
@@ -151,7 +153,9 @@ export default function CustomerTransactionExportView({
           FALLBACK_METRICS.continuationBarHeight,
         tableHeaderHeight:
           headerEl?.offsetHeight || FALLBACK_METRICS.tableHeaderHeight,
-        rowHeight: itemEl?.offsetHeight || FALLBACK_METRICS.rowHeight,
+        // Fractional height: offsetHeight rounds, and the error adds up over many rows.
+        rowHeight:
+          itemEl?.getBoundingClientRect().height || FALLBACK_METRICS.rowHeight,
         emptyStateHeight:
           emptyEl?.offsetHeight || FALLBACK_METRICS.emptyStateHeight,
       };
@@ -240,32 +244,17 @@ export default function CustomerTransactionExportView({
   }, [isShopLoading, pageCount, metrics]);
 
   return (
-    <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
+    <div
+      className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0"
+      style={textScaleStyle(textScale)}
+    >
       {/* Top Toolbar (Hidden on print) */}
-      <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-          className="gap-2 shadow-xs bg-card cursor-pointer"
-        >
-          <ArrowLeft className="size-4" />
-          <span className="hidden sm:inline">Go Back</span>
-        </Button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
-            {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
-          </span>
-          <Button
-            onClick={handlePrint}
-            className="gap-2 bg-primary text-primary-foreground font-semibold shadow-xs hover:opacity-95 cursor-pointer"
-            size="sm"
-          >
-            <Printer className="size-4" /> Print / Save as PDF
-          </Button>
-        </div>
-      </div>
+      <PrintToolbar onPrint={handlePrint}>
+        <TextSizeControl scale={textScale} onChange={changeTextScale} />
+        <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
+          {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
+        </span>
+      </PrintToolbar>
 
       {/* Hidden Probing Container for Dynamic Height Calculation */}
       <div

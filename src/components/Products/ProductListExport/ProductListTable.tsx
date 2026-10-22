@@ -1,10 +1,11 @@
 import { TProduct } from "@/types";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
-
-const thClass =
-  "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-black dark:text-foreground whitespace-nowrap border-b border-slate-200 bg-slate-50";
-const tdClass =
-  "px-2 border-b border-slate-200/80 py-[6px] align-middle text-[11px] text-slate-900";
+import {
+  PRINT_TABLE_STYLE,
+  PRINT_TD as tdClass,
+  PRINT_TH as thClass,
+  printRowClass,
+} from "@/components/Global/printTable";
 
 function formatQty(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -22,10 +23,13 @@ export default function ProductListTable({
   empty?: boolean;
 }) {
   return (
-    <table className="w-full caption-bottom text-sm border-collapse">
+    <table
+      className="w-full caption-bottom border-collapse"
+      style={PRINT_TABLE_STYLE}
+    >
       <thead data-probe="header">
         <tr>
-          <th className={`${thClass} w-8 text-center`}>#</th>
+          <th className={`${thClass} w-[3.2em] text-center`}>#</th>
           <th className={thClass}>Name</th>
           <th className={thClass}>Unit</th>
           <th className={`${thClass} text-right`}>Stock</th>
@@ -38,7 +42,7 @@ export default function ProductListTable({
           <tr data-row="empty">
             <td
               colSpan={6}
-              className={`${tdClass} text-center text-slate-500 italic py-6`}
+              className={`${tdClass} text-center text-slate-500 italic py-[1.6em]`}
             >
               No products found for this filter.
             </td>
@@ -48,12 +52,12 @@ export default function ProductListTable({
             <tr
               key={product.id}
               data-row="item"
-              className={(startIndex + idx) % 2 === 1 ? "bg-muted" : ""}
+              className={printRowClass(startIndex + idx)}
             >
               <td className={`${tdClass} text-center text-slate-500 font-mono`}>
                 {startIndex + idx + 1}
               </td>
-              <td className={`${tdClass} font-semibold truncate max-w-[220px]`}>
+              <td className={`${tdClass} font-semibold truncate max-w-[22em]`}>
                 {product.name}
               </td>
               <td className={`${tdClass} text-slate-700 whitespace-nowrap`}>

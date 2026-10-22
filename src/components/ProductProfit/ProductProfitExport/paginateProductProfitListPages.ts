@@ -1,6 +1,7 @@
 import { TProductProfitRow } from "@/types";
 
-export const LIST_CONTENT_FOOTER_GAP = 28;
+/** Breathing room kept between the last row and the footer. */
+export const LIST_CONTENT_FOOTER_GAP = 12;
 export const LIST_CONTENT_TOP_PADDING = 32;
 export const LIST_TABLE_TOP_PADDING = 16;
 

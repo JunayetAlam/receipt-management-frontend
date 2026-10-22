@@ -1,10 +1,23 @@
 import { TReceipt } from "@/types";
 import { formatInvoiceDate } from "@/utils/formatInvoiceDate";
-import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
+import {
+  formatInvoiceMoney,
+  roundInvoiceMoney,
+} from "@/utils/formatInvoiceMoney";
 import { deriveReceiptSettlement } from "@/utils/deriveReceiptSettlement";
 import React from "react";
+import { INVOICE_BASE_FONT } from "./RIV_ProductTable";
+import RIV_PageTotals from "./RIV_PageTotals";
+import type { PageTotal } from "./paginateInvoicePages";
 
-export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
+export default function RIV_Calculation({
+  receipt,
+  pageTotals,
+}: {
+  receipt: TReceipt;
+  /** Per-page item totals, listed above the Subtotal (multi-page invoices only). */
+  pageTotals?: PageTotal[];
+}) {
   const sortedPayments = [...(receipt.payments || [])]
     .filter((p) => p.status !== "REJECTED")
     .sort(
@@ -33,77 +46,68 @@ export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
     thisRefunded: 0,
   });
 
+  // paidAmount is the running total: the amount paid at sale (not a payment
+  // record) plus every installment. Show the at-sale part as its own line so
+  // the list adds up to the Total Paid below it.
+  const totalPaid = Number(receipt.paidAmount) || 0;
+  const installmentsTotal = sortedPayments.reduce(
+    (sum, p) => sum + (Number(p.amount) || 0),
+    0,
+  );
+  const paidAtSale = roundInvoiceMoney(Math.max(0, totalPaid - installmentsTotal));
+
+  const paidLines = [
+    ...(paidAtSale > 0 || sortedPayments.length === 0
+      ? [{ key: "sale", date: receipt.createdAt, amount: paidAtSale }]
+      : []),
+    ...sortedPayments.map((p, idx) => ({
+      key: p.id || String(idx),
+      date: p.createdAt,
+      amount: p.amount,
+    })),
+  ];
+
+  // Two columns so the summary uses the full width under the table: history
+  // (payments, returns) on the left, the running totals on the right.
   return (
     <div
-      className="flex justify-end pt-1 pr-2.5"
-      style={{ breakInside: "avoid", pageBreakInside: "avoid" }}
+      className="grid grid-cols-2 gap-x-6 pt-1.5 px-1.5 leading-snug"
+      style={{
+        fontSize: INVOICE_BASE_FONT,
+        breakInside: "avoid",
+        pageBreakInside: "avoid",
+      }}
     >
-      <div className="w-full sm:w-1/2 print:w-1/2 space-y-1 text-xs">
-        <div className="flex justify-between items-center text-slate-700">
-          <span className="font-semibold text-sm">Subtotal</span>
-          <span className="font-mono font-semibold text-sm text-slate-900">
-            {formatInvoiceMoney(receipt.subTotal)}
-          </span>
-        </div>
-
-        {receipt.discount > 0 && (
-          <div className="flex justify-between items-center text-slate-700">
-            <span className="font-semibold text-sm">Discount</span>
-            <span className="font-mono font-semibold text-sm text-rose-600">
-              -{formatInvoiceMoney(receipt.discount)}
-            </span>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center text-slate-900 pt-1 border-t border-slate-200">
-          <span className="font-semibold text-sm">Net Total</span>
-          <span className="font-mono font-bold text-sm text-slate-900">
-            {formatInvoiceMoney(receipt.totalAmount)}
-          </span>
-        </div>
-
-        {sortedPayments.length > 0 ? (
-          sortedPayments.map((p, idx) => (
+      {/* Left part ends in a vertical divider, centred in the gap between the parts. */}
+      <div className="space-y-1.5 pr-6 border-r border-slate-300">
+        <div className="space-y-0.5">
+          <p className="font-bold text-[0.9em] uppercase tracking-wider text-slate-500">
+            Payments
+          </p>
+          {paidLines.map((line) => (
             <div
-              key={p.id || idx}
+              key={line.key}
               className="flex justify-between items-center text-slate-700"
             >
-              <span className="font-semibold text-sm">
-                Paid ({formatInvoiceDate(p.createdAt)})
+              <span className="font-semibold">
+                Paid ({formatInvoiceDate(line.date)})
               </span>
-              <span className="font-mono font-semibold text-sm text-emerald-700">
-                {formatInvoiceMoney(p.amount)}
+              <span className="font-mono font-semibold text-emerald-700">
+                {formatInvoiceMoney(line.amount)}
               </span>
             </div>
-          ))
-        ) : (
-          <div className="flex justify-between items-center text-slate-700">
-            <span className="font-semibold text-sm">
-              Paid ({formatInvoiceDate(receipt.createdAt)})
-            </span>
-            <span className="font-mono font-semibold text-sm text-emerald-700">
-              {formatInvoiceMoney(receipt.paidAmount)}
+          ))}
+          <div className="flex justify-between items-center text-slate-900 pt-0.5 border-t border-slate-300">
+            <span className="font-bold">Total Paid</span>
+            <span className="font-mono font-bold text-emerald-700">
+              {formatInvoiceMoney(totalPaid)}
             </span>
           </div>
-        )}
-
-        {/* Without returns: original sale balance. With returns: settled below. */}
-        {!hasReturns && (
-          <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900">
-            <span className="font-bold text-base">Total Due</span>
-            <span
-              className={`font-mono font-extrabold text-xl ${
-                receipt.dueAmount > 0 ? "text-rose-600" : "text-slate-900"
-              }`}
-            >
-              {formatInvoiceMoney(receipt.dueAmount)}
-            </span>
-          </div>
-        )}
+        </div>
 
         {hasReturns && (
-          <div className="pt-3 mt-2 border-t border-dashed border-slate-300 space-y-1.5">
-            <p className="font-bold text-sm text-slate-900 tracking-wide">
+          <div className="space-y-1 pt-1 border-t border-dashed border-slate-300">
+            <p className="font-bold text-[0.9em] uppercase tracking-wider text-slate-500">
               Returns
             </p>
             {returns.map((ret) => {
@@ -115,112 +119,148 @@ export default function RIV_Calculation({ receipt }: { receipt: TReceipt }) {
                 Math.round((credit + discount) * 100) / 100;
 
               return (
-                <div key={ret.id} className="space-y-0.5 pb-1">
+                <div key={ret.id} className="space-y-px">
                   <div className="flex justify-between items-center text-slate-700">
-                    <span className="font-semibold text-xs">
+                    <span className="font-semibold">
                       {ret.returnNumber}{" "}
                       <span className="font-normal text-slate-500">
                         ({formatInvoiceDate(ret.createdAt)})
                       </span>
                     </span>
-                    <span className="font-mono font-semibold text-xs text-slate-700">
+                    <span className="font-mono font-semibold text-slate-700">
                       {formatInvoiceMoney(subTotal)}
                     </span>
                   </div>
                   {discount > 0 && (
-                    <div className="flex justify-between items-center text-slate-500 pl-0.5">
-                      <span className="text-[10px]">Discount</span>
-                      <span className="font-mono text-[10px] text-rose-600">
+                    <div className="flex justify-between items-center text-[0.9em] text-slate-500 pl-1.5">
+                      <span>Discount</span>
+                      <span className="font-mono text-rose-600">
                         -{formatInvoiceMoney(discount)}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center text-slate-700 pl-0.5">
-                    <span className="text-[10px] font-semibold">Net Credit</span>
-                    <span className="font-mono text-[10px] font-semibold text-rose-600">
+                  <div className="flex justify-between items-center text-[0.9em] text-slate-700 pl-1.5">
+                    <span className="font-semibold">Net Credit</span>
+                    <span className="font-mono font-semibold text-rose-600">
                       -{formatInvoiceMoney(credit)}
                     </span>
                   </div>
                   {refunded > 0 && (
-                    <div className="flex justify-between items-center text-slate-700 pl-0.5">
-                      <span className="text-[10px] font-semibold">
-                        Refunded
-                      </span>
-                      <span className="font-mono text-[10px] font-semibold text-emerald-700">
+                    <div className="flex justify-between items-center text-[0.9em] text-slate-700 pl-1.5">
+                      <span className="font-semibold">Refunded</span>
+                      <span className="font-mono font-semibold text-emerald-700">
                         {formatInvoiceMoney(refunded)}
                       </span>
                     </div>
                   )}
-                  {/* Product details of what returned - skipped for return invoice */}
-                  {/* {(ret.items || []).length > 0 && (
-                    <p className="text-[10px] text-slate-500 leading-snug pl-0.5">
-                      {(ret.items || [])
-                        .map((it) => `${it.productName} × ${it.quantity}`)
-                        .join(", ")}
-                    </p>
-                  )} */}
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
 
-            <div className="flex justify-between items-center text-slate-800 pt-1 border-t border-slate-200">
-              <span className="font-semibold text-sm">Total Returned</span>
-              <span className="font-mono font-bold text-sm text-rose-600">
+      <div className="space-y-0.5">
+        <RIV_PageTotals pageTotals={pageTotals} />
+
+        <div className="flex justify-between items-center text-slate-700">
+          <span className="font-semibold">Subtotal</span>
+          <span className="font-mono font-semibold text-slate-900">
+            {formatInvoiceMoney(receipt.subTotal)}
+          </span>
+        </div>
+
+        {receipt.discount > 0 && (
+          <div className="flex justify-between items-center text-slate-700">
+            <span className="font-semibold">Discount</span>
+            <span className="font-mono font-semibold text-rose-600">
+              -{formatInvoiceMoney(receipt.discount)}
+            </span>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center text-slate-900 pt-0.5 border-t border-slate-200">
+          <span className="font-semibold">Net Total</span>
+          <span className="font-mono font-bold text-slate-900">
+            {formatInvoiceMoney(receipt.totalAmount)}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center text-slate-700">
+          <span className="font-semibold">Total Paid</span>
+          <span className="font-mono font-semibold text-emerald-700">
+            {formatInvoiceMoney(receipt.paidAmount)}
+          </span>
+        </div>
+
+        {/* Without returns: original sale balance. With returns: settled below. */}
+        {!hasReturns && (
+          <div className="flex justify-between items-center text-slate-900 pt-0.5 border-t-2 border-slate-900">
+            <span className="font-bold text-[1.2em]">Total Due</span>
+            <span
+              className={`font-mono font-extrabold text-[1.4em] ${
+                receipt.dueAmount > 0 ? "text-rose-600" : "text-slate-900"
+              }`}
+            >
+              {formatInvoiceMoney(receipt.dueAmount)}
+            </span>
+          </div>
+        )}
+
+        {hasReturns && (
+          <>
+            <div className="flex justify-between items-center text-slate-800 pt-0.5 border-t border-slate-200">
+              <span className="font-semibold">Total Returned</span>
+              <span className="font-mono font-bold text-rose-600">
                 -{formatInvoiceMoney(settlement.totalCredits)}
               </span>
             </div>
 
             {settlement.totalRefunded > 0 && (
               <div className="flex justify-between items-center text-slate-800">
-                <span className="font-semibold text-sm">Total Refunded</span>
-                <span className="font-mono font-bold text-sm text-emerald-700">
+                <span className="font-semibold">Total Refunded</span>
+                <span className="font-mono font-bold text-emerald-700">
                   {formatInvoiceMoney(settlement.totalRefunded)}
                 </span>
               </div>
             )}
 
-            <div className="pt-1.5 space-y-1 border-t border-slate-200">
-              <div className="flex justify-between items-center text-slate-900">
-                <span className="font-semibold text-sm">
-                  Net Sale After Returns
-                </span>
-                <span className="font-mono font-bold text-sm">
-                  {formatInvoiceMoney(settlement.netSaleAfterReturns)}
+            <div className="flex justify-between items-center text-slate-900 pt-0.5 border-t border-slate-200">
+              <span className="font-semibold">Net Sale After Returns</span>
+              <span className="font-mono font-bold">
+                {formatInvoiceMoney(settlement.netSaleAfterReturns)}
+              </span>
+            </div>
+
+            {settlement.totalRefunded > 0 && (
+              <div className="flex justify-between items-center text-slate-700">
+                <span className="font-semibold">Net Paid (after refunds)</span>
+                <span className="font-mono text-emerald-700">
+                  {formatInvoiceMoney(settlement.netPaid)}
                 </span>
               </div>
+            )}
 
-              {settlement.totalRefunded > 0 && (
-                <div className="flex justify-between items-center text-slate-700">
-                  <span className="font-semibold text-xs">
-                    Net Paid (after refunds)
-                  </span>
-                  <span className="font-mono text-xs text-emerald-700">
-                    {formatInvoiceMoney(settlement.netPaid)}
-                  </span>
-                </div>
-              )}
-
-              {settlement.netRefundable > 0 ? (
-                <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-1">
-                  <span className="font-bold text-base">Net Refundable</span>
-                  <span className="font-mono font-extrabold text-xl text-emerald-700">
-                    {formatInvoiceMoney(settlement.netRefundable)}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-1">
-                  <span className="font-bold text-base">Net Due</span>
-                  <span
-                    className={`font-mono font-extrabold text-xl ${
-                      settlement.netDue > 0 ? "text-rose-600" : "text-slate-900"
-                    }`}
-                  >
-                    {formatInvoiceMoney(settlement.netDue)}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+            {settlement.netRefundable > 0 ? (
+              <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-0.5">
+                <span className="font-bold text-[1.2em]">Net Refundable</span>
+                <span className="font-mono font-extrabold text-[1.4em] text-emerald-700">
+                  {formatInvoiceMoney(settlement.netRefundable)}
+                </span>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center text-slate-900 border-t-2 border-slate-900 pt-0.5">
+                <span className="font-bold text-[1.2em]">Net Due</span>
+                <span
+                  className={`font-mono font-extrabold text-[1.4em] ${
+                    settlement.netDue > 0 ? "text-rose-600" : "text-slate-900"
+                  }`}
+                >
+                  {formatInvoiceMoney(settlement.netDue)}
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

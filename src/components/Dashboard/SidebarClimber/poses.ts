@@ -1,4 +1,4 @@
-// Joint angles for the stair figure. Each limb is [upper, bend] in degrees:
+// Joint angles for the ninja figure. Each limb is [upper, bend] in degrees:
 // `upper` is measured from straight down (0) to straight up (180), swinging
 // outward from the body; `bend` is added for the lower segment.
 // The figure always plants its lowest foot on the ground point, so bending the
@@ -15,7 +15,7 @@ export type Pose = {
   flag: number;
   /** Pennant wave, -1..1. */
   wave: number;
-  /** Visibility of the small motion marks beside the body, 0..1. */
+  /** Visibility of the small motion marks beside the body (also makes the headband tails flutter harder), 0..1. */
   motion: number;
 };
 
@@ -56,66 +56,194 @@ const pose = (
   ...extra,
 });
 
-/** Standing on a stair, arms relaxed with a slight idle sway. */
-export function standPose(time = 0): Pose {
-  const sway = Math.sin(time / 500) * 4;
+/** Ninja ready stance: knees bent and apart, both hands raised in guard. */
+export const STANCE = pose(
+  [
+    [55, 85],
+    [30, 100],
+  ],
+  [
+    [26, -38],
+    [26, -38],
+  ],
+);
+
+/** Deep crouch: loading a jump, or absorbing a landing. */
+export const CROUCH = pose(
+  [
+    [40, 70],
+    [40, 70],
+  ],
+  [
+    [55, -110],
+    [55, -110],
+  ],
+);
+
+/** Airborne stretch: arms thrown up, legs trailing. */
+export const FLIGHT = pose(
+  [
+    [150, -10],
+    [150, -10],
+  ],
+  [
+    [20, -50],
+    [20, -50],
+  ],
+  { motion: 0.9 },
+);
+
+/** Balled-up tuck for somersaults. */
+export const TUCK = pose(
+  [
+    [70, 95],
+    [70, 95],
+  ],
+  [
+    [80, -150],
+    [80, -150],
+  ],
+  { motion: 1 },
+);
+
+/** Arms out for balance while dropping. */
+export const BALANCE = pose(
+  [
+    [96, 4],
+    [96, 4],
+  ],
+  [
+    [22, -40],
+    [14, -18],
+  ],
+  { motion: 0.7 },
+);
+
+/** Ninja landing: low kneel, one hand down to the floor, the other swept back up. */
+export const LAND = pose(
+  [
+    [8, 0],
+    [130, 20],
+  ],
+  [
+    [70, -140],
+    [65, -125],
+  ],
+  { motion: 0.3 },
+);
+
+/** Star shape (arms and legs flung wide) for cartwheel-style aerials. */
+export const SPREAD = pose(
+  [
+    [120, 0],
+    [120, 0],
+  ],
+  [
+    [42, 0],
+    [42, 0],
+  ],
+  { motion: 1 },
+);
+
+/** Mid-air kick off a wall: one leg shot out, the other tucked. */
+export const KICK = pose(
+  [
+    [60, 90],
+    [110, 10],
+  ],
+  [
+    [55, -110],
+    [92, 0],
+  ],
+  { motion: 1 },
+);
+
+/** Head-first dive: arms stretched overhead, legs straight. */
+export const DIVE = pose(
+  [
+    [175, 0],
+    [175, 0],
+  ],
+  [
+    [6, 0],
+    [6, 0],
+  ],
+  { motion: 1 },
+);
+
+/** Leaning back into a slide, arms forward for balance. */
+export const LEAN = pose(
+  [
+    [100, 30],
+    [80, 40],
+  ],
+  [
+    [40, -30],
+    [12, -10],
+  ],
+  { motion: 0.8 },
+);
+
+/** Hand seal before vanishing: hands together in front of the chest. */
+export const SEAL = pose(
+  [
+    [35, 120],
+    [35, 120],
+  ],
+  [
+    [20, -26],
+    [20, -26],
+  ],
+  { motion: 0.6 },
+);
+
+/** Right arm thrown straight up to shoot a web line. */
+export const AIM = pose(
+  [
+    [45, 75],
+    [172, 0],
+  ],
+  [
+    [26, -38],
+    [26, -38],
+  ],
+);
+
+/** Rappelling: both hands up on the line, feet pushed out against the wall. */
+export const RAPPEL = pose(
+  [
+    [165, -10],
+    [165, -10],
+  ],
+  [
+    [62, -25],
+    [48, -10],
+  ],
+  { motion: 0.5 },
+);
+
+/** Climbing a line hand over hand, with alternating knee lifts. `phase` +1 per hand pair. */
+export function climbPose(phase: number): Pose {
+  const s = Math.sin(phase * Math.PI * 2);
+  const up = (1 + s) / 2;
+  const down = (1 - s) / 2;
   return pose(
     [
-      [18 + sway, 12],
-      [18 - sway, 12],
+      [lerp(145, 175, up), lerp(35, -5, up)],
+      [lerp(145, 175, down), lerp(35, -5, down)],
     ],
     [
-      [6, -2],
-      [6, -2],
+      [lerp(8, 50, down), lerp(-4, -90, down)],
+      [lerp(8, 50, up), lerp(-4, -90, up)],
     ],
+    { motion: 0.3 + 0.4 * Math.abs(s) },
   );
 }
 
-/** Knees bent, arms swung back: before a jump and when landing. `k` 0..1. */
-export function crouchPose(k: number): Pose {
-  return lerpPose(standPose(), pose(
-    [
-      [48, 40],
-      [48, 40],
-    ],
-    [
-      [42, -84],
-      [42, -84],
-    ],
-  ), clamp01(k));
-}
+/** Crouch depth `k` 0..1, from the ready stance. */
+export const crouchPose = (k: number) => lerpPose(STANCE, CROUCH, clamp01(k));
 
-/** Airborne: arms up, legs tucked. `k` 0..1 blends in from standing. */
-export function flightPose(k: number): Pose {
-  return lerpPose(standPose(), pose(
-    [
-      [158, -12],
-      [158, -12],
-    ],
-    [
-      [32, -64],
-      [32, -64],
-    ],
-    { motion: 0.9 },
-  ), clamp01(k));
-}
-
-/** Arms stretched out to the sides for balance when hopping down. */
-export function balancePose(k: number): Pose {
-  return lerpPose(standPose(), pose(
-    [
-      [96, 4],
-      [96, 4],
-    ],
-    [
-      [22, -40],
-      [14, -18],
-    ],
-    { motion: 0.7 },
-  ), clamp01(k));
-}
-
-/** Running: alternating knee lifts and arm swings. `phase` +1 per stride pair. */
+/** Sprinting: alternating knee lifts and arm pumps. `phase` +1 per stride pair. */
 export function runPose(phase: number): Pose {
   const s = Math.sin(phase * Math.PI * 2);
   const a = (1 + s) / 2;
@@ -129,39 +257,7 @@ export function runPose(phase: number): Pose {
       [lerp(4, 62, b), lerp(-2, -105, b)],
       [lerp(4, 62, a), lerp(-2, -105, a)],
     ],
-    { motion: 0.4 + 0.5 * Math.abs(s) },
-  );
-}
-
-/** Both hands reaching up to grab the stair above. */
-export function reachPose(k: number): Pose {
-  return lerpPose(standPose(), pose(
-    [
-      [172, -4],
-      [172, -4],
-    ],
-    [
-      [6, -2],
-      [6, -2],
-    ],
-  ), clamp01(k));
-}
-
-/** Pulling up / stepping between stairs: alternating reach and leg step. */
-export function climbPose(phase: number): Pose {
-  const s = Math.sin(phase * Math.PI * 2);
-  const up = (1 + s) / 2;
-  const down = (1 - s) / 2;
-  return pose(
-    [
-      [lerp(130, 172, up), lerp(40, -6, up)],
-      [lerp(130, 172, down), lerp(40, -6, down)],
-    ],
-    [
-      [lerp(8, 58, down), lerp(-4, -95, down)],
-      [lerp(8, 58, up), lerp(-4, -95, up)],
-    ],
-    { motion: 0.35 + 0.5 * Math.abs(s) },
+    { motion: 0.5 + 0.5 * Math.abs(s) },
   );
 }
 

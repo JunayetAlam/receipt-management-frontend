@@ -1,17 +1,22 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { Printer, ArrowLeft, AlertTriangle, Pencil } from "lucide-react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
+import { AlertTriangle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { tabPillClass } from "@/lib/tabColors";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
+import TextSizeControl, {
+  textScaleStyle,
+  useTextScale,
+} from "@/components/Global/TextSizeControl";
+import PrintToolbar from "@/components/Global/PrintToolbar";
 import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 import { TReceipt, TReceiptItem, TReturnInvoice } from "@/types";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
@@ -22,7 +27,10 @@ import RIV_Footer from "@/components/Receipts/ReceipInvoiceView.tsx/RIV_Footer";
 import RIV_ContinuationBar from "@/components/Receipts/ReceipInvoiceView.tsx/RIV_ContinuationBar";
 import {
   INVOICE_CONTENT_FOOTER_GAP,
+  measureOverheadCorrection,
+  pageTotalsOf,
   paginateInvoicePages,
+  type OverheadCorrection,
 } from "@/components/Receipts/ReceipInvoiceView.tsx/paginateInvoicePages";
 import RetIV_Details from "./RetIV_Details";
 import RetIV_Calculation from "./RetIV_Calculation";
@@ -83,7 +91,6 @@ function toReceiptItems(returnInvoice: TReturnInvoice): TReceiptItem[] {
 export default function ReturnInvoiceView({
   returnInvoice,
 }: ReturnInvoiceViewProps) {
-  const router = useRouter();
   const rulerRef = useRef<HTMLDivElement>(null);
   const detailsProbeRef = useRef<HTMLDivElement>(null);
   const barProbeRef = useRef<HTMLDivElement>(null);
@@ -92,6 +99,13 @@ export default function ReturnInvoiceView({
   const compactFooterProbeRef = useRef<HTMLDivElement>(null);
   const lastFooterProbeRef = useRef<HTMLDivElement>(null);
   const [metrics, setMetrics] = useState<InvoiceMetrics>(FALLBACK_METRICS);
+  // Measured height of every item row (long names wrap, so rows differ).
+  const [rowHeights, setRowHeights] = useState<number[]>([]);
+  const [textScale, changeTextScale] = useTextScale();
+  // Gap between predicted and rendered page layout, measured after render (see measureOverheadCorrection).
+  const [overheadCorrection, setOverheadCorrection] =
+    useState<OverheadCorrection>({ first: 0, rest: 0 });
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"customer" | "shop">("customer");
   const didAutoPrint = useRef(false);
@@ -152,9 +166,13 @@ export default function ReturnInvoiceView({
       const headerEl = tableRoot?.querySelector(
         '[data-probe="header"]',
       ) as HTMLElement | null;
-      const rowEl = tableRoot?.querySelector(
-        "tbody tr:not([data-row])",
-      ) as HTMLElement | null;
+      const itemHeights = Array.from(
+        tableRoot?.querySelectorAll<HTMLElement>('[data-row="item"]') ?? [],
+      ).map((el) => el.getBoundingClientRect().height);
+      // Single-line row height: the shortest measured row.
+      const singleRowHeight = itemHeights.length
+        ? Math.min(...itemHeights)
+        : 0;
       const bfEl = tableRoot?.querySelector(
         '[data-row="balance-bf"]',
       ) as HTMLElement | null;
@@ -176,18 +194,35 @@ export default function ReturnInvoiceView({
           FALLBACK_METRICS.continuationBarHeight,
         tableHeaderHeight:
           headerEl?.offsetHeight || FALLBACK_METRICS.tableHeaderHeight,
-        rowHeight: rowEl?.offsetHeight || FALLBACK_METRICS.rowHeight,
+        rowHeight: singleRowHeight || FALLBACK_METRICS.rowHeight,
         balanceRowHeight:
-          bfEl?.offsetHeight || FALLBACK_METRICS.balanceRowHeight,
+          bfEl?.getBoundingClientRect().height ||
+          FALLBACK_METRICS.balanceRowHeight,
         calculationHeight:
           calcProbeRef.current?.offsetHeight ||
           FALLBACK_METRICS.calculationHeight,
       };
     };
 
+    const readRowHeights = () =>
+      items.length
+        ? Array.from(
+            tableProbeRef.current?.querySelectorAll<HTMLElement>(
+              '[data-row="item"]',
+            ) ?? [],
+          ).map((el) => el.getBoundingClientRect().height)
+        : [];
+
     const apply = () => {
       const next = readMetrics();
       setMetrics((prev) => (metricsEqual(prev, next) ? prev : next));
+      const nextHeights = readRowHeights();
+      setRowHeights((prev) =>
+        prev.length === nextHeights.length &&
+        prev.every((h, i) => Math.abs(h - nextHeights[i]) < 0.5)
+          ? prev
+          : nextHeights,
+      );
     };
 
     apply();
@@ -204,18 +239,45 @@ export default function ReturnInvoiceView({
       if (r.current) ro.observe(r.current);
     });
     return () => ro.disconnect();
-  }, [returnInvoice, shop]);
+  }, [returnInvoice, shop, items]);
 
   const pages = useMemo(
     () =>
       paginateInvoicePages({
         items,
         ...metrics,
+        rowHeights,
+        overheadCorrection,
       }),
-    [items, metrics],
+    [items, metrics, rowHeights, overheadCorrection],
   );
 
+  // After the pages render, check them against the prediction and fill any
+  // space left at the bottom (or pull rows back out from under the footer).
+  const correctionPasses = useRef(0);
+  useEffect(() => {
+    // New layout inputs: allow a fresh round of corrections.
+    correctionPasses.current = 0;
+  }, [items, metrics, rowHeights]);
+
+  useLayoutEffect(() => {
+    if (correctionPasses.current >= 3) return; // settled (guards against flip-flopping)
+    const next = measureOverheadCorrection(sheetRef.current, pages);
+    if (!next) return; // nothing measurable (e.g. single page): keep the last value
+    if (
+      Math.abs(overheadCorrection.first - next.first) < 1 &&
+      Math.abs(overheadCorrection.rest - next.rest) < 1
+    ) {
+      return;
+    }
+    correctionPasses.current += 1;
+    setOverheadCorrection(next);
+  }, [pages, activeTab, overheadCorrection]);
+
   const pageCount = pages.length;
+  // Page-by-page totals for the final summary (also used by its measuring probe,
+  // so the summary's height includes these lines).
+  const pageTotals = useMemo(() => pageTotalsOf(pages), [pages]);
   const footerContacts = { contactPhones, contactLocations, contactEmails };
 
   useEffect(() => {
@@ -243,73 +305,50 @@ export default function ReturnInvoiceView({
   }, [isShopLoading, pageCount, metrics, printValidation.isPrintable]);
 
   return (
-    <div className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0">
-      <div className="max-w-[210mm] mx-auto px-4 mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-          className="gap-2 shadow-xs bg-card cursor-pointer"
-        >
-          <ArrowLeft className="size-4" />
-          <span className="hidden sm:inline">Go Back</span>
-        </Button>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Tabs for Customer Copy / Shop Copy */}
-          <div className="inline-flex items-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-0.5 shadow-xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("customer")}
-              className={cn(
-                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
-                tabPillClass("customer", activeTab === "customer"),
-              )}
-            >
-              Customer's Copy
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("shop")}
-              className={cn(
-                "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
-                tabPillClass("shop", activeTab === "shop"),
-              )}
-            >
-              Dealer's Copy
-            </button>
-          </div>
+    <div
+      className="min-h-screen bg-slate-100/80 dark:bg-zinc-950 py-6 sm:py-10 print:bg-white print:py-0 print:m-0"
+      /* Scales the product table and summary (pages, measuring probes and print alike). */
+      style={textScaleStyle(textScale)}
+    >
+      <PrintToolbar
+        onPrint={handlePrint}
+        printDisabledReason={
+          printValidation.isPrintable
+            ? undefined
+            : printValidation.warningMessage
+        }
+      >
+        {/* Text size meter for the product table and summary */}
+        <TextSizeControl scale={textScale} onChange={changeTextScale} />
 
-          <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
-            {pageCount} {pageCount === 1 ? "Page" : "Pages"} × 2 Copies
-          </span>
-          {printValidation.isPrintable ? (
-            <Button
-              onClick={handlePrint}
-              className="gap-2 font-semibold shadow-xs"
-              size="sm"
-            >
-              <Printer className="size-4" /> Print / Save as PDF
-            </Button>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex cursor-not-allowed">
-                  <Button
-                    disabled
-                    className="gap-2 font-semibold shadow-xs pointer-events-none opacity-50"
-                    size="sm"
-                  >
-                    <Printer className="size-4" /> Print / Save as PDF
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs max-w-xs text-center">
-                {printValidation.warningMessage}
-              </TooltipContent>
-            </Tooltip>
-          )}
+        {/* Tabs for Customer Copy / Shop Copy */}
+        <div className="inline-flex items-center rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-0.5 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab("customer")}
+            className={cn(
+              "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+              tabPillClass("customer", activeTab === "customer"),
+            )}
+          >
+            Customer's Copy
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("shop")}
+            className={cn(
+              "px-3 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer",
+              tabPillClass("shop", activeTab === "shop"),
+            )}
+          >
+            Dealer's Copy
+          </button>
         </div>
-      </div>
+
+        <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
+          {pageCount} {pageCount === 1 ? "Page" : "Pages"} × 2 Copies
+        </span>
+      </PrintToolbar>
 
       {/* Warning banner when customer info is incomplete */}
       {!printValidation.isPrintable && (
@@ -370,8 +409,9 @@ export default function ReturnInvoiceView({
           />
         </div>
         <div ref={tableProbeRef} className="px-10">
+          {/* Every item is rendered here so each row's real (possibly wrapped) height is measured. */}
           <RIV_ProductTable
-            items={[probeItem]}
+            items={items.length ? items : [probeItem]}
             showBroughtForward
             showCarryForward
             broughtForward={100}
@@ -379,7 +419,10 @@ export default function ReturnInvoiceView({
           />
         </div>
         <div className="px-10" ref={calcProbeRef}>
-          <RetIV_Calculation returnInvoice={returnInvoice} />
+          <RetIV_Calculation
+            returnInvoice={returnInvoice}
+            pageTotals={pageTotals}
+          />
         </div>
         <div ref={compactFooterProbeRef}>
           <RIV_Footer
@@ -396,6 +439,7 @@ export default function ReturnInvoiceView({
 
       <div
         id="a4-invoice-sheet"
+        ref={sheetRef}
         className="flex flex-col items-center gap-6 print:gap-0"
       >
         {/* Customer Copy */}
@@ -411,6 +455,7 @@ export default function ReturnInvoiceView({
             return (
               <div
                 key={`customer-${page.pageNo}`}
+                data-invoice-page={page.pageNo}
                 className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none overflow-hidden"
                 style={{
                   width: "210mm",
@@ -444,10 +489,24 @@ export default function ReturnInvoiceView({
                       toPage={page.pageNo + 1}
                       showBroughtForward={page.showBroughtForward}
                       showCarryForward={page.showCarryForward}
+                      pageTotal={
+                        page.pageNo > 1
+                          ? pageTotals.find((pt) => pt.pageNo === page.pageNo)
+                          : undefined
+                      }
+                      broughtForwardParts={pageTotals.filter(
+                        (pt) => pt.pageNo < page.pageNo,
+                      )}
+                      carriedForwardParts={pageTotals.filter(
+                        (pt) => pt.pageNo <= page.pageNo,
+                      )}
                     />
                   </div>
                   {page.showCalculation && (
-                    <RetIV_Calculation returnInvoice={returnInvoice} />
+                    <RetIV_Calculation
+                      returnInvoice={returnInvoice}
+                      pageTotals={pageTotals}
+                    />
                   )}
                 </div>
                 <div className="absolute left-0 right-0 bottom-0">
@@ -477,6 +536,7 @@ export default function ReturnInvoiceView({
             return (
               <div
                 key={`shop-${page.pageNo}`}
+                data-invoice-page={page.pageNo}
                 className="invoice-page relative w-full max-w-[210mm] bg-white text-slate-900 shadow-xl rounded-sm border border-slate-200/80 print:border-none print:shadow-none print:rounded-none overflow-hidden"
                 style={{
                   width: "210mm",
@@ -510,10 +570,24 @@ export default function ReturnInvoiceView({
                       toPage={page.pageNo + 1}
                       showBroughtForward={page.showBroughtForward}
                       showCarryForward={page.showCarryForward}
+                      pageTotal={
+                        page.pageNo > 1
+                          ? pageTotals.find((pt) => pt.pageNo === page.pageNo)
+                          : undefined
+                      }
+                      broughtForwardParts={pageTotals.filter(
+                        (pt) => pt.pageNo < page.pageNo,
+                      )}
+                      carriedForwardParts={pageTotals.filter(
+                        (pt) => pt.pageNo <= page.pageNo,
+                      )}
                     />
                   </div>
                   {page.showCalculation && (
-                    <RetIV_Calculation returnInvoice={returnInvoice} />
+                    <RetIV_Calculation
+                      returnInvoice={returnInvoice}
+                      pageTotals={pageTotals}
+                    />
                   )}
                 </div>
                 <div className="absolute left-0 right-0 bottom-0">

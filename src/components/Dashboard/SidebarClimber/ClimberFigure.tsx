@@ -3,8 +3,11 @@
 import { useId, useImperativeHandle, useRef, type Ref } from "react";
 import type { Limb, Pose } from "./poses";
 
+/** Web line in px, relative to the feet: `reach` up to the anchor, `dx` across to it, `out` 0..1 shot. */
+export type WebLine = { reach: number; dx: number; out: number };
+
 export type ClimberFigureHandle = {
-  setPose: (pose: Pose) => void;
+  setPose: (pose: Pose, web?: WebLine) => void;
 };
 
 // Figure geometry in SVG units (viewBox below leaves headroom for the flag).
@@ -22,6 +25,16 @@ export const FIGURE_WIDTH = 30;
 export const FIGURE_HEIGHT = 45;
 export const FIGURE_ANCHOR_X = ((NECK.x + 4) / 32) * FIGURE_WIDTH;
 export const FIGURE_FEET_Y = ((FEET_Y + 10) / 48) * FIGURE_HEIGHT;
+/** Body center (mid-torso) in px: somersaults rotate around this point. */
+export const FIGURE_CENTER_Y = ((16 + 10) / 48) * FIGURE_HEIGHT;
+
+const HEAD = { x: NECK.x, y: 6.6, r: 3.6 };
+/** Where the headband is tied, at the back-left of the head. */
+const KNOT = { x: HEAD.x - 3.3, y: 5 };
+
+/** px → SVG units. */
+const UNITS_X = 32 / FIGURE_WIDTH;
+const UNITS_Y = 48 / FIGURE_HEIGHT;
 
 type Point = { x: number; y: number };
 
@@ -62,10 +75,15 @@ export default function ClimberFigure({
   const pennant = useRef<SVGPolygonElement>(null);
   const motion = useRef<SVGGElement>(null);
   const body = useRef<SVGGElement>(null);
+  const tailA = useRef<SVGPolylineElement>(null);
+  const tailB = useRef<SVGPolylineElement>(null);
+  const web = useRef<SVGGElement>(null);
+  const webLine = useRef<SVGLineElement>(null);
+  const webSplat = useRef<SVGCircleElement>(null);
   const partsId = `climber-${useId().replace(/:/g, "")}`;
 
   useImperativeHandle(handleRef, () => ({
-    setPose(pose) {
+    setPose(pose, line) {
       const lShoulder = { x: NECK.x - 1.4, y: SHOULDER_Y };
       const rShoulder = { x: NECK.x + 1.4, y: SHOULDER_Y };
       const lHip = { x: HIP.x - 1.3, y: HIP.y };
@@ -102,6 +120,45 @@ export default function ClimberFigure({
       );
       flag.current?.setAttribute("opacity", pose.flag.toFixed(2));
       motion.current?.setAttribute("opacity", pose.motion.toFixed(2));
+
+      // Headband tails stream out behind the head, fluttering harder in motion.
+      const t = performance.now();
+      const flutter = 0.3 + 0.7 * pose.motion;
+      const len = 3.5 + 3.5 * flutter;
+      const tail = (phase: number, droop: number) =>
+        toPoints(
+          KNOT,
+          {
+            x: KNOT.x - len * 0.5,
+            y: KNOT.y + droop * 0.5 + Math.sin(t / 70 + phase) * 0.9 * flutter,
+          },
+          {
+            x: KNOT.x - len,
+            y: KNOT.y + droop + Math.sin(t / 70 + phase + 1.4) * 1.6 * flutter,
+          },
+        );
+      tailA.current?.setAttribute("points", tail(0, 1.2 + 2.5 * (1 - flutter)));
+      tailB.current?.setAttribute("points", tail(2.1, 2.6 + 3 * (1 - flutter)));
+
+      // Web line shot from the right hand to the anchor (drawn outside the lifted body group).
+      if (!line || line.out <= 0) {
+        web.current?.setAttribute("opacity", "0");
+      } else {
+        const from = { x: ra.end.x, y: ra.end.y + lift };
+        const anchor = { x: NECK.x + 3 + line.dx * UNITS_X, y: FEET_Y - line.reach * UNITS_Y };
+        const end = {
+          x: from.x + (anchor.x - from.x) * line.out,
+          y: from.y + (anchor.y - from.y) * line.out,
+        };
+        webLine.current?.setAttribute("x1", from.x.toFixed(2));
+        webLine.current?.setAttribute("y1", from.y.toFixed(2));
+        webLine.current?.setAttribute("x2", end.x.toFixed(2));
+        webLine.current?.setAttribute("y2", end.y.toFixed(2));
+        webSplat.current?.setAttribute("cx", end.x.toFixed(2));
+        webSplat.current?.setAttribute("cy", end.y.toFixed(2));
+        webSplat.current?.setAttribute("opacity", line.out >= 0.98 ? "1" : "0");
+        web.current?.setAttribute("opacity", "1");
+      }
     },
   }));
 
@@ -116,6 +173,10 @@ export default function ClimberFigure({
       strokeLinejoin="round"
       className="overflow-visible text-slate-800 dark:text-slate-100"
     >
+      <g ref={web} opacity={0} className="text-slate-500 dark:text-slate-300">
+        <line ref={webLine} strokeWidth={0.9} />
+        <circle ref={webSplat} r={1.6} strokeWidth={0.8} strokeDasharray="1 0.8" />
+      </g>
       <g ref={body}>
         {/* motion marks */}
         <g ref={motion} opacity={0} stroke="#f59e0b" strokeWidth={1.3}>
@@ -127,9 +188,9 @@ export default function ClimberFigure({
         <defs>
           <g id={partsId}>
             <circle
-              cx={NECK.x}
-              cy={6.6}
-              r={3.6}
+              cx={HEAD.x}
+              cy={HEAD.y}
+              r={HEAD.r}
               fill="currentColor"
               style={{ strokeWidth: "var(--head-w)" }}
             />
@@ -158,6 +219,28 @@ export default function ClimberFigure({
           className="text-white dark:text-slate-900"
           style={{ ["--limb-w" as string]: "2.2", ["--head-w" as string]: "0" }}
         />
+        {/* ninja hood with an eye slit, and a red headband with streaming tails */}
+        <circle
+          cx={HEAD.x}
+          cy={HEAD.y}
+          r={HEAD.r}
+          fill="currentColor"
+          stroke="none"
+          className="text-slate-800 dark:text-slate-100"
+        />
+        <line
+          x1={HEAD.x - 2.5}
+          y1={HEAD.y + 0.5}
+          x2={HEAD.x + 2.5}
+          y2={HEAD.y + 0.5}
+          strokeWidth={1.2}
+          className="text-white dark:text-slate-900"
+        />
+        <g stroke="#ef4444" strokeWidth={1.3}>
+          <line x1={KNOT.x} y1={KNOT.y} x2={HEAD.x + 3.1} y2={KNOT.y - 0.6} />
+          <polyline ref={tailA} />
+          <polyline ref={tailB} strokeWidth={1} />
+        </g>
         <g ref={flag} opacity={0}>
           <line ref={pole} strokeWidth={1.4} />
           <polygon

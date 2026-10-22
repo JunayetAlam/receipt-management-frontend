@@ -40,6 +40,7 @@ import {
 } from "@/types";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { getCustomerSaveValidation } from "@/utils/customerPrintValidation";
+import { roundInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import CustomPhoneInput from "@/components/Forms/CustomPhoneInput";
 import CustomerFormModal from "@/components/Customers/CustomerFormModal";
 import CustomerSelect from "./CustomerSelect";
@@ -818,6 +819,26 @@ export default function ReceiptForm({
     };
   }, [items, receiptDiscount, paidAmount]);
 
+  // Product picker toggle, shared by every row: hide products already added.
+  const [hideAddedProducts, setHideAddedProducts] = useState(false);
+
+  // Which row each product is already on, so the product picker can flag duplicates.
+  const addedProductRows = useMemo(() => {
+    const map = new Map<string, number>();
+    items.forEach((it, idx) => {
+      if (it.productId && !map.has(it.productId)) map.set(it.productId, idx + 1);
+    });
+    return map;
+  }, [items]);
+
+  // paidAmount is the running total (amount paid at sale + every installment payment).
+  const totalPaid = Math.max(0, Number(paidAmount) || 0);
+  const paymentsTotal = sortedPayments.reduce(
+    (sum, p) => sum + (Number(p.amount) || 0),
+    0,
+  );
+  const initialPaidAmount = Math.max(0, totalPaid - paymentsTotal);
+
   // Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1403,6 +1424,9 @@ export default function ReceiptForm({
                           onClear={() => handleClearProduct(it.tempId)}
                           disabled={isLocked || isProductsLoading}
                           placeholder="Search product or type custom name..."
+                          addedProductRows={addedProductRows}
+                          hideAdded={hideAddedProducts}
+                          onHideAddedChange={setHideAddedProducts}
                         />
                       </div>
 
@@ -1808,6 +1832,28 @@ export default function ReceiptForm({
                         No payments recorded yet.
                       </p>
                     )}
+
+                    {/* Total Paid: the amount paid at sale time is not a payment record, so show how the total is made up */}
+                    <div className="flex justify-between items-start gap-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-2">
+                      <div className="space-y-0.5">
+                        <span className="text-sm font-semibold text-foreground">
+                          Total Paid
+                        </span>
+                        {sortedPayments.length > 0 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            ৳{roundInvoiceMoney(initialPaidAmount)} at sale + ৳
+                            {roundInvoiceMoney(paymentsTotal)} in{" "}
+                            {sortedPayments.length}{" "}
+                            {sortedPayments.length === 1
+                              ? "payment"
+                              : "payments"}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 pr-[11px]">
+                        ৳{roundInvoiceMoney(totalPaid)}
+                      </span>
+                    </div>
                   </div>
                 )}
 

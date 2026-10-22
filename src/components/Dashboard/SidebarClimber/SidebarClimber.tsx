@@ -9,6 +9,7 @@ import {
 } from "react";
 import ClimberFigure, {
   FIGURE_ANCHOR_X,
+  FIGURE_CENTER_Y,
   FIGURE_FEET_Y,
   type ClimberFigureHandle,
 } from "./ClimberFigure";
@@ -20,7 +21,7 @@ import {
   type Frame,
   type MoveStyle,
 } from "./moves";
-import { clamp01, lerpPose, standPose, victoryPose } from "./poses";
+import { STANCE, clamp01, lerpPose, victoryPose } from "./poses";
 import useNavStops, { type NavStop } from "./useNavStops";
 
 /**
@@ -31,9 +32,10 @@ const STAND_FROM_RIGHT = 44;
 /** Feet sink 1px into the item's top edge so it reads as standing on it. */
 const FLOOR_INSET = -1;
 
-const STAND_MS = 2500;
-const TOP_TOTAL_MS = 2600;
-const BOTTOM_TOTAL_MS = 2000;
+/** A brief ready-stance pause on each stair: ninjas don't linger. */
+const STAND_MS = 650;
+const TOP_TOTAL_MS = 2200;
+const BOTTOM_TOTAL_MS = 1500;
 
 /** Attribute set on the menu link the figure is currently standing on. */
 const HERE_ATTR = "data-climber-here";
@@ -47,7 +49,6 @@ type Timeline = {
   index: number;
   target: number;
   style: MoveStyle;
-  moves: number;
   t0: number;
   fired: boolean;
   pausedAt: number | null;
@@ -71,13 +72,13 @@ const useReducedMotion = () =>
 const feetOf = (stop: NavStop) => stop.floor - FLOOR_INSET;
 
 /** Victory jumps: arms up in a V (with the flag at the top), easing in and out. */
-function celebrate(elapsed: number, total: number, withFlag: boolean, now: number) {
+function celebrate(elapsed: number, total: number, withFlag: boolean) {
   const k = clamp01(Math.min(elapsed / 250, (total - elapsed) / 300));
   const hop = Math.abs(Math.sin((elapsed / 460) * Math.PI));
   return {
     frame: {
       x: 0,
-      pose: lerpPose(standPose(now), victoryPose(elapsed, withFlag), k),
+      pose: lerpPose(STANCE, victoryPose(elapsed, withFlag), k),
       squash: 1 + 0.05 * hop * k,
     },
     /** Upward jump offset in px. */
@@ -86,12 +87,13 @@ function celebrate(elapsed: number, total: number, withFlag: boolean, now: numbe
 }
 
 /**
- * A silhouette figure that uses the sidebar menu items as stairs, standing on
- * top of each one near its right end: starting on the bottom item, it moves up
- * one item at a time (mixing jumps, run-ups and pull-ups), stands on each,
- * celebrates on the top item with a flag and
- * confetti, comes back down one item at a time (mixing hops, steps and jumps),
- * celebrates on the bottom item, and loops. Stairs are measured from the real
+ * A ninja silhouette that uses the sidebar menu items as stairs, standing on
+ * top of each one near its right end: starting on the bottom item, it leaps up
+ * one item at a time (each move picked at random from six: a front flip, a
+ * star jump, dash-leaps, wall kicks, vanishing, and a Spider-Man web climb), pausing briefly in a ready
+ * stance on each, celebrates on the top item with a flag and confetti, comes
+ * back down (random from six more: drops, hops, tuck drops, slides,
+ * smoke drops, and rappelling down a web line), celebrates on the bottom item, and loops. Stairs are measured from the real
  * nav links.
  */
 export default function SidebarClimber({
@@ -119,8 +121,7 @@ export default function SidebarClimber({
     dir: 1,
     index: 0,
     target: 0,
-    style: "jump",
-    moves: 0,
+    style: "flip",
     t0: 0,
     fired: false,
     pausedAt: null,
@@ -137,9 +138,21 @@ export default function SidebarClimber({
       // without being clipped), so follow the menu's scroll position.
       const x = nav.offsetLeft + nav.clientWidth - STAND_FROM_RIGHT + frame.x - FIGURE_ANCHOR_X;
       const y = nav.offsetTop + feetY - nav.scrollTop - FIGURE_FEET_Y + lift;
-      wrap.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scaleY(${frame.squash.toFixed(3)})`;
+      // Spin around the body's center (the transform origin is at the feet).
+      const pivot = FIGURE_CENTER_Y - FIGURE_FEET_Y;
+      const spin = frame.spin
+        ? ` translate(0, ${pivot.toFixed(2)}px) rotate(${frame.spin.toFixed(1)}deg) translate(0, ${(-pivot).toFixed(2)}px)`
+        : "";
+      wrap.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)${spin} scaleY(${frame.squash.toFixed(3)})`;
+      wrap.style.opacity = (frame.alpha ?? 1).toFixed(2);
     }
-    figureRef.current?.setPose(frame.pose);
+    const web = frame.rope && {
+      // The anchor is on a stair, fixed in place while the figure moves around it.
+      reach: feetY - frame.rope.anchorY,
+      dx: -frame.x,
+      out: frame.rope.out,
+    };
+    figureRef.current?.setPose(frame.pose, web);
   };
 
   const markHere = (el: HTMLElement | null) => {
@@ -219,7 +232,7 @@ export default function SidebarClimber({
       tl.mode = "move";
       tl.target = next;
       tl.targetHref = s[next].href;
-      tl.style = pickStyle(tl.dir === 1, tl.moves++);
+      tl.style = pickStyle(tl.dir === 1, tl.style);
       tl.t0 = now;
     };
 
@@ -266,7 +279,8 @@ export default function SidebarClimber({
         }
         case "stand": {
           markHere(here.el);
-          place(feetOf(here), { x: 0, squash: 1, pose: standPose(now) });
+          // Ready stance with a slight breathing bob.
+          place(feetOf(here), { x: 0, squash: 1 + 0.015 * Math.sin(now / 260), pose: STANCE });
           if (elapsed >= STAND_MS) startMove(now);
           break;
         }
@@ -275,7 +289,7 @@ export default function SidebarClimber({
           const atTop = tl.mode === "top";
           const total = atTop ? TOP_TOTAL_MS : BOTTOM_TOTAL_MS;
           markHere(here.el);
-          const { frame: f, lift } = celebrate(elapsed, total, atTop, now);
+          const { frame: f, lift } = celebrate(elapsed, total, atTop);
           place(feetOf(here), f, lift);
           if (!tl.fired && elapsed >= 230) {
             tl.fired = true;

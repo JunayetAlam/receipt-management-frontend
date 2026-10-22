@@ -4,6 +4,12 @@ import {
   formatInvoiceMoney,
   formatSignedDue,
 } from "@/utils/formatInvoiceMoney";
+import {
+  PRINT_TABLE_STYLE,
+  PRINT_TD as tdClass,
+  PRINT_TH as thClass,
+  printRowClass,
+} from "@/components/Global/printTable";
 
 const formatDateOnly = (dateStr?: string) => {
   if (!dateStr) return "—";
@@ -23,11 +29,6 @@ const formatTimeOnly = (dateStr?: string) => {
   });
 };
 
-const thClass =
-  "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-black dark:text-foreground whitespace-nowrap border-b border-slate-200 bg-slate-50";
-const tdClass =
-  "px-2 border-b border-slate-200/80 py-[6px] align-middle text-[10.5px] text-slate-900";
-
 export default function CustomerTransactionListTable({
   transactions,
   startIndex = 0,
@@ -40,10 +41,13 @@ export default function CustomerTransactionListTable({
   isCustomerSelected?: boolean;
 }) {
   return (
-    <table className="w-full caption-bottom text-sm border-collapse">
+    <table
+      className="w-full caption-bottom border-collapse"
+      style={PRINT_TABLE_STYLE}
+    >
       <thead data-probe="header">
         <tr>
-          <th className={`${thClass} w-7 text-center`}>#</th>
+          <th className={`${thClass} w-[2.8em] text-center`}>#</th>
           <th className={`${thClass} whitespace-nowrap`}>Date</th>
           {!isCustomerSelected && <th className={thClass}>Client</th>}
           <th className={thClass}>Type</th>
@@ -59,7 +63,7 @@ export default function CustomerTransactionListTable({
           <tr data-row="empty">
             <td
               colSpan={isCustomerSelected ? 8 : 9}
-              className={`${tdClass} text-center text-slate-500 italic py-6`}
+              className={`${tdClass} text-center text-slate-500 italic py-[1.6em]`}
             >
               No transactions found for this filter.
             </td>
@@ -81,7 +85,7 @@ export default function CustomerTransactionListTable({
               <tr
                 key={tx.id}
                 data-row="item"
-                className={(startIndex + idx) % 2 === 1 ? "bg-muted" : ""}
+                className={printRowClass(startIndex + idx)}
               >
                 <td
                   className={`${tdClass} text-center text-slate-500 font-mono`}
@@ -89,25 +93,25 @@ export default function CustomerTransactionListTable({
                   {startIndex + idx + 1}
                 </td>
                 <td className={`${tdClass} whitespace-nowrap`}>
-                  <p className="font-mono text-slate-800 text-[10px] font-medium leading-tight">
+                  <p className="font-mono text-slate-800 text-[1em] font-medium leading-tight">
                     {formatDateOnly(tx.createdAt)}
                   </p>
-                  <p className="font-mono text-slate-500 text-[9px] leading-tight mt-0.5">
+                  <p className="font-mono text-slate-500 text-[0.9em] leading-tight mt-[0.2em]">
                     {formatTimeOnly(tx.createdAt)}
                   </p>
                 </td>
                 {!isCustomerSelected && (
                   <td className={tdClass}>
-                    <div className="max-w-[170px]">
-                      <p className="font-semibold text-slate-900 text-[10.5px] leading-tight truncate">
+                    <div className="max-w-[17em]">
+                      <p className="font-semibold text-slate-900 text-[1.05em] leading-tight truncate">
                         {tx.customer?.name || "Walk-in"}
                       </p>
-                      <p className="font-mono text-slate-600 text-[9px] leading-tight mt-0.5 truncate">
+                      <p className="font-mono text-slate-600 text-[0.9em] leading-tight mt-[0.2em] truncate">
                         {tx.customer?.phoneNumber
                           ? `${tx.customer.countryCode || "+880"} ${tx.customer.phoneNumber}`
                           : "—"}
                       </p>
-                      <p className="text-slate-500 text-[9px] leading-tight mt-0.5 truncate">
+                      <p className="text-slate-500 text-[0.9em] leading-tight mt-[0.2em] truncate">
                         {tx.customer?.address || "—"}
                       </p>
                     </div>
@@ -115,7 +119,7 @@ export default function CustomerTransactionListTable({
                 )}
                 <td className={`${tdClass} whitespace-nowrap font-medium`}>
                   <span
-                    className={`inline-block px-1.5 py-0.5 rounded text-[9.5px] font-semibold ${
+                    className={`inline-block px-[0.6em] py-[0.2em] rounded text-[0.95em] font-semibold ${
                       isReceipt
                         ? "bg-blue-50 text-blue-700 border border-blue-200"
                         : isPayment
@@ -152,12 +156,12 @@ export default function CustomerTransactionListTable({
                   {formatSignedDue(tx.balance)}
                 </td>
                 <td
-                  className={`${tdClass} text-[9.5px] text-slate-700 whitespace-pre-wrap break-words leading-relaxed`}
+                  className={`${tdClass} text-[0.95em] text-slate-700 whitespace-pre-wrap wrap-break-word leading-relaxed`}
                 >
                   {tx.note || tx.payment?.note || tx.receipt?.note || "—"}
                 </td>
                 <td
-                  className={`${tdClass} font-mono text-[10.5px] font-semibold text-slate-800 whitespace-nowrap`}
+                  className={`${tdClass} font-mono text-[1.05em] font-semibold text-slate-800 whitespace-nowrap`}
                 >
                   {invoiceNumber}
                 </td>

@@ -1,11 +1,12 @@
 import { TProductProfitRow } from "@/types";
 import { formatInvoiceMoney } from "@/utils/formatInvoiceMoney";
 import { cn } from "@/lib/utils";
-
-const thClass =
-  "h-8 px-2 py-1.5 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-black dark:text-foreground whitespace-nowrap border-b border-slate-200 bg-slate-50";
-const tdClass =
-  "px-2 border-b border-slate-200/80 py-[6px] align-middle text-[11px] text-slate-900";
+import {
+  PRINT_TABLE_STYLE,
+  PRINT_TD as tdClass,
+  PRINT_TH as thClass,
+  printRowClass,
+} from "@/components/Global/printTable";
 
 function formatQty(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -33,10 +34,13 @@ export default function ProductProfitListTable({
   empty?: boolean;
 }) {
   return (
-    <table className="w-full caption-bottom text-sm border-collapse">
+    <table
+      className="w-full caption-bottom border-collapse"
+      style={PRINT_TABLE_STYLE}
+    >
       <thead data-probe="header">
         <tr>
-          <th className={`${thClass} w-8 text-center`}>#</th>
+          <th className={`${thClass} w-[3.2em] text-center`}>#</th>
           <th className={thClass}>Product</th>
           <th className={`${thClass} text-right`}>Sold</th>
           <th className={`${thClass} text-right`}>Avg Buy</th>
@@ -52,7 +56,7 @@ export default function ProductProfitListTable({
           <tr data-row="empty">
             <td
               colSpan={9}
-              className={`${tdClass} text-center text-slate-500 italic py-6`}
+              className={`${tdClass} text-center text-slate-500 italic py-[1.6em]`}
             >
               No product sales found for this period.
             </td>
@@ -62,14 +66,14 @@ export default function ProductProfitListTable({
             <tr
               key={row.productId}
               data-row="item"
-              className={(startIndex + idx) % 2 === 1 ? "bg-muted" : ""}
+              className={printRowClass(startIndex + idx)}
             >
               <td className={`${tdClass} text-center text-slate-500 font-mono`}>
                 {startIndex + idx + 1}
               </td>
-              <td className={`${tdClass} font-semibold truncate max-w-40`}>
+              <td className={`${tdClass} font-semibold truncate max-w-[16em]`}>
                 <span title={row.productName}>{row.productName}</span>
-                <span className="block text-[10px] font-normal text-slate-500">
+                <span className="block text-[0.9em] font-normal text-slate-500">
                   {row.unit}
                 </span>
               </td>
