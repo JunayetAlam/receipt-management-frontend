@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { TProduct, TShop } from "@/types";
-import { downloadProductsCsv } from "@/utils/exportProductsCsv";
 import { useGetShopDetailsQuery } from "@/redux/api/shopApi";
 import ReceiptStyle from "@/components/Receipts/ReceipInvoiceView.tsx/receipt-style";
 import TextSizeControl, {
@@ -164,11 +161,6 @@ export default function ProductListExportView({
 
   const handlePrint = () => window.print();
 
-  const handleExportCsv = () => {
-    const date = new Date().toISOString().slice(0, 10);
-    downloadProductsCsv(products, `products-${date}.csv`);
-  };
-
   useEffect(() => {
     if (didAutoPrint.current || isShopLoading) return;
     if (typeof window === "undefined") return;
@@ -201,15 +193,6 @@ export default function ProductListExportView({
     >
       <PrintToolbar onPrint={handlePrint}>
         <TextSizeControl scale={textScale} onChange={changeTextScale} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCsv}
-          disabled={products.length === 0}
-          className="gap-2 shadow-xs bg-card cursor-pointer"
-        >
-          <Download className="size-4" /> Export CSV
-        </Button>
         <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 px-2.5 py-1 rounded-md shadow-xs">
           {pageCount} {pageCount === 1 ? "Page" : "Pages"} (A4)
         </span>
