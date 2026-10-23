@@ -21,6 +21,7 @@ import {
   useConfirmDeleteReturnInvoiceMutation,
   useRejectDeleteReturnInvoiceMutation,
   useRestoreReturnInvoiceMutation,
+  usePermanentDeleteReturnInvoiceMutation,
 } from "@/redux/api/returnInvoiceApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import ReturnInvoiceForm from "@/components/ReturnInvoices/ReturnInvoiceForm";
@@ -28,6 +29,7 @@ import ReturnInvoiceStatusDropdown from "@/components/ReturnInvoices/ReturnInvoi
 import ReturnInvoiceDeleteModal from "@/components/ReturnInvoices/ReturnInvoiceDeleteModal";
 import ReturnInvoiceActivitySheet from "@/components/ReturnInvoices/ReturnInvoiceActivitySheet";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
+import { PermanentDeleteButton } from "@/components/Global/ArchiveButtons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +46,7 @@ export default function ReturnInvoiceDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const [isAdmin] = useIsAdmin();
+  const [isAdmin, , isSuperAdmin] = useIsAdmin();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
   const [customerEditOpen, setCustomerEditOpen] = useState(false);
@@ -60,6 +62,8 @@ export default function ReturnInvoiceDetailsPage() {
     useRejectDeleteReturnInvoiceMutation();
   const [restoreReturn, { isLoading: isRestoring }] =
     useRestoreReturnInvoiceMutation();
+  const [permanentDeleteReturn, { isLoading: isPermanentDeleting }] =
+    usePermanentDeleteReturnInvoiceMutation();
 
   if (isLoading) {
     return (
@@ -109,6 +113,14 @@ export default function ReturnInvoiceDetailsPage() {
             <span className="font-mono text-xs text-muted-foreground">
               Return Invoice #{returnInvoice.returnNumber}
             </span>
+            {returnInvoice.isArchived && (
+              <Badge
+                variant="secondary"
+                className="ml-2 text-[10px] px-1.5 py-0 text-slate-600 bg-slate-500/10"
+              >
+                Archived
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -117,7 +129,7 @@ export default function ReturnInvoiceDetailsPage() {
           <ReturnInvoiceStatusDropdown returnInvoice={returnInvoice} />
 
           {/* View Invoice / Print Invoice */}
-          {!returnInvoice.isDeleted && (
+          {!returnInvoice.isArchived && (
             <>
               <Link href={`/return-invoices/${returnInvoice.id}/invoice`}>
                 <Button
@@ -188,7 +200,7 @@ export default function ReturnInvoiceDetailsPage() {
           </Button>
 
           {/* Edit return invoice if allowed */}
-          {!returnInvoice.isDeleted &&
+          {!returnInvoice.isArchived &&
             (isAdmin || returnInvoice.status !== "APPROVED") &&
             returnInvoice.isLatest !== false && (
               <Link href={`/return-invoices/${returnInvoice.id}/edit`}>
@@ -203,18 +215,18 @@ export default function ReturnInvoiceDetailsPage() {
             )}
 
           {/* Deletion & Restoration Actions */}
-          {isAdmin && returnInvoice.isDeleteRequested ? (
+          {isAdmin && returnInvoice.isDeleteRequested && !returnInvoice.isArchived ? (
             <div className="flex items-center gap-1.5 border-l border-border pl-1.5 ml-1">
               <ConfirmPopup
                 title="Approve Deletion Request?"
-                description={`Confirm deletion of Return Invoice "${returnInvoice.returnNumber}"? Stock will be adjusted.`}
-                confirmLabel="Confirm Delete"
+                description={`Archive Return Invoice "${returnInvoice.returnNumber}"? Stock will be adjusted.`}
+                confirmLabel="Approve & Archive"
                 destructive={true}
                 loading={isConfirming}
                 onConfirm={async () => {
                   try {
                     await confirmDelete(returnInvoice.id).unwrap();
-                    toast.success("Return invoice deletion confirmed");
+                    toast.success("Return invoice archived");
                     router.push("/return-invoices");
                   } catch (err) {
                     toast.error(errorMessageGenerator(err));
@@ -226,7 +238,7 @@ export default function ReturnInvoiceDetailsPage() {
                   size="sm"
                   className="h-8 px-2.5 text-xs font-medium gap-1"
                 >
-                  <Check className="size-3.5" /> Delete
+                  <Check className="size-3.5" /> Archive
                 </Button>
               </ConfirmPopup>
               <ConfirmPopup
@@ -253,11 +265,12 @@ export default function ReturnInvoiceDetailsPage() {
                 </Button>
               </ConfirmPopup>
             </div>
-          ) : returnInvoice.isDeleted && isAdmin ? (
-            returnInvoice.canRestore !== false ? (
+          ) : returnInvoice.isArchived && isAdmin ? (
+            <div className="flex items-center gap-1.5">
+            {returnInvoice.canRestore !== false ? (
               <ConfirmPopup
                 title="Restore Return Invoice?"
-                description={`Restore deleted Return "${returnInvoice.returnNumber}"? Stock will be restored again.`}
+                description={`Restore archived Return "${returnInvoice.returnNumber}" back to the active list?`}
                 confirmLabel="Restore Return"
                 destructive={false}
                 loading={isRestoring}
@@ -281,13 +294,30 @@ export default function ReturnInvoiceDetailsPage() {
             ) : (
               <span
                 className="text-xs text-muted-foreground italic px-2"
-                title="Cannot restore: a newer return exists on this receipt"
+                title="Cannot restore: a newer return exists or the source receipt is archived"
               >
-                Restore locked (newer return exists)
+                Restore locked
               </span>
-            )
+            )}
+            {isSuperAdmin && (
+              <PermanentDeleteButton
+                label={returnInvoice.returnNumber}
+                loading={isPermanentDeleting}
+                onConfirm={async () => {
+                  try {
+                    await permanentDeleteReturn(returnInvoice.id).unwrap();
+                    toast.success("Return invoice permanently deleted");
+                    router.push("/return-invoices");
+                  } catch (err) {
+                    toast.error(errorMessageGenerator(err));
+                    throw err;
+                  }
+                }}
+              />
+            )}
+            </div>
           ) : (
-            !returnInvoice.isDeleted && (
+            !returnInvoice.isArchived && (
               returnInvoice.isDeleteRequested && !isAdmin ? (
                 <Badge
                   variant="secondary"
@@ -301,12 +331,12 @@ export default function ReturnInvoiceDetailsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    title={isAdmin ? "Delete Return Invoice" : "Request Delete"}
+                    title={isAdmin ? "Archive Return Invoice" : "Request Delete"}
                     onClick={() => setDeleteModalOpen(true)}
                     className="h-8 gap-1.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
                   >
                     <Trash2 className="size-3.5" />
-                    {isAdmin ? "Delete" : "Request Delete"}
+                    {isAdmin ? "Archive" : "Request Delete"}
                   </Button>
                 )
               )

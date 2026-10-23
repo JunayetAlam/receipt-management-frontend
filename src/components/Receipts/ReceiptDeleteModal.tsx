@@ -64,12 +64,12 @@ export default function ReceiptDeleteModal({
               )}
             </div>
             <DialogTitle className="text-base font-semibold text-foreground">
-              {isAdmin ? "Confirm Receipt Deletion" : "Request Receipt Deletion"}
+              {isAdmin ? "Archive Receipt" : "Request Receipt Deletion"}
             </DialogTitle>
           </div>
           <DialogDescription className="pt-2 text-xs text-muted-foreground leading-relaxed">
             {isAdmin
-              ? `Are you sure you want to delete Receipt "${receipt.receiptNumber}"? This will soft-delete the receipt and automatically restore product stock.`
+              ? `Are you sure you want to archive Receipt "${receipt.receiptNumber}"? Product stock will be restored automatically. You can restore it anytime from the Archived tab. Only a super admin can delete it permanently.`
               : `You are submitting a deletion request for Receipt "${receipt.receiptNumber}". An administrator will review and confirm this request.`}
           </DialogDescription>
         </DialogHeader>
@@ -110,7 +110,7 @@ export default function ReceiptDeleteModal({
               {isLoading
                 ? "Processing..."
                 : isAdmin
-                ? "Delete Receipt"
+                ? "Archive Receipt"
                 : "Submit Deletion Request"}
             </Button>
           </div>

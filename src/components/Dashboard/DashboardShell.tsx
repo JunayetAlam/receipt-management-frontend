@@ -4,6 +4,7 @@ import DashboardSidebar from "@/components/Dashboard/DashboardSidebar";
 import DashboardUserMenu from "@/components/Dashboard/DashboardUserMenu";
 import NavbarWelcomeMarquee from "@/components/Dashboard/NavbarWelcomeMarquee";
 import NotificationDropdown from "@/components/Dashboard/NotificationDropdown";
+import BulkImportPanel from "@/components/Products/BulkImportPanel";
 
 export default function DashboardShell({
   children,
@@ -23,6 +24,7 @@ export default function DashboardShell({
         </header>
         <main className="min-w-0 flex-1">{children}</main>
       </div>
+      <BulkImportPanel />
     </div>
   );
 }

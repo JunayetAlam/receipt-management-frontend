@@ -69,7 +69,7 @@ export default function ReturnInvoiceStatusDropdown({
     }
   };
 
-  if (!isAdmin || returnInvoice.isDeleted) {
+  if (!isAdmin || returnInvoice.isArchived) {
     return (
       <Badge
         variant="outline"

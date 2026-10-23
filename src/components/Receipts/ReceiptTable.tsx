@@ -31,6 +31,8 @@ import {
   useConfirmDeleteReceiptMutation,
   useRejectDeleteReceiptMutation,
   useRestoreReceiptMutation,
+  usePermanentDeleteReceiptMutation,
+  useClearArchivedReceiptsMutation,
 } from "@/redux/api/receiptApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import { TReceipt } from "@/types";
@@ -66,6 +68,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
 import ConfirmPopup from "../Global/ConfirmPopup";
+import { ClearArchiveButton, PermanentDeleteButton } from "../Global/ArchiveButtons";
 import ReceiptDeleteModal from "./ReceiptDeleteModal";
 import ReceiptStatusDropdown from "./ReceiptStatusDropdown";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
@@ -100,7 +103,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function ReceiptTable() {
-  const [isAdmin] = useIsAdmin();
+  const [isAdmin, , isSuperAdmin] = useIsAdmin();
 
   // Filters & State
   const { getString, getNumber, setParams, resetParams } = useUrlState();
@@ -132,6 +135,10 @@ export default function ReceiptTable() {
     useRejectDeleteReceiptMutation();
   const [restoreReceipt, { isLoading: isRestoring }] =
     useRestoreReceiptMutation();
+  const [permanentDeleteReceipt, { isLoading: isPermanentDeleting }] =
+    usePermanentDeleteReceiptMutation();
+  const [clearArchivedReceipts, { isLoading: isClearing }] =
+    useClearArchivedReceiptsMutation();
 
   // Query Params
   const queryParams: Record<string, unknown> = {
@@ -151,18 +158,18 @@ export default function ReceiptTable() {
 
   // Tab Filtering
   if (activeTab === "ALL") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
   } else if (activeTab === "PENDING") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.status = "PENDING";
   } else if (activeTab === "APPROVED") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.status = "APPROVED";
   } else if (activeTab === "PENDING_DELETION") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.isDeleteRequested = true;
   } else if (activeTab === "ARCHIVED") {
-    queryParams.isDeleted = true;
+    queryParams.isArchived = true;
   }
 
   const {
@@ -182,7 +189,7 @@ export default function ReceiptTable() {
     try {
       await confirmDelete(r.id).unwrap();
       toast.success(
-        `Receipt ${r.receiptNumber} deletion confirmed. Stock restored.`,
+        `Receipt ${r.receiptNumber} archived. Stock restored.`,
       );
     } catch (err) {
       toast.error(errorMessageGenerator(err));
@@ -209,6 +216,26 @@ export default function ReceiptTable() {
       }
     } catch (err) {
       toast.error(errorMessageGenerator(err));
+    }
+  };
+
+  const handlePermanentDelete = async (r: TReceipt) => {
+    try {
+      await permanentDeleteReceipt(r.id).unwrap();
+      toast.success(`Receipt ${r.receiptNumber} permanently deleted.`);
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
+
+  const handleClearArchive = async () => {
+    try {
+      const res: any = await clearArchivedReceipts().unwrap();
+      toast.success(res.message || "Archive cleared.");
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
     }
   };
 
@@ -300,6 +327,15 @@ export default function ReceiptTable() {
             </button>
           </div>
 
+          {activeTab === "ARCHIVED" && isSuperAdmin && (
+            <ClearArchiveButton
+              entityPlural="receipts"
+              count={meta?.total ?? 0}
+              loading={isClearing}
+              onConfirm={handleClearArchive}
+            />
+          )}
+
           <Link href="/receipts/create">
             <Button
               size="sm"
@@ -375,7 +411,7 @@ export default function ReceiptTable() {
           )}
         >
           <Archive className="size-3" />
-          Archived / Deleted
+          Archived
         </button>
       </div>
 
@@ -462,7 +498,7 @@ export default function ReceiptTable() {
                       isFetching && "opacity-60",
                       receipt.isDeleteRequested &&
                         "bg-rose-500/5 hover:bg-rose-500/10",
-                      receipt.isDeleted && "bg-muted/30 opacity-70",
+                      receipt.isArchived && "bg-muted/30 opacity-70",
                     )}
                   >
                     {/* Receipt Number & Date */}
@@ -576,7 +612,7 @@ export default function ReceiptTable() {
                           <Activity className="size-3.5 text-muted-foreground hover:text-foreground" />
                         </Button>
 
-                        {!receipt.isDeleted && (
+                        {!receipt.isArchived && (
                           <>
                             <Link href={`/receipts/${receipt.id}/invoice`}>
                               <Button
@@ -635,11 +671,12 @@ export default function ReceiptTable() {
                         )}
 
                         {/* Admin Restore Button */}
-                        {receipt.isDeleted
+                        {receipt.isArchived
                           ? isAdmin && (
+                              <>
                               <ConfirmPopup
                                 title="Restore Receipt?"
-                                description={`Restore Receipt "${receipt.receiptNumber}"? Stock will be re-deducted.`}
+                                description={`Restore Receipt "${receipt.receiptNumber}" from the archive? Stock will be re-deducted.`}
                                 confirmLabel="Restore"
                                 destructive={false}
                                 loading={isRestoring}
@@ -654,9 +691,16 @@ export default function ReceiptTable() {
                                   Restore
                                 </Button>
                               </ConfirmPopup>
+                              {isSuperAdmin && (
+                                <PermanentDeleteButton
+                                  label={receipt.receiptNumber}
+                                  loading={isPermanentDeleting}
+                                  onConfirm={() => handlePermanentDelete(receipt)}
+                                />
+                              )}
+                              </>
                             )
-                          : /* Normal Delete / Request Delete */
-                            !receipt.isDeleted &&
+                          : /* Normal Archive / Request Delete */
                             (receipt.isDeleteRequested && !isAdmin ? (
                               <Badge
                                 variant="secondary"
@@ -670,12 +714,12 @@ export default function ReceiptTable() {
                                 variant="outline"
                                 size="sm"
                                 title={
-                                  isAdmin ? "Delete Receipt" : "Request Delete"
+                                  isAdmin ? "Archive Receipt" : "Request Delete"
                                 }
                                 onClick={() => handleOpenDelete(receipt)}
                                 className="h-7 px-2.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10"
                               >
-                                {isAdmin ? "Delete" : "Request Delete"}
+                                {isAdmin ? "Archive" : "Request Delete"}
                               </Button>
                             ))}
                       </div>

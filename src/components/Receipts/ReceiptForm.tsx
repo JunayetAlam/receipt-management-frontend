@@ -200,7 +200,8 @@ export default function ReceiptForm({
   const [isAdmin] = useIsAdmin();
   const isCashier = meData?.data?.role === "CASHIER";
   const isApproved = initialData?.status === "APPROVED";
-  const isLocked = isDetails || (!isAdmin && isApproved);
+  const isLocked =
+    isDetails || Boolean(initialData?.isArchived) || (!isAdmin && isApproved);
 
   // Payments State for Edit / Details mode
   const [payments, setPayments] = useState<TReceiptPayment[]>(
@@ -1674,7 +1675,7 @@ export default function ReceiptForm({
                         <Clock className="size-3" /> Payment History (
                         {payments.length})
                       </span>
-                      {dueAmount > 0 && (
+                      {dueAmount > 0 && !initialData.isArchived && (
                         <Button
                           type="button"
                           size="sm"
@@ -1699,7 +1700,7 @@ export default function ReceiptForm({
                               {/* Top-Right Corner Action Buttons (Like Product Row) */}
                               <div className="absolute -top-2.5 -right-2.5 z-10 flex items-center gap-1">
                                 {/* Approve Button (Only Admin and Super Admin, when not approved) */}
-                                {isAdmin && !isApprovedPayment && (
+                                {isAdmin && !isApprovedPayment && !initialData.isArchived && (
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -1714,7 +1715,7 @@ export default function ReceiptForm({
                                 )}
 
                                 {/* Edit Button (Only when not approved) */}
-                                {!isApprovedPayment && (
+                                {!isApprovedPayment && !initialData.isArchived && (
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -1728,7 +1729,7 @@ export default function ReceiptForm({
                                 )}
 
                                 {/* Delete Button with Popover Warning (Only when not approved) */}
-                                {!isApprovedPayment && (
+                                {!isApprovedPayment && !initialData.isArchived && (
                                   <ConfirmPopup
                                     title="Delete Payment"
                                     description={`Are you sure you want to delete this payment of ৳${p.amount}? The receipt remaining due will be recalculated.`}

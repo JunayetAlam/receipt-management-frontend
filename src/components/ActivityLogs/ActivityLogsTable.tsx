@@ -83,8 +83,10 @@ const ACTIONS_LIST = [
   { label: "Create Product", value: "CREATE_PRODUCT" },
   { label: "Update Product", value: "UPDATE_PRODUCT" },
   { label: "Request Delete Product", value: "REQUEST_DELETE_PRODUCT" },
-  { label: "Delete Product", value: "DELETE_PRODUCT" },
-  { label: "Restore Product", value: "ADMIN_RESTORE_PRODUCT" },
+  { label: "Archive Product", value: "ARCHIVE_PRODUCT" },
+  { label: "Restore Product", value: "RESTORE_PRODUCT" },
+  { label: "Permanent Delete Product", value: "PERMANENT_DELETE_PRODUCT" },
+  { label: "Clear Archived Products", value: "CLEAR_ARCHIVED_PRODUCTS" },
   // Customer Actions
   { label: "Create Customer", value: "CREATE_CUSTOMER" },
   { label: "Update Customer", value: "UPDATE_CUSTOMER" },
@@ -97,10 +99,12 @@ const ACTIONS_LIST = [
   { label: "Update Receipt Status", value: "UPDATE_RECEIPT_STATUS" },
   { label: "Add Receipt Payment", value: "ADD_RECEIPT_PAYMENT" },
   { label: "Request Delete Receipt", value: "REQUEST_DELETE_RECEIPT" },
-  { label: "Delete Receipt", value: "ADMIN_DELETE_RECEIPT" },
   { label: "Confirm Delete Receipt", value: "ADMIN_CONFIRM_DELETE_RECEIPT" },
   { label: "Reject Delete Receipt", value: "ADMIN_REJECT_DELETE_RECEIPT" },
-  { label: "Restore Receipt", value: "ADMIN_RESTORE_RECEIPT" },
+  { label: "Archive Receipt", value: "ARCHIVE_RECEIPT" },
+  { label: "Restore Receipt", value: "RESTORE_RECEIPT" },
+  { label: "Permanent Delete Receipt", value: "PERMANENT_DELETE_RECEIPT" },
+  { label: "Clear Archived Receipts", value: "CLEAR_ARCHIVED_RECEIPTS" },
   // Return Invoice Actions
   { label: "Create Return Invoice", value: "CREATE_RETURN_INVOICE" },
   { label: "Update Return Invoice", value: "UPDATE_RETURN_INVOICE" },
@@ -110,7 +114,7 @@ const ACTIONS_LIST = [
     label: "Request Delete Return Invoice",
     value: "REQUEST_DELETE_RETURN_INVOICE",
   },
-  { label: "Delete Return Invoice", value: "ADMIN_DELETE_RETURN_INVOICE" },
+  { label: "Archive Return Invoice", value: "ARCHIVE_RETURN_INVOICE" },
   {
     label: "Confirm Delete Return Invoice",
     value: "ADMIN_CONFIRM_DELETE_RETURN_INVOICE",
@@ -119,7 +123,15 @@ const ACTIONS_LIST = [
     label: "Reject Delete Return Invoice",
     value: "ADMIN_REJECT_DELETE_RETURN_INVOICE",
   },
-  { label: "Restore Return Invoice", value: "ADMIN_RESTORE_RETURN_INVOICE" },
+  { label: "Restore Return Invoice", value: "RESTORE_RETURN_INVOICE" },
+  {
+    label: "Permanent Delete Return Invoice",
+    value: "PERMANENT_DELETE_RETURN_INVOICE",
+  },
+  {
+    label: "Clear Archived Return Invoices",
+    value: "CLEAR_ARCHIVED_RETURN_INVOICES",
+  },
 ];
 
 const ENTITIES_LIST = [

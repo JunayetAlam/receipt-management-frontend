@@ -170,6 +170,22 @@ export const returnInvoiceApi = baseApi.injectEndpoints({
         "Notification",
       ],
     }),
+
+    permanentDeleteReturnInvoice: builder.mutation<TResponse<null>, string>({
+      query: (id) => ({
+        url: `/return-invoices/${id}/permanent`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ReturnInvoice", "Receipt", "Product", "ActivityLog"],
+    }),
+
+    clearArchivedReturnInvoices: builder.mutation<TResponse<{ count: number }>, void>({
+      query: () => ({
+        url: "/return-invoices/archived/clear",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ReturnInvoice", "Receipt", "Product", "ActivityLog"],
+    }),
   }),
 });
 
@@ -184,4 +200,6 @@ export const {
   useConfirmDeleteReturnInvoiceMutation,
   useRejectDeleteReturnInvoiceMutation,
   useRestoreReturnInvoiceMutation,
+  usePermanentDeleteReturnInvoiceMutation,
+  useClearArchivedReturnInvoicesMutation,
 } = returnInvoiceApi;

@@ -27,6 +27,8 @@ import {
   useConfirmDeleteReturnInvoiceMutation,
   useRejectDeleteReturnInvoiceMutation,
   useRestoreReturnInvoiceMutation,
+  usePermanentDeleteReturnInvoiceMutation,
+  useClearArchivedReturnInvoicesMutation,
 } from "@/redux/api/returnInvoiceApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import { TReturnInvoice } from "@/types";
@@ -48,6 +50,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCustomerPrintValidation } from "@/utils/customerPrintValidation";
 import ConfirmPopup from "../Global/ConfirmPopup";
+import { ClearArchiveButton, PermanentDeleteButton } from "../Global/ArchiveButtons";
 import ReturnInvoiceDeleteModal from "./ReturnInvoiceDeleteModal";
 import ReturnInvoiceStatusDropdown from "./ReturnInvoiceStatusDropdown";
 import ReturnInvoiceActivitySheet from "./ReturnInvoiceActivitySheet";
@@ -83,7 +86,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function ReturnInvoiceTable() {
-  const [isAdmin] = useIsAdmin();
+  const [isAdmin, , isSuperAdmin] = useIsAdmin();
   const { getString, getNumber, setParams, resetParams } = useUrlState();
   const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
   const activeTab = (getString("tab", "ALL") as TabType);
@@ -109,6 +112,10 @@ export default function ReturnInvoiceTable() {
     useRejectDeleteReturnInvoiceMutation();
   const [restoreReturn, { isLoading: isRestoring }] =
     useRestoreReturnInvoiceMutation();
+  const [permanentDeleteReturn, { isLoading: isPermanentDeleting }] =
+    usePermanentDeleteReturnInvoiceMutation();
+  const [clearArchivedReturns, { isLoading: isClearing }] =
+    useClearArchivedReturnInvoicesMutation();
 
   const queryParams: Record<string, unknown> = {
     page,
@@ -121,18 +128,18 @@ export default function ReturnInvoiceTable() {
     queryParams.customerType = customerTypeFilter;
   }
 
-  if (activeTab === "ALL") queryParams.isDeleted = false;
+  if (activeTab === "ALL") queryParams.isArchived = false;
   else if (activeTab === "PENDING") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.status = "PENDING";
   } else if (activeTab === "APPROVED") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.status = "APPROVED";
   } else if (activeTab === "PENDING_DELETION") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.isDeleteRequested = true;
   } else if (activeTab === "ARCHIVED") {
-    queryParams.isDeleted = true;
+    queryParams.isArchived = true;
   }
 
   const { data: response, isLoading } =
@@ -140,6 +147,27 @@ export default function ReturnInvoiceTable() {
   const rows = response?.data || [];
   const meta = response?.meta;
   const totalPages = meta?.totalPage || 1;
+  const totalCount = meta?.total ?? 0;
+
+  const handlePermanentDelete = async (row: TReturnInvoice) => {
+    try {
+      await permanentDeleteReturn(row.id).unwrap();
+      toast.success(`Return invoice ${row.returnNumber} permanently deleted`);
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
+
+  const handleClearArchive = async () => {
+    try {
+      const res = await clearArchivedReturns().unwrap();
+      toast.success(res.message || "Archive cleared.");
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
 
   const tabs: { key: TabType; label: string; icon?: React.ReactNode }[] = [
     { key: "ALL", label: "All Returns" },
@@ -244,6 +272,15 @@ export default function ReturnInvoiceTable() {
               Retailer
             </button>
           </div>
+
+          {activeTab === "ARCHIVED" && isSuperAdmin && (
+            <ClearArchiveButton
+              entityPlural="return invoices"
+              count={totalCount}
+              loading={isClearing}
+              onConfirm={handleClearArchive}
+            />
+          )}
 
           <Link href="/return-invoices/create">
             <Button size="sm" className="gap-1.5 font-semibold text-xs shadow-xs">
@@ -419,7 +456,7 @@ export default function ReturnInvoiceTable() {
                         <Activity className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </Button>
 
-                      {!row.isDeleted && (
+                      {!row.isArchived && (
                         <>
                           <Link href={`/return-invoices/${row.id}/invoice`}>
                             <Button
@@ -478,12 +515,13 @@ export default function ReturnInvoiceTable() {
                       )}
 
                       {/* Admin Restore Button */}
-                      {row.isDeleted
-                        ? isAdmin &&
-                          (row.canRestore !== false ? (
+                      {row.isArchived
+                        ? isAdmin && (
+                          <>
+                          {row.canRestore !== false ? (
                             <ConfirmPopup
                               title="Restore return invoice?"
-                              description={`Restore ${row.returnNumber}? Stock will be restored again. Not allowed if a newer return already exists.`}
+                              description={`Restore ${row.returnNumber} from the archive? Not allowed if a newer return already exists or the source receipt is archived.`}
                               confirmLabel="Restore"
                               destructive={false}
                               loading={isRestoring}
@@ -508,25 +546,34 @@ export default function ReturnInvoiceTable() {
                           ) : (
                             <span
                               className="text-[11px] text-muted-foreground italic px-1"
-                              title="Cannot restore: a newer return exists on this receipt"
+                              title="Cannot restore: a newer return exists or the source receipt is archived"
                             >
                               Locked
                             </span>
-                          ))
-                        : /* Not deleted */
-                          !row.isDeleted &&
+                          )}
+                          {isSuperAdmin && (
+                            <PermanentDeleteButton
+                              label={row.returnNumber}
+                              loading={isPermanentDeleting}
+                              onConfirm={() => handlePermanentDelete(row)}
+                            />
+                          )}
+                          </>
+                          )
+                        : /* Not archived */
+                          !row.isArchived &&
                           (isAdmin && row.isDeleteRequested && row.isLatest !== false ? (
                             <div className="flex items-center gap-1">
                               <ConfirmPopup
-                                title="Confirm deletion?"
-                                description={`Delete ${row.returnNumber}? Stock will be adjusted. Only the latest return can be deleted.`}
-                                confirmLabel="Confirm"
+                                title="Confirm deletion request?"
+                                description={`Archive ${row.returnNumber}? Stock will be adjusted. Only the latest return can be archived.`}
+                                confirmLabel="Approve & Archive"
                                 destructive
                                 loading={isConfirming}
                                 onConfirm={async () => {
                                   try {
                                     await confirmDelete(row.id).unwrap();
-                                    toast.success("Return invoice deleted");
+                                    toast.success("Return invoice archived");
                                   } catch (err) {
                                     toast.error(errorMessageGenerator(err));
                                   }
@@ -579,7 +626,7 @@ export default function ReturnInvoiceTable() {
                                 size="sm"
                                 title={
                                   isAdmin
-                                    ? "Delete Return Invoice"
+                                    ? "Archive Return Invoice"
                                     : "Request Delete"
                                 }
                                 onClick={() => {
@@ -588,7 +635,7 @@ export default function ReturnInvoiceTable() {
                                 }}
                                 className="h-7 px-2.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10"
                               >
-                                {isAdmin ? "Delete" : "Request Delete"}
+                                {isAdmin ? "Archive" : "Request Delete"}
                               </Button>
                             )
                           ))}

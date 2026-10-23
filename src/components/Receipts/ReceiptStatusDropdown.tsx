@@ -69,7 +69,7 @@ export default function ReceiptStatusDropdown({
     }
   };
 
-  if (!isAdmin || receipt.isDeleted) {
+  if (!isAdmin || receipt.isArchived) {
     return (
       <Badge
         variant="outline"

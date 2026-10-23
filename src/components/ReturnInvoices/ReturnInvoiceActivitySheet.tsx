@@ -61,11 +61,18 @@ const getActionBadge = (action: string) => {
           Deletion Requested
         </Badge>
       );
+    case "ARCHIVE_RETURN_INVOICE":
     case "ADMIN_CONFIRM_DELETE_RETURN_INVOICE":
     case "ADMIN_DELETE_RETURN_INVOICE":
       return (
+        <Badge className="bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20">
+          Archived
+        </Badge>
+      );
+    case "PERMANENT_DELETE_RETURN_INVOICE":
+      return (
         <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20">
-          Deleted
+          Permanently Deleted
         </Badge>
       );
     case "ADMIN_REJECT_DELETE_RETURN_INVOICE":
@@ -74,6 +81,7 @@ const getActionBadge = (action: string) => {
           Deletion Rejected
         </Badge>
       );
+    case "RESTORE_RETURN_INVOICE":
     case "ADMIN_RESTORE_RETURN_INVOICE":
       return (
         <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20">

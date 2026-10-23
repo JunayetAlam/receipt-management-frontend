@@ -1,4 +1,4 @@
-import { TProduct, TProductOption, TProductProfitReport, TProductStats, TResponse } from "@/types";
+import { TBulkImportProduct, TProduct, TProductOption, TProductProfitReport, TProductStats, TResponse } from "@/types";
 import { baseApi } from "./baseApi";
 
 export const productApi = baseApi.injectEndpoints({
@@ -67,6 +67,19 @@ export const productApi = baseApi.injectEndpoints({
       invalidatesTags: ["Product", "ActivityLog"],
     }),
 
+    // Used by the background bulk import queue, one row per request.
+    // No invalidatesTags: the queue invalidates in batches to avoid a refetch per row.
+    importProduct: builder.mutation<
+      TResponse<TProduct & { restored: boolean }>,
+      TBulkImportProduct
+    >({
+      query: (body) => ({
+        url: "/products/import",
+        method: "POST",
+        body,
+      }),
+    }),
+
     bulkCreateProducts: builder.mutation<
       TResponse<TProduct[]>,
       { products: Partial<TProduct>[] }
@@ -126,6 +139,22 @@ export const productApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Product", "ActivityLog", "Notification"],
     }),
+
+    permanentDeleteProduct: builder.mutation<TResponse<null>, string>({
+      query: (id) => ({
+        url: `/products/${id}/permanent`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Product", "ActivityLog"],
+    }),
+
+    clearArchivedProducts: builder.mutation<TResponse<{ count: number }>, void>({
+      query: () => ({
+        url: "/products/archived/clear",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Product", "ActivityLog"],
+    }),
   }),
 });
 
@@ -142,4 +171,6 @@ export const {
   useConfirmDeleteProductMutation,
   useRejectDeleteProductMutation,
   useRestoreProductMutation,
+  usePermanentDeleteProductMutation,
+  useClearArchivedProductsMutation,
 } = productApi;

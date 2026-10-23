@@ -119,6 +119,15 @@ export type ProductUnit =
   | "CARTON"
   | "OTHER";
 
+export interface TBulkImportProduct {
+  name: string;
+  unit: ProductUnit;
+  sellingPrice: number;
+  buyingPrice: number | null;
+  stock: number;
+  description: string | null;
+}
+
 export interface TProduct {
   id: string;
   name: string;
@@ -129,6 +138,8 @@ export interface TProduct {
   stock: number;
   description?: string | null;
   isDeleted: boolean;
+  isArchived: boolean;
+  archivedAt?: string | null;
   isDeleteRequested: boolean;
   deleteRequestedAt?: string | null;
   deleteReason?: string | null;
@@ -359,6 +370,8 @@ export interface TReceipt {
   status: ReceiptStatus;
   note?: string | null;
   isDeleted: boolean;
+  isArchived: boolean;
+  archivedAt?: string | null;
   isDeleteRequested: boolean;
   deleteRequestedAt?: string | null;
   deleteReason?: string | null;
@@ -486,6 +499,8 @@ export interface TReturnInvoice extends TReturnInvoiceMoney {
   status: ReceiptStatus;
   note?: string | null;
   isDeleted: boolean;
+  isArchived: boolean;
+  archivedAt?: string | null;
   isDeleteRequested: boolean;
   deleteRequestedAt?: string | null;
   deleteReason?: string | null;

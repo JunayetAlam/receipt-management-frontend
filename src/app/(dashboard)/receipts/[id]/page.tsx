@@ -22,6 +22,7 @@ import {
   useConfirmDeleteReceiptMutation,
   useRejectDeleteReceiptMutation,
   useRestoreReceiptMutation,
+  usePermanentDeleteReceiptMutation,
 } from "@/redux/api/receiptApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import ReceiptForm from "@/components/Receipts/ReceiptForm";
@@ -29,6 +30,7 @@ import ReceiptStatusDropdown from "@/components/Receipts/ReceiptStatusDropdown";
 import ReceiptDeleteModal from "@/components/Receipts/ReceiptDeleteModal";
 import ReceiptActivitySheet from "@/components/Receipts/ReceiptActivitySheet";
 import ConfirmPopup from "@/components/Global/ConfirmPopup";
+import { PermanentDeleteButton } from "@/components/Global/ArchiveButtons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +47,7 @@ export default function ReceiptDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
-  const [isAdmin] = useIsAdmin();
+  const [isAdmin, , isSuperAdmin] = useIsAdmin();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activitySheetOpen, setActivitySheetOpen] = useState(false);
@@ -62,13 +64,15 @@ export default function ReceiptDetailsPage() {
     useRejectDeleteReceiptMutation();
   const [restoreReceipt, { isLoading: isRestoring }] =
     useRestoreReceiptMutation();
+  const [permanentDeleteReceipt, { isLoading: isPermanentDeleting }] =
+    usePermanentDeleteReceiptMutation();
 
   const handleAdminConfirmDelete = async () => {
     if (!receipt) return;
     try {
       await confirmDelete(receipt.id).unwrap();
       toast.success(
-        `Receipt ${receipt.receiptNumber} deletion confirmed. Stock restored.`
+        `Receipt ${receipt.receiptNumber} archived. Stock restored.`
       );
       router.push("/receipts");
     } catch (err) {
@@ -101,6 +105,18 @@ export default function ReceiptDetailsPage() {
     }
   };
 
+  const handlePermanentDelete = async () => {
+    if (!receipt) return;
+    try {
+      await permanentDeleteReceipt(receipt.id).unwrap();
+      toast.success(`Receipt ${receipt.receiptNumber} permanently deleted.`);
+      router.push("/receipts");
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
+
   return (
     <div className="space-y-6 p-6 max-w-6xl mx-auto relative">
       {/* Header bar */}
@@ -124,6 +140,14 @@ export default function ReceiptDetailsPage() {
                 Receipt #{receipt.receiptNumber}
               </span>
             )}
+            {receipt?.isArchived && (
+              <Badge
+                variant="secondary"
+                className="ml-2 text-[10px] px-1.5 py-0 bg-muted text-muted-foreground"
+              >
+                Archived
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -133,7 +157,7 @@ export default function ReceiptDetailsPage() {
             <ReceiptStatusDropdown receipt={receipt} />
 
             {/* View Invoice / Print Invoice */}
-            {!receipt.isDeleted && (
+            {!receipt.isArchived && (
               <>
                 <Link href={`/receipts/${receipt.id}/invoice`}>
                   <Button
@@ -212,7 +236,7 @@ export default function ReceiptDetailsPage() {
             </Button>
 
             {/* Edit receipt if allowed */}
-            {!receipt.isDeleted && (isAdmin || receipt.status !== "APPROVED") && (
+            {!receipt.isArchived && (isAdmin || receipt.status !== "APPROVED") && (
               <Link href={`/receipts/${receipt.id}/edit`}>
                 <Button
                   variant="outline"
@@ -229,8 +253,8 @@ export default function ReceiptDetailsPage() {
               <div className="flex items-center gap-1.5 border-l border-border pl-1.5 ml-1">
                 <ConfirmPopup
                   title="Approve Deletion Request?"
-                  description={`Confirm deletion of Receipt "${receipt.receiptNumber}"? Stock will be restored.`}
-                  confirmLabel="Confirm Delete"
+                  description={`Approve the request and archive Receipt "${receipt.receiptNumber}"? Stock will be restored.`}
+                  confirmLabel="Approve & Archive"
                   destructive={true}
                   loading={isConfirming}
                   onConfirm={handleAdminConfirmDelete}
@@ -240,7 +264,7 @@ export default function ReceiptDetailsPage() {
                     size="sm"
                     className="h-8 px-2.5 text-xs font-medium gap-1"
                   >
-                    <Check className="size-3.5" /> Delete
+                    <Check className="size-3.5" /> Approve
                   </Button>
                 </ConfirmPopup>
                 <ConfirmPopup
@@ -260,10 +284,12 @@ export default function ReceiptDetailsPage() {
                   </Button>
                 </ConfirmPopup>
               </div>
-            ) : receipt.isDeleted && isAdmin ? (
+            ) : receipt.isArchived ? (
+              isAdmin && (
+              <>
               <ConfirmPopup
                 title="Restore Receipt?"
-                description={`Restore deleted Receipt "${receipt.receiptNumber}"? Stock will be re-deducted.`}
+                description={`Restore archived Receipt "${receipt.receiptNumber}"? Stock will be re-deducted.`}
                 confirmLabel="Restore Receipt"
                 destructive={false}
                 loading={isRestoring}
@@ -277,8 +303,17 @@ export default function ReceiptDetailsPage() {
                   <RotateCcw className="size-3.5" /> Restore
                 </Button>
               </ConfirmPopup>
+              {isSuperAdmin && (
+                <PermanentDeleteButton
+                  label={receipt.receiptNumber}
+                  loading={isPermanentDeleting}
+                  onConfirm={handlePermanentDelete}
+                />
+              )}
+              </>
+              )
             ) : (
-              !receipt.isDeleted && (
+              !receipt.isArchived && (
                 receipt.isDeleteRequested && !isAdmin ? (
                   <Badge
                     variant="secondary"
@@ -290,12 +325,12 @@ export default function ReceiptDetailsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    title={isAdmin ? "Delete Receipt" : "Request Delete"}
+                    title={isAdmin ? "Archive Receipt" : "Request Delete"}
                     onClick={() => setDeleteModalOpen(true)}
                     className="h-8 gap-1.5 text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10 cursor-pointer"
                   >
                     <Trash2 className="size-3.5" />
-                    {isAdmin ? "Delete" : "Request Delete"}
+                    {isAdmin ? "Archive" : "Request Delete"}
                   </Button>
                 )
               )
@@ -363,12 +398,14 @@ export default function ReceiptDetailsPage() {
             <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold">Return Invoices</h2>
+                {!receipt.isArchived && (
                 <Link
                   href={`/return-invoices/create?receiptId=${receipt.id}`}
                   className="text-xs text-primary hover:underline"
                 >
                   + New return
                 </Link>
+                )}
               </div>
               <div className="divide-y border rounded-lg overflow-hidden">
                 {(receipt.returnInvoices || [])

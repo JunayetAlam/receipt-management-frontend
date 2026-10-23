@@ -65,13 +65,13 @@ export default function ReturnInvoiceDeleteModal({
             </div>
             <DialogTitle className="text-base font-semibold text-foreground">
               {isAdmin
-                ? "Confirm Return Invoice Deletion"
+                ? "Archive Return Invoice"
                 : "Request Return Invoice Deletion"}
             </DialogTitle>
           </div>
           <DialogDescription className="pt-2 text-xs text-muted-foreground leading-relaxed">
             {isAdmin
-              ? `Delete Return "${returnInvoice.returnNumber}"? Inventory will be adjusted (returned stock deducted back).`
+              ? `Archive Return "${returnInvoice.returnNumber}"? Inventory will be adjusted (returned stock deducted back). You can restore it from the Archived tab. Only a super admin can delete it permanently.`
               : `Submit a deletion request for Return "${returnInvoice.returnNumber}". An administrator will review it.`}
           </DialogDescription>
         </DialogHeader>
@@ -115,7 +115,7 @@ export default function ReturnInvoiceDeleteModal({
               {isLoading
                 ? "Processing..."
                 : isAdmin
-                  ? "Delete Return Invoice"
+                  ? "Archive Return Invoice"
                   : "Submit Deletion Request"}
             </Button>
           </div>

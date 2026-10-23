@@ -124,7 +124,7 @@ export default function ReturnInvoiceForm({
   const { data: receiptsRes, isLoading: isReceiptsLoading } =
     useGetAllReceiptsQuery(
       {
-        isDeleted: false,
+        isArchived: false,
         limit: 50,
         ...(receiptSearch.trim()
           ? { searchTerm: receiptSearch.trim() }

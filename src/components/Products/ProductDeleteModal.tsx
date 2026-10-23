@@ -61,14 +61,14 @@ export default function ProductDeleteModal({
               )}
             </div>
             <DialogTitle className="text-base font-semibold text-foreground">
-              {isAdmin ? "Delete Product" : "Request Product Deletion"}
+              {isAdmin ? "Archive Product" : "Request Product Deletion"}
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-muted-foreground pt-1">
             {isAdmin ? (
               <>
-                Are you sure you want to soft-delete <strong>{product.name}</strong>?
-                You can undo and restore this product anytime from the archived tab.
+                Are you sure you want to archive <strong>{product.name}</strong>?
+                You can restore it anytime from the Archived tab. Only a super admin can delete it permanently.
               </>
             ) : (
               <>
@@ -114,7 +114,7 @@ export default function ProductDeleteModal({
             {isLoading
               ? "Submitting..."
               : isAdmin
-                ? "Confirm Delete"
+                ? "Archive Product"
                 : "Submit Deletion Request"}
           </Button>
         </div>

@@ -26,14 +26,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useBulkCreateProductsMutation } from "@/redux/api/productApi";
-import { ProductUnit } from "@/types";
+import { useAppDispatch, useAppSelector } from "@/redux/store";
+import { startBulkImport } from "@/redux/bulkImportRunner";
+import { ProductUnit, TBulkImportProduct } from "@/types";
 import {
   downloadSampleCSV,
   ParsedProductRow,
   parseProductCSV,
 } from "@/utils/csvParser";
-import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import {
   AlertCircle,
   Download,
@@ -80,7 +80,8 @@ export default function ProductBulkModal({
 }: ProductBulkModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ParsedProductRow[]>([createEmptyRow()]);
-  const [bulkCreateProducts, { isLoading }] = useBulkCreateProductsMutation();
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector((state) => state.bulkImport.isRunning);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,7 +213,7 @@ export default function ProductBulkModal({
     return isValid;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!validateRows()) {
       toast.error(
         "Please resolve highlighted validation errors before saving.",
@@ -220,7 +221,7 @@ export default function ProductBulkModal({
       return;
     }
 
-    const payload = rows.map((r) => ({
+    const payload: TBulkImportProduct[] = rows.map((r) => ({
       name: r.name.trim(),
       unit: r.unit,
       sellingPrice: parseFloat(r.sellingPrice),
@@ -230,16 +231,13 @@ export default function ProductBulkModal({
       description: r.description.trim() || null,
     }));
 
-    try {
-      const res = await bulkCreateProducts({ products: payload }).unwrap();
-      toast.success(
-        res.message || `Successfully created ${payload.length} products!`,
-      );
-      setRows([createEmptyRow()]);
-      onOpenChange(false);
-    } catch (error) {
-      toast.error(errorMessageGenerator(error));
-    }
+    // Products are created one by one in the background; progress shows in the import panel
+    const started = dispatch(startBulkImport(payload));
+    if (!started) return;
+
+    toast.info(`Creating ${payload.length} product(s) in the background...`);
+    setRows([createEmptyRow()]);
+    onOpenChange(false);
   };
 
   return (
@@ -580,7 +578,7 @@ export default function ProductBulkModal({
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5"
             >
               {isLoading
-                ? "Creating Products..."
+                ? "Another import is running..."
                 : `Create All (${rows.length} Products)`}
             </Button>
           </div>

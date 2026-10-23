@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
 function filterLabelFromParams(params: URLSearchParams) {
-  if (params.get("isDeleted") === "true") return "Archived";
+  if (params.get("isArchived") === "true") return "Archived";
   if (params.get("isDeleteRequested") === "true") return "Pending Deletion";
   const stockStatus = params.get("stockStatus");
   if (stockStatus === "NEGATIVE") return "Negative Stock (< 0)";
@@ -50,11 +50,7 @@ function ProductExportPageInner() {
     const unit = searchParams.get("unit");
     if (unit) params.unit = unit;
 
-    if (searchParams.get("isDeleted") === "true") {
-      params.isDeleted = true;
-    } else {
-      params.isDeleted = false;
-    }
+    params.isArchived = searchParams.get("isArchived") === "true";
 
     if (searchParams.get("isDeleteRequested") === "true") {
       params.isDeleteRequested = true;

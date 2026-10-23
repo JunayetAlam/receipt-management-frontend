@@ -140,6 +140,22 @@ export const receiptApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Receipt", "ActivityLog", "Notification"],
     }),
+
+    permanentDeleteReceipt: builder.mutation<TResponse<null>, string>({
+      query: (id) => ({
+        url: `/receipts/${id}/permanent`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Receipt", "Product", "ActivityLog"],
+    }),
+
+    clearArchivedReceipts: builder.mutation<TResponse<{ count: number }>, void>({
+      query: () => ({
+        url: "/receipts/archived/clear",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Receipt", "Product", "ActivityLog"],
+    }),
   }),
 });
 
@@ -157,4 +173,6 @@ export const {
   useUpdatePaymentMutation,
   useApprovePaymentMutation,
   useDeletePaymentMutation,
+  usePermanentDeleteReceiptMutation,
+  useClearArchivedReceiptsMutation,
 } = receiptApi;

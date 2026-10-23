@@ -29,6 +29,8 @@ import {
   useConfirmDeleteProductMutation,
   useRejectDeleteProductMutation,
   useRestoreProductMutation,
+  usePermanentDeleteProductMutation,
+  useClearArchivedProductsMutation,
 } from "@/redux/api/productApi";
 import useIsAdmin from "@/hooks/useIsAdmin";
 import { TProduct } from "@/types";
@@ -48,6 +50,7 @@ import ProductBulkModal from "./ProductBulkModal";
 import ProductActivitySheet from "./ProductActivitySheet";
 import ProductDeleteModal from "./ProductDeleteModal";
 import ConfirmPopup from "../Global/ConfirmPopup";
+import { ClearArchiveButton, PermanentDeleteButton } from "../Global/ArchiveButtons";
 import { errorMessageGenerator } from "@/utils/errorMessageGenerator";
 import { cn } from "@/lib/utils";
 import { tabPillClass } from "@/lib/tabColors";
@@ -89,7 +92,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function ProductTable() {
-  const [isAdmin] = useIsAdmin();
+  const [isAdmin, , isSuperAdmin] = useIsAdmin();
   const { getString, getNumber, setParams, resetParams } = useUrlState();
   const { value: searchInput, setValue: setSearchInput, searchTerm } = useUrlSearch();
   const activeTab = (getString("tab", "ACTIVE") as TabType);
@@ -128,6 +131,10 @@ export default function ProductTable() {
     useRejectDeleteProductMutation();
   const [restoreProduct, { isLoading: isRestoring }] =
     useRestoreProductMutation();
+  const [permanentDeleteProduct, { isLoading: isPermanentDeleting }] =
+    usePermanentDeleteProductMutation();
+  const [clearArchivedProducts, { isLoading: isClearing }] =
+    useClearArchivedProductsMutation();
 
   // Query Params Construction
   const selectedSort = SORT_OPTIONS[Number(sortIndex)] || SORT_OPTIONS[0];
@@ -147,12 +154,12 @@ export default function ProductTable() {
 
   // Tab Filtering logic
   if (activeTab === "ACTIVE") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
   } else if (activeTab === "PENDING_DELETION") {
-    queryParams.isDeleted = false;
+    queryParams.isArchived = false;
     queryParams.isDeleteRequested = true;
   } else if (activeTab === "ARCHIVED") {
-    queryParams.isDeleted = true;
+    queryParams.isArchived = true;
   }
 
   const {
@@ -212,6 +219,26 @@ export default function ProductTable() {
     }
   };
 
+  const handlePermanentDelete = async (p: TProduct) => {
+    try {
+      await permanentDeleteProduct(p.id).unwrap();
+      toast.success(`Product "${p.name}" permanently deleted.`);
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
+
+  const handleClearArchive = async () => {
+    try {
+      const res = await clearArchivedProducts().unwrap();
+      toast.success(res.message || "Archive cleared.");
+    } catch (err) {
+      toast.error(errorMessageGenerator(err));
+      throw err;
+    }
+  };
+
   const handleResetFilters = () => {
     setSearchInput("");
     resetParams(["searchTerm", "unit", "sort", "page"]);
@@ -223,8 +250,8 @@ export default function ProductTable() {
     params.set("sortOrder", selectedSort.sortOrder);
     if (searchTerm.trim()) params.set("searchTerm", searchTerm.trim());
     if (selectedUnit !== "ALL") params.set("unit", selectedUnit);
-    if (activeTab === "ARCHIVED") params.set("isDeleted", "true");
-    else params.set("isDeleted", "false");
+    if (activeTab === "ARCHIVED") params.set("isArchived", "true");
+    else params.set("isArchived", "false");
     if (activeTab === "PENDING_DELETION") {
       params.set("isDeleteRequested", "true");
     }
@@ -283,6 +310,14 @@ export default function ProductTable() {
 
         {/* Header Action Buttons */}
         <div className="flex items-center gap-2">
+          {activeTab === "ARCHIVED" && isSuperAdmin && (
+            <ClearArchiveButton
+              entityPlural="products"
+              count={totalCount}
+              loading={isClearing}
+              onConfirm={handleClearArchive}
+            />
+          )}
           <Button
             asChild
             variant="outline"
@@ -500,7 +535,7 @@ export default function ProductTable() {
                         isFetching && "opacity-60",
                         product.isDeleteRequested &&
                           "bg-amber-500/5 hover:bg-amber-500/10",
-                        product.isDeleted && "bg-muted/30 opacity-70",
+                        product.isArchived && "bg-muted/30 opacity-70",
                       )}
                     >
                       {/* Index / Serial Number */}
@@ -617,11 +652,12 @@ export default function ProductTable() {
                           </Button>
 
                           {/* If Deleted (Admin Restore) */}
-                          {product.isDeleted ? (
+                          {product.isArchived ? (
                             isAdmin && (
+                              <>
                               <ConfirmPopup
                                 title="Restore Product?"
-                                description={`Are you sure you want to restore "${product.name}" back to active stock?`}
+                                description={`Restore "${product.name}" from the archive back to the active product list?`}
                                 confirmLabel="Restore"
                                 destructive={false}
                                 loading={isRestoring}
@@ -637,6 +673,14 @@ export default function ProductTable() {
                                   Restore
                                 </Button>
                               </ConfirmPopup>
+                              {isSuperAdmin && (
+                                <PermanentDeleteButton
+                                  label={product.name}
+                                  loading={isPermanentDeleting}
+                                  onConfirm={() => handlePermanentDelete(product)}
+                                />
+                              )}
+                              </>
                             )
                           ) : (
                             <>
@@ -645,8 +689,8 @@ export default function ProductTable() {
                                 <div className="flex items-center gap-1">
                                   <ConfirmPopup
                                     title="Confirm Deletion Request?"
-                                    description={`A cashier requested deletion: "${product.deleteReason || "No reason specified"}". Confirming will soft-delete this product.`}
-                                    confirmLabel="Confirm Delete"
+                                    description={`A cashier requested deletion: "${product.deleteReason || "No reason specified"}". Approving will move this product to the archive.`}
+                                    confirmLabel="Approve & Archive"
                                     destructive={true}
                                     loading={isConfirming}
                                     onConfirm={() =>
@@ -712,7 +756,7 @@ export default function ProductTable() {
                                   size="icon"
                                   title={
                                     isAdmin
-                                      ? "Delete Product"
+                                      ? "Archive Product"
                                       : "Request Delete"
                                   }
                                   onClick={() => handleOpenDelete(product)}

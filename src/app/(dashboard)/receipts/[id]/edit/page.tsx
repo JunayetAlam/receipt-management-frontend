@@ -41,6 +41,21 @@ export default function UpdateReceiptPage() {
             <span className="hidden sm:inline">Go Back</span>
           </Button>
         </div>
+      ) : receipt.isArchived ? (
+        <div className="p-8 text-center space-y-4 rounded-xl border border-border bg-muted/30">
+          <p className="text-muted-foreground font-semibold">
+            Archived receipts cannot be edited. Restore it first.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/receipts/${receipt.id}`)}
+            className="gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Back to Receipt</span>
+          </Button>
+        </div>
       ) : (
         <ReceiptForm initialData={receipt} isEditing={true} />
       )}

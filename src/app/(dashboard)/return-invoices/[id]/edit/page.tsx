@@ -40,11 +40,11 @@ function EditReturnInvoiceInner() {
     );
   }
 
-  if (returnInvoice.isDeleted) {
+  if (returnInvoice.isArchived) {
     return (
       <div className="text-center space-y-3">
         <p className="text-destructive font-semibold">
-          Deleted return invoices cannot be edited
+          Archived return invoices cannot be edited
         </p>
         <Button
           variant="outline"
